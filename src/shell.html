@@ -60,12 +60,15 @@ body:not(.touchdev) .tc{display:none}
 .tb{position:absolute;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 11px/1.15 ui-monospace,Menlo,monospace;letter-spacing:.03em;color:#f0e2c0;background:rgba(20,14,8,.5);border:2px solid rgba(232,192,80,.55);pointer-events:auto;touch-action:none;text-align:center}
 .tb small{font-size:8px;opacity:.65;font-weight:400}
 .tb.down{background:rgba(232,192,80,.45)}
-#bR{width:86px;height:86px;right:12px;bottom:16px;font-size:12px}
-#bL{width:70px;height:70px;right:106px;bottom:20px}
-#bHorse{width:60px;height:60px;right:18px;bottom:112px;font-size:10px}
-#bUse{width:60px;height:60px;right:100px;bottom:104px;font-size:11px;border-color:#ffd84a;color:#ffd84a;display:none}
-#bPot{width:48px;height:48px;right:20px;bottom:182px;font-size:12px}
-#bBag{width:48px;height:48px;right:76px;bottom:176px;font-size:10px}
+#bAtk{width:96px;height:96px;right:12px;bottom:20px;font-size:13px;border-color:rgba(255,216,74,.85)}
+#bDash{width:76px;height:76px;right:116px;bottom:14px;font-size:12px;border-color:rgba(122,224,255,.8);color:#d8f4ff}
+#bOff{width:66px;height:66px;right:22px;bottom:126px;font-size:11px}
+#bLock{width:52px;height:52px;right:106px;bottom:104px;font-size:10px;border-color:rgba(255,122,74,.7)}
+#bLock.lit{background:rgba(255,122,74,.4)}
+#bHorse{width:44px;height:44px;right:64px;bottom:196px;font-size:8px}
+#bUse{width:58px;height:58px;right:200px;bottom:30px;font-size:11px;border-color:#ffd84a;color:#ffd84a;display:none}
+#bPot{width:44px;height:44px;right:14px;bottom:204px;font-size:10px}
+#bBag{width:44px;height:44px;right:114px;bottom:168px;font-size:9px}
 #bPause{position:fixed;left:50%;top:0;transform:translateX(-50%);width:38px;height:28px;z-index:6;display:flex;align-items:center;justify-content:center;font:700 12px ui-monospace,monospace;color:#c8b898;background:rgba(13,10,7,.6);border:1px solid #4a3a28;cursor:pointer;touch-action:none}
 </style>
 </head>
@@ -75,8 +78,10 @@ body:not(.touchdev) .tc{display:none}
 <div id="touch">
   <div id="zone"></div>
   <div id="base"><div id="knob"></div></div>
-  <div class="tb" id="bR">SLASH</div>
-  <div class="tb" id="bL">PUNCH</div>
+  <div class="tb" id="bAtk">ATTACK</div>
+  <div class="tb" id="bDash">DASH</div>
+  <div class="tb" id="bOff">PARRY</div>
+  <div class="tb" id="bLock">LOCK</div>
   <div class="tb" id="bHorse">HORSE</div>
   <div class="tb" id="bUse">USE</div>
   <div class="tb" id="bPot">POT</div>
@@ -92,16 +97,19 @@ body:not(.touchdev) .tc{display:none}
     <button class="btn" id="btnCont">Continue</button><br>
     <button class="btn" id="btnNew">New Game</button>
     <div class="keys kb">
-      <b>W S / ↑ ↓</b> ride &amp; walk · <b>A D / ← →</b> turn<br>
-      <b>J / Space / L-click</b> right hand · <b>K / Q / R-click</b> left hand (hold)<br>
-      <b>E</b> use (trade, rest, loot) · <b>H</b> horse (mount / call)<br>
-      <b>I</b> inventory · <b>R</b> potion · <b>P</b> pause · <b>M</b> mute
+      <b>WASD / arrows</b> move · <b>Space / Shift</b> dash (i-frames)<br>
+      <b>J / L-click</b> attack — tap in rhythm for combos, hold for a heavy<br>
+      <b>K / R-click</b> block · parry (tap just before a hit) · off-hand<br>
+      <b>L / Tab</b> lock-on (again = next) · <b>Z X</b> turn camera<br>
+      <b>E</b> use · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
+      <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it</span>
     </div>
     <div class="keys tc">
-      <b>Left thumb</b>: joystick (up = forward, sideways = turn)<br>
-      <b>RIGHT / LEFT</b>: what each hand holds (hold to block or draw)<br>
-      <b>HORSE</b> mount / call · <b>USE</b> trade, rest, loot<br>
-      <b>BAG</b> inventory · <b>POT</b> drink · <b>II</b> pause
+      <b>Left thumb</b>: joystick · <b>DASH</b>: dodge through attacks<br>
+      <b>ATTACK</b>: tap in rhythm for combos, hold for a heavy<br>
+      <b>BLOCK / PARRY</b>: tap just before a hit lands · <b>LOCK</b>: target<br>
+      <b>HORSE</b> · <b>USE</b> · <b>BAG</b> · <b>POT</b> · <b>II</b> pause<br>
+      <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it</span>
     </div>
   </div>
 </div>

@@ -11,67 +11,111 @@ Open `index.html` in any modern browser with WebGL2. It is one self-contained fi
 - **Near-endless world.** The map is generated in chunks as you explore. It has six biomes: the Green Vales, the Old Forest, the Frostlands to the north (snow, frost giants), the Mirefen Swamps, the Grimmoor Heath (giants) and the Southern Sands to the south.
 - **Villages and ruins.** Villages have a merchant, guards, a campfire you can rest at, a well and fields. Ruins hold treasure chests.
 - **Day and night.** A full day takes 7 minutes. Without a torch, nights are dark. Every fifth night has a blood moon.
-- **Unarmed start.** You begin in a linen tunic with no weapon. Your first fight is with your fists: landing 3 hits in a row gives a takedown.
-- **Two hands.** Each hand holds one item:
-  - swords (5 tiers)
-  - shields that block attacks from the front (buckler, kite, tower)
-  - a torch, which gives light and burns undead
-  - a flintlock pistol
+- **Gear.** Two hands, one item each: swords (5 tiers), shields, a torch, a flintlock pistol. The claymore and bows take both hands. Armor goes from a linen tunic to full plate; heavier armor protects more but slows you, shortens your dash and its i-frames, and slows stamina recovery.
+- **Horse riding**, an XP/level system, a 20-slot inventory, merchants, loot that improves with distance, and saves (rest at a campfire, plus autosave).
 
-  Two-handed items take both hands: the claymore, and bows (hold to draw; they need arrows).
-- **Armor tiers.** Tunic, gambeson, leather, chainmail, half-plate, full plate. Heavier armor protects more but slows you down.
-- **Horse riding.** Mount and dismount, or whistle to call your horse. A charge does extra damage and tramples enemies. Pikemen deal double damage to riders, and a giant's slam knocks you off.
-- **Enemies.**
-  - By day: bandits, soldiers, pikemen, musketeers, archers, and dragoons (cavalry). There are also battles where the Royal army fights redcoats.
-  - At night: vampires (they drain health and teleport behind you) and witches (homing fireballs, teleporting).
-  - Giants and frost giants (ground slams, boulders).
-- **RPG systems.** XP and levels, an inventory (20 slots), buying and selling with merchants, and loot that gets better the further you travel. The game saves when you rest at a campfire and also autosaves.
+## Combat
+
+Combat is built around timing. Every attack, yours and the enemy's, has wind-up, active and recovery frames, and every enemy attack is telegraphed.
+
+**Reading enemies.** Before an enemy strikes, it flashes and paints its hitbox on the ground. A **yellow** flash and decal can be parried or blocked. A **red** one cannot: dodge it. The decal fills up as the wind-up runs out, so you can see exactly when the hit lands.
+
+| Enemy | Attack | Tell |
+|---|---|---|
+| Bandit | Punch (0.5 s wind-up) | yellow sector |
+| Soldier | 3-hit combo; the last hit is delayed (0.72 s), plus a single cut | yellow sector |
+| Pikeman | Lunging line thrust, 3.9 units (0.62 s) | red line |
+| Musketeer | Aims with a red line, locks 0.32 s before firing; fixed 1.05 s delay | red aim line |
+| Archer | Lighter version: 0.85 s aim, arrows can be parried | yellow aim line |
+| Dragoon | Gallop charge along a line (0.62 s wind-up, 15 units) | red line |
+| Vampire | Dash-in lunge (yellow), drain grab (red), claw swipe; blinks behind you when hit | yellow / red |
+| Witch | Homing fireballs (parry to send them back), ground blast circle (1.0 s) | yellow / red circle |
+| Giant / frost giant | Slam with an expanding circle (1.1 s), club sweep (yellow), boulder throw onto a target circle | red / yellow |
+
+Only one or two enemies (two on harder ground) may wind up a melee attack on you at the same time; the rest circle and wait for an **attack token**. Ranged enemies share their own two tokens.
+
+**Dash.** 0.28 s long with **i-frames for the first 0.16 s**, costs stamina, and cannot be done below 18 stamina, so spamming it runs you dry. It cancels the recovery of your attacks, a heavy charge or a bow draw, but never a wind-up. If an attack would have hit you during the i-frames, it's a **PERFECT DODGE**: 0.45 s of slow-motion (the world runs at 30 %), a flash, +25 stamina, and a 1.4 s counter window where your next hit is a guaranteed x2 crit.
+
+**Light combos.** Tap attack in rhythm. A white glint marks the moment the next swing opens (at the end of each swing's active frames); press again inside it to chain, up to 0.14 s after the swing ends. Pressing more than 0.14 s before the window opens ("too early", i.e. mashing during the wind-up) drops the string. Pressing in the first 0.1 s of the window is a sharp hit (+15 % damage). Finishers stagger.
+
+| Weapon | String | Notes |
+|---|---|---|
+| Fists | jab, cross, hook | the hook knocks foes down (TAKEDOWN) |
+| Sword | slash, back-slash, thrust | the thrust reaches further |
+| Claymore | sweep, sweep | wide arcs, slow wind-up |
+| Torch | 2 swings | sets targets burning (x2.3 vs undead) |
+| Mounted | side sweep | toward the nearest foe beside the horse |
+
+**Heavy attack.** Hold attack for 0.26 s to start charging. A ring shrinks around you; releasing when it turns gold (a 0.16 s window after full charge) is a **CRUSH**: x2.6 damage, a big poise hit and a guard break. Releasing early does up to x1.6; holding too long falls back to x1.6.
+
+**Block and parry.** Hold block with a shield to block from the front; it drains stamina and breaks when stamina runs out. Tap it just before a yellow hit lands to **PARRY**: the attacker staggers and your next hit is a x2.6 **RIPOSTE**. Windows: shield 0.16 s, sword 0.1 s, bare hands 0.12 s. A bare-handed parry becomes a **grab and throw**. Parrying a fireball or an arrow reflects it back at the shooter. After a parry attempt there's a 0.42 s cooldown, so mashing doesn't work.
+
+**Ranged.** Bows draw while you move slowly; releasing in the 0.14 s perfect window gives a crit arrow that pierces. They use arrows. The pistol has a 2.3 s reload, and a shot that lands during an enemy's wind-up or aim **interrupts** it. The torch lights the area at night.
+
+**Poise and hit feel.** Every enemy has poise (the yellow line under its health). Hits wear it down; at zero they stagger, and giants are **BROKEN** for 2.6 s. Hits have 50–120 ms of hitstop, screen shake, sparks and knockback. Early hits interrupt a wind-up. Soft aim assist turns your swings toward the nearest foe in front of you. **Lock-on** cycles through targets, draws a reticle and pulls the camera toward the target.
+
+**Mounted.** The horse sprints on stamina (dash = burst), side sweeps hit what you ride past, and charges trample. Hard hits (slams, charges, big damage) throw you off.
+
+**STYLE rank (D → C → B → A → S).** It rises with combos, sharp hits, perfect dodges, parries and interrupts, drops when you are hit, and decays when you stop. It multiplies XP and gold (x1.0 to x1.6).
+
+**Input buffer.** Attack, dash and block presses are remembered for 0.14 s, so a press slightly early still counts.
+
+The opening bandit is a tutorial: land a 3-hit combo, parry-grab his punch, perfect-dodge it, then finish him.
 
 ## Controls
 
-| Action | Keyboard | Touch |
+| Action | Keyboard / mouse | Touch |
 |---|---|---|
-| Move / turn | W S / A D (or arrows) | Left-side joystick |
-| Right hand | J, Space, left click | RIGHT |
-| Left hand (hold to block) | K, Q, right click | LEFT |
+| Move (camera-relative) | WASD or arrows | left-side joystick |
+| Dash | Space or Shift | DASH |
+| Attack (tap = combo, hold = heavy; draw bow, fire pistol) | J or left click | ATTACK |
+| Block / parry / off-hand | K or right click | BLOCK / PARRY |
+| Lock on (press again for the next target) | L or Tab | LOCK |
+| Turn camera 45° | Z / X | – |
 | Trade / rest / loot / mount | E | USE |
 | Horse (mount, dismount, call) | H | HORSE |
 | Potion | R | POT |
-| Inventory | I, Tab, B | BAG |
-| Pause / mute | P, Esc / M | II |
+| Inventory | I or B | BAG |
+| Pause / mute | P or Esc / M | II |
+
+With a mouse, attacks aim at the cursor while you are using the mouse.
 
 ## Graphics
 
-The world is a real-time 3D scene in raw **WebGL2** (no libraries), turned into text by an **ASCII post-process** in the spirit of Acerola's ASCII shader. The look follows the reference shots in `docs/reference/`: moody, dark and misty, with rocks and buildings drawn as dark shapes full of small letters, and painterly grass.
+A cel-shaded chibi 3D look inspired by the handheld Pokémon X/Y era (its look only, none of its characters), in raw **WebGL2** with no libraries.
 
-- **Scene.** Gentle fbm hills (gameplay stays 2D; height is visual only). Each chunk gets a terrain mesh coloured by tile, plus animated water. Trees, rocks, houses with chimneys and glowing windows, ruins, wells, campfires and chests are low-poly meshes drawn instanced per chunk, with distance LODs. A ring of distant mountains gives the horizon.
-- **Characters.** Articulated low-poly rigs (head, torso, arms, legs, hat or helmet, cape, held items), animated in code: walk and gallop cycles, sword and fist swings, raised shield, bow draw, flinch, knock-down. The armour tier changes both colours and silhouette. The roster covers the horse, dragoon, vampire, witch on her broom, giant and frost giant, plus blob shadows.
-- **Grass.** Tens of thousands of wind-swept blades around you (fewer on phones), coloured by the ground they grow on.
-- **Atmosphere.** Sun or moon light by time of day, point lights for your torch, campfires, windows, fireballs and burning foes, and distance + height fog by biome. A sky with stars and moon glow, ground mist over water and swamps, snowfall, embers, chimney smoke, sparkles and blue fireflies at night.
-- **ASCII pass.** The scene renders at reduced resolution. Every material writes an "ASCII amount" into alpha: about 1 for terrain, rock and buildings, 0.6 for characters, 0.3 for grass and foliage, and 0 for glows. The screen is then split into cells, about 6 CSS px on desktop and 4.5 on phones. Each cell averages its colour and picks a glyph by luminance from a runtime-generated atlas (` .:-=+ ... vzxnu eosac wpqdb ... @`), with per-cell letter variation. Depth edges become `| / \ _ -`. Glyphs are drawn in the boosted cell colour over a dark tint, mixed with the scene by the ASCII amount. Bloom, grain and a vignette finish the frame.
-- **HUD.** A separate crisp 2D canvas on top with the same panels, minimap and world markers. Without WebGL2 the game shows a clear message instead.
+- **Toon shading.** A crisp two-band light ramp with a small highlight band, cool blue shadows, banded point lights (torch, campfires, windows, fireballs) and a soft rim light.
+- **Outlines.** The scene renders to two targets: colour and an aux buffer holding a per-object id and an outline weight. A composite pass draws dark ink lines where the id or depth changes. Characters, trees, rocks and buildings get outlines; terrain, grass tufts and flowers don't.
+- **Chibi models.** Big round heads (about a third of the height), painted eyes with highlights, blush, belts, trims, buttons and crests. Every character, the horse, the giants and the scenery were restyled.
+- **World.** Bright, clean colour zones per biome, with no noisy grass blades: sparse tufts, flowers and reeds, toon water with foam bands, bright snow, warm sand. By day the palette is saturated; at night it turns dark blue, lit by warm torch and campfire light.
+- **Camera.** A fixed 3/4 overhead view (50° pitch, perspective) with a gentle follow. It doesn't rotate with you, zooms out a little in combat and when riding, and leans toward a locked target.
+- **Effects.** Solid slash ribbons, star-burst hit sparks, dust puffs, dash afterimages, parry flash rings, red/yellow ground telegraph decals, wind-up flashes on enemies, outlined damage numbers, bloom from emissive surfaces and FX, and slow-motion desaturation on perfect dodges.
 
 | | |
 |---|---|
-| ![Fight (mobile)](docs/screenshots/sc_m_fight.png) | ![Night](docs/screenshots/sc_d_night.png) |
-| ![Frostlands](docs/screenshots/sc_d_snow.png) | ![Mounted](docs/screenshots/sc_d_mounted.png) |
-| ![Village at night](docs/screenshots/sc_d_village.png) | ![Giants](docs/screenshots/sc_d_giants.png) |
-| ![Swamp mist](docs/screenshots/sc_d_swamp.png) | ![Night (mobile)](docs/screenshots/sc_m_night.png) |
+| ![Fight](docs/screenshots/sc_d_fight.png) | ![Perfect dodge](docs/screenshots/sc_d_perfect.png) |
+| ![Parry](docs/screenshots/sc_d_parry.png) | ![Giant slam telegraph](docs/screenshots/sc_d_giant.png) |
+| ![Night village](docs/screenshots/sc_d_village.png) | ![Frostlands](docs/screenshots/sc_d_snow.png) |
+| ![Mounted sweep](docs/screenshots/sc_d_mounted.png) | ![Swamp witch](docs/screenshots/sc_d_swamp.png) |
+| ![Fight (phone)](docs/screenshots/sc_m_fight.png) | ![Night (phone)](docs/screenshots/sc_m_night.png) |
+
+All test scenes: `docs/screenshots/grid_toon.png`.
 
 ## Project structure
 
 ```
 src/1_core.js     utilities, palette, item + creature data
 src/2_world.js    biomes, tiles, infinite chunk generation, villages, collisions
-src/3_gl.js       WebGL2 core: shaders, camera, sun/moon + fog, point lights, ASCII post-process
-src/3_mesh.js     low-poly mesh builder; rigged people, armour, items, horse, giants, scenery
-src/3_scene.js    terrain chunks, instancing + LODs, grass, particles, mist, actors, frame, overlays
-src/4_game.js     game state, player, two-hand combat, AI, events, day/night, saves
+src/3_gl.js       WebGL2 core: toon shaders, outline + bloom composite, fixed 3/4 camera, sun/moon, lights
+src/3_mesh.js     mesh builder; chibi rigged people, armour, items, horse, giants, toon scenery
+src/3_scene.js    terrain chunks, instancing + decor, poses, telegraph decals, slash ribbons, particles, frame, overlays
+src/4_game.js     game state, action combat (combos, dash, parry, heavy, poise, tokens, style), enemy AI, events, saves
 src/5_ui.js       HUD, minimap, input (keyboard / touch), overlays, sound, main loop
 src/shell.html    page shell: CSS, overlays, touch controls
 build.py          inlines src/*.js into shell.html -> index.html (and test/game.js)
 test/harness.js   Node vm harness with DOM/canvas stubs
-test/sim.js       scripted play-through on the harness (fights, biomes, death, saves)
+test/sim.js       scripted play-through on the harness (tutorial, fights, biomes, death, saves)
+test/combat.js    timing tests: perfect dodge, parry windows, combo mashing, stamina, tokens, buffer
 test/scenes.py    Playwright screenshots (SwiftShader WebGL2) of test scenes -> shots/
 ```
 

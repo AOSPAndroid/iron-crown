@@ -1,12 +1,14 @@
 // =====================================================================
-//  RENDERER CORE — WebGL2 context, shaders, camera, lights, ASCII post-process
+//  RENDERER CORE — WebGL2 context, toon shaders, outline composite, camera, lights
 // =====================================================================
 let canvas = null, ctx = null;              // HUD overlay canvas (2D, device px)
 let glc = null, gl = null, GLOK = false;    // WebGL2 canvas + context
 let VW = 800, VH = 600, DPR = 1, GDPR = 1, PORTRAIT = false;
 const MOBILE = (typeof navigator !== 'undefined') && ((navigator.maxTouchPoints || 0) > 0) && (typeof window !== 'undefined') && Math.min(window.innerWidth || 800, window.innerHeight || 600) < 820;
-let RW = 1, RH = 1, SW = 1, SH = 1, CW = 1, CH = 1, CELLX = 6, CELLY = 8;
-const CAM = { a: 0, c: 1, s: 0, x: 0, y: 0, eye: [0, 0, 0], fwd: [1, 0, 0], vp: new Float32Array(16), view: new Float32Array(16), proj: new Float32Array(16), ivp: new Float32Array(16), fovY: 1, gh: 0, sh: [0, 0] };
+let RW = 1, RH = 1, SW = 1, SH = 1, BW2 = 1, BH2 = 1;
+const CAM = { a: -Math.PI / 2, c: 0, s: -1, x: 0, y: 0, eye: [0, 0, 0], fwd: [0, 0, -1], vp: new Float32Array(16), view: new Float32Array(16), proj: new Float32Array(16), ivp: new Float32Array(16), fovY: 1, gh: 0 };
+// fixed-angle 3/4 camera (does not turn with the player); yaw can be nudged with Z / X
+const CAMK = { yaw: -Math.PI / 2, yawT: -Math.PI / 2, pitch: 50 * Math.PI / 180, dist: 21, zoom: 1, fx: 0, fy: 0, init: false };
 function mkCanvas(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h)); return c; }
 const now = () => performance.now();
 
@@ -45,7 +47,6 @@ function m4inv(o, m) {
 function m4trs(o, x, y, z, yaw, pitch, roll, s) {
   const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch), cr = Math.cos(roll), sr = Math.sin(roll);
   s = s || 1;
-  // R = Ry * Rx * Rz
   const r00 = cy * cr + sy * sp * sr, r01 = -cy * sr + sy * sp * cr, r02 = sy * cp;
   const r10 = cp * sr, r11 = cp * cr, r12 = -sp;
   const r20 = -sy * cr + cy * sp * sr, r21 = sy * sr + cy * sp * cr, r22 = cy * cp;
@@ -58,28 +59,37 @@ function m4trs(o, x, y, z, yaw, pitch, roll, s) {
 // world yaw for a game heading a: model +Z faces (cos a, sin a)
 const yawOf = a => Math.PI / 2 - a;
 
-// ---------- shader helpers ----------
+// ---------- shaders ----------
 const GLSL_LIGHT = `
-uniform vec3 uCamPos, uSunDir, uSunCol, uSkyAmb, uGndAmb, uFogCol;
-uniform float uFogD, uFogH, uFogMul, uTime;
+uniform vec3 uCamPos, uSunDir, uSunCol, uSkyAmb, uGndAmb, uFogCol, uShadowTint;
+uniform float uFogD, uFogH, uFogMul, uTime, uRim;
 uniform vec4 uLP[8], uLC[8];
 uniform int uNL;
-vec3 shade(vec3 p, vec3 n, vec3 base) {
+// cel-shaded lighting: hard terminator, a small highlight band, cool-tinted shadows, banded point lights, soft rim
+vec3 toon(vec3 p, vec3 n, vec3 base, vec3 V) {
+  float ndl = dot(n, uSunDir);
+  float lit = smoothstep(-0.02, 0.06, ndl);
+  float mid = smoothstep(0.42, 0.5, ndl);
   vec3 amb = mix(uGndAmb, uSkyAmb, n.y * 0.5 + 0.5);
-  float d = max(dot(n, uSunDir), 0.0);
-  vec3 c = base * (amb + uSunCol * d);
+  vec3 sh = base * (amb * 0.95 + 0.1) * uShadowTint;
+  vec3 lt = base * (amb * 0.32 + uSunCol * (0.74 + 0.16 * mid));
+  vec3 c = mix(sh, lt, lit);
   for (int i = 0; i < 8; i++) {
     if (i >= uNL) break;
     vec3 L = uLP[i].xyz - p; float dl = length(L) + 1e-4;
-    float att = clamp(1.0 - dl / uLP[i].w, 0.0, 1.0); att *= att;
-    c += base * uLC[i].rgb * att * (0.35 + 0.65 * max(dot(n, L / dl), 0.0));
+    float a = clamp(1.0 - dl / uLP[i].w, 0.0, 1.0);
+    float band = smoothstep(0.0, 0.05, a) * 0.22 + smoothstep(0.32, 0.38, a) * 0.33 + smoothstep(0.62, 0.68, a) * 0.45;
+    float dd = smoothstep(-0.1, 0.1, dot(n, L / dl));
+    c += base * uLC[i].rgb * band * (0.45 + 0.55 * dd);
   }
+  float rim = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.0);
+  c += (uSkyAmb + uSunCol * 0.4) * rim * uRim * (0.35 + 0.65 * lit);
   return c;
 }
 float fogF(vec3 p) {
   float dd = length(p - uCamPos) * uFogMul;
-  float f = 1.0 - exp(-pow(dd * uFogD, 1.7));
-  f += uFogH * exp(-max(p.y + 0.6, 0.0) * 0.55) * smoothstep(4.0, 30.0, dd);
+  float f = 1.0 - exp(-pow(max(dd - 18.0, 0.0) * uFogD, 1.6));
+  f += uFogH * exp(-max(p.y + 0.6, 0.0) * 0.7) * smoothstep(10.0, 40.0, dd);
   return clamp(f, 0.0, 1.0);
 }`;
 
@@ -101,7 +111,7 @@ function program(vs, fs) {
 function tex2D(w, h, ifmt, fmt, type, filter, data) {
   const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
   gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, fmt, type, data || null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter === gl.LINEAR_MIPMAP_LINEAR ? gl.LINEAR : filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return t;
 }
@@ -112,9 +122,11 @@ function fbo(colors, depth) {
   gl.drawBuffers(colors.map((_, i) => gl.COLOR_ATTACHMENT0 + i));
   return f;
 }
+// the scene target has 2 attachments: colour (+emissive in alpha) and aux (object id lo/hi, outline weight)
+function mrtBoth() { gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]); }
+function mrtColor() { gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.NONE]); }
 
-// ---------- programs ----------
-let PR = {}, RT = {}, ATLAS = null, QUADVAO = null;
+let PR = {}, RT = {}, QUADVAO = null;
 const VS_MESH = `
 layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNrm;
@@ -125,22 +137,23 @@ layout(location=5) in vec4 aI1;
 uniform mat4 uVP, uModel;
 uniform mat4 uBones[18];
 uniform int uMode;
-uniform float uTime, uWind;
+uniform float uTime, uWind, uId;
 uniform vec3 uPlayer, uCamPos;
-out vec3 vPos, vNrm; out vec4 vCol; out vec2 vEx; out float vCut;
+out vec3 vPos, vNrm; out vec4 vCol; out vec2 vEx; out float vCut; flat out float vId;
 void main() {
   vec3 p = aPos, n = aNrm; vec4 col = aCol;
-  vec4 wp; vCut = 0.0;
+  vec4 wp; vCut = 0.0; vId = uId;
   if (uMode == 1) {
     float c = cos(aI0.w), s = sin(aI0.w), sc = aI1.x;
     vec3 q = p * sc;
-    float sw = aExt.z * uWind * q.y * (sin(uTime * 1.6 + aI1.z) * 0.035 + sin(uTime * 2.9 + aI1.z * 1.7) * 0.015);
+    float sw = aExt.z * uWind * q.y * (sin(uTime * 1.6 + aI1.z) * 0.03 + sin(uTime * 2.9 + aI1.z * 1.7) * 0.012);
     q.x += sw; q.z += sw * 0.6;
     wp = vec4(aI0.x + q.x * c + q.z * s, aI0.y + q.y, aI0.z - q.x * s + q.z * c, 1.0);
     n = vec3(n.x * c + n.z * s, n.y, -n.x * s + n.z * c);
     col.rgb *= aI1.y;
+    vId = 100.0 + floor(fract(aI1.z * 0.6180339 + aI0.x * 0.013 + aI0.z * 0.007) * 60000.0);
     vec2 ea = uCamPos.xz, eb = uPlayer.xz, ab = eb - ea; float tt = clamp(dot(aI0.xz - ea, ab) / max(dot(ab, ab), 1e-3), 0.0, 1.0);
-    vCut = (tt > 0.03 && tt < 0.93 && length(aI0.xz - ea - ab * tt) < aI1.w * sc) ? 1.0 : 0.0;
+    vCut = (aI1.w > 0.0 && tt > 0.05 && tt < 0.9 && length(aI0.xz - ea - ab * tt) < aI1.w * sc && wp.y > uPlayer.y + 0.4) ? 1.0 : 0.0;
   } else {
     if (uMode == 2) { mat4 B = uBones[int(aExt.x * 255.0 + 0.5)]; p = (B * vec4(p, 1.0)).xyz; n = mat3(B) * n; }
     wp = uModel * vec4(p, 1.0); n = mat3(uModel) * n;
@@ -149,44 +162,46 @@ void main() {
   gl_Position = uVP * wp;
 }`;
 const FS_MESH = GLSL_LIGHT + `
-in vec3 vPos, vNrm; in vec4 vCol; in vec2 vEx; in float vCut;
+in vec3 vPos, vNrm; in vec4 vCol; in vec2 vEx; in float vCut; flat in float vId;
 uniform int uMat;
-uniform float uEmK, uTintA, uMaskMul;
+uniform float uEmK, uTintA, uOW, uGhost;
 uniform vec3 uTint;
-out vec4 o;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 o1;
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+vec4 idOut(float w) { float id = vId; return vec4(mod(id, 256.0) / 255.0, floor(id / 256.0) / 255.0, w, 1.0); }
 void main() {
   if (vCut > 0.5) { ivec2 q = ivec2(gl_FragCoord.xy) & 1; if (q.x + q.y != 0) discard; }
   vec3 n = normalize(vNrm);
-  vec3 V = uCamPos - vPos;
+  vec3 V = normalize(uCamPos - vPos);
   if (dot(n, V) < 0.0) n = -n;
   vec3 base = vCol.rgb;
-  float mask = vCol.a;
-  if (uMat == 1) { // terrain: painterly mottling
-    float k = vn(vPos.xz * 1.7) * 0.6 + vn(vPos.xz * 5.3) * 0.4;
-    base *= 0.78 + 0.42 * k;
-  } else if (uMat == 2) { // water
-    float w = vn(vPos.xz * 1.3 + vec2(uTime * 0.35, uTime * 0.2)) + vn(vPos.xz * 3.1 - vec2(uTime * 0.5, -uTime * 0.3)) * 0.5;
-    n = normalize(vec3((w - 0.75) * 0.35, 1.0, (vn(vPos.zx * 2.2 + uTime * 0.4) - 0.5) * 0.35));
-    vec3 R = reflect(-normalize(V), n);
-    float sp = pow(max(dot(R, uSunDir), 0.0), 40.0);
-    base = mix(base, base * 1.5, w * 0.3);
-    vec3 c = shade(vPos, n, base) + uSunCol * sp * 1.4;
-    for (int i = 0; i < 8; i++) { if (i >= uNL) break; vec3 L = normalize(uLP[i].xyz - vPos); float dl = length(uLP[i].xyz - vPos);
-      c += uLC[i].rgb * pow(max(dot(R, L), 0.0), 24.0) * clamp(1.0 - dl / (uLP[i].w * 1.6), 0.0, 1.0) * 0.8; }
+  if (uGhost > 0.0) { o = vec4(uTint, uGhost * (0.4 + 0.6 * pow(1.0 - max(dot(n, V), 0.0), 1.5))); o1 = vec4(0.0); return; }
+  if (uMat == 1) { // terrain: soft painted variation
+    float k = vn(vPos.xz * 0.35) * 0.55 + vn(vPos.xz * 1.3) * 0.3 + vn(vPos.xz * 4.0) * 0.15;
+    base *= 0.9 + 0.2 * k;
+  } else if (uMat == 2) { // toon water
+    float w = vn(vPos.xz * 0.9 + vec2(uTime * 0.25, uTime * 0.15)) * 0.6 + vn(vPos.xz * 2.3 - vec2(uTime * 0.4, -uTime * 0.2)) * 0.4;
+    vec3 c = toon(vPos, vec3(0.0, 1.0, 0.0), base, V);
+    c = mix(c, c * 1.25 + 0.04, smoothstep(0.55, 0.58, w));
+    c = mix(c, vec3(0.92, 0.97, 1.0) * (0.35 + 0.65 * (1.0 - smoothstep(0.3, 0.9, 1.0 - uSunCol.r))), smoothstep(0.74, 0.76, w) * 0.85);
+    vec3 R = reflect(-V, vec3(0.0, 1.0, 0.0));
+    c += uSunCol * step(0.985, max(dot(R, uSunDir), 0.0)) * 0.6;
+    for (int i = 0; i < 8; i++) { if (i >= uNL) break; float dl = length(uLP[i].xyz - vPos);
+      c += uLC[i].rgb * smoothstep(0.55, 0.62, clamp(1.0 - dl / (uLP[i].w * 1.5), 0.0, 1.0)) * 0.35; }
     float f = fogF(vPos);
-    o = vec4(mix(c, uFogCol, f), mask * (1.0 - f * 0.6) * uMaskMul);
+    o = vec4(mix(c, uFogCol, f), 0.0); o1 = idOut(0.0);
     return;
   }
-  vec3 c = shade(vPos, n, base);
-  c = c / (1.0 + max(c.r, max(c.g, c.b)) * 0.45) * 1.3;
+  vec3 c = toon(vPos, n, base, V);
   float em = vEx.x * uEmK;
-  c = mix(c, base * 1.7 + vec3(0.06, 0.03, 0.0), em);
+  c = mix(c, base * 1.35 + vec3(0.08, 0.04, 0.0), em);
   c = mix(c, uTint, uTintA);
   float f = fogF(vPos);
-  o = vec4(mix(c, uFogCol, f), mask * (1.0 - f * 0.55) * (1.0 - em) * uMaskMul);
+  o = vec4(mix(c, uFogCol, f), em * (1.0 - f));
+  o1 = idOut(uOW * (1.0 - f));
 }`;
 const VS_FULL = `
 layout(location=0) in vec2 aP;
@@ -197,166 +212,82 @@ in vec2 vUV;
 uniform mat4 uIVP;
 uniform vec3 uCamPos, uZen, uHor, uFogCol, uMoonDir, uMoonCol, uSunDir2;
 uniform float uStars, uTime;
-out vec4 o;
+layout(location=0) out vec4 o;
+layout(location=1) out vec4 o1;
 float h31(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 void main() {
   vec4 a = uIVP * vec4(vUV * 2.0 - 1.0, 1.0, 1.0);
   vec3 d = normalize(a.xyz / a.w - uCamPos);
   float h = clamp(d.y, -0.2, 1.0);
-  vec3 c = mix(uHor, uZen, smoothstep(0.0, 0.55, h));
-  c = mix(uFogCol, c, smoothstep(-0.05, 0.12, h));
+  vec3 c = mix(uHor, uZen, smoothstep(0.0, 0.5, h));
+  c = mix(uFogCol, c, smoothstep(-0.05, 0.1, h));
   if (uStars > 0.0 && d.y > 0.02) {
-    vec3 q = floor(d * 220.0); float s = h31(q);
-    float tw = 0.6 + 0.4 * sin(uTime * 2.0 + s * 40.0);
-    c += vec3(0.8, 0.85, 1.0) * step(0.9965, s) * uStars * tw * smoothstep(0.02, 0.2, d.y);
+    vec3 q = floor(d * 200.0); float s = h31(q);
+    c += vec3(0.85, 0.9, 1.0) * step(0.996, s) * uStars * (0.6 + 0.4 * sin(uTime * 2.0 + s * 40.0));
   }
   float md = max(dot(d, uMoonDir), 0.0);
-  c += uMoonCol * (pow(md, 900.0) * 2.5 + pow(md, 40.0) * 0.25 + pow(md, 6.0) * 0.08);
+  c += uMoonCol * (step(0.9993, md) * 1.6 + pow(md, 60.0) * 0.25);
   float sd = max(dot(d, uSunDir2), 0.0);
-  c += vec3(1.0, 0.8, 0.55) * (pow(sd, 400.0) * 1.2 + pow(sd, 12.0) * 0.18) * step(0.0, uSunDir2.y + 0.1);
-  o = vec4(c, 0.55);
+  c += vec3(1.0, 0.92, 0.7) * (step(0.9985, sd) * 1.4 + pow(sd, 14.0) * 0.2) * step(0.0, uSunDir2.y + 0.1);
+  o = vec4(c, 0.0); o1 = vec4(0.0);
 }`;
-// ascii pass A: average each cell of the scene (colour + mask) and its depth / luminance
-const FS_CELL = `
-uniform sampler2D tScene, tDepth;
-uniform vec2 uCellS;       // cell size in scene texels
-uniform vec2 uSceneSz;
-uniform float uNear, uFar;
-layout(location=0) out vec4 o0;
-layout(location=1) out vec4 o1;
-float lin(float d) { float z = d * 2.0 - 1.0; return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear)); }
-void main() {
-  vec2 c0 = floor(gl_FragCoord.xy) * uCellS;
-  vec4 acc = vec4(0.0);
-  for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) {
-    vec2 p = c0 + uCellS * (vec2(i, j) + 0.5) * 0.5;
-    acc += texture(tScene, p / uSceneSz);
-  }
-  acc *= 0.25;
-  float dz = lin(texture(tDepth, (c0 + uCellS * 0.5) / uSceneSz).r);
-  float ld = clamp(log2(dz) / 9.0, 0.0, 1.0);
-  float lum = dot(acc.rgb, vec3(0.299, 0.587, 0.114));
-  float e = ld * 255.0;
-  o0 = acc;
-  o1 = vec4(floor(e) / 255.0, fract(e), lum, 1.0);
-}`;
-// ascii pass B: choose a glyph per cell (luminance ramp + per-cell letter variation, edge glyphs on silhouettes)
-const FS_GLYPH = `
-uniform sampler2D tCell, tCellD;
-uniform float uExpo, uEdge;
-uniform vec2 uSeed;
-out vec4 o;
-float h21(vec2 p) { p = fract(p * vec2(234.34, 435.345)); p += dot(p, p + 34.23); return fract(p.x * p.y); }
-float dep(ivec2 c) { vec4 v = texelFetch(tCellD, c, 0); return v.r + v.g / 255.0; }
-float lu(ivec2 c) { return texelFetch(tCellD, c, 0).b; }
-void main() {
-  ivec2 c = ivec2(gl_FragCoord.xy);
-  vec4 cell = texelFetch(tCell, c, 0);
-  float lum = texelFetch(tCellD, c, 0).b;
-  float d00 = dep(c + ivec2(-1, -1)), d10 = dep(c + ivec2(0, -1)), d20 = dep(c + ivec2(1, -1));
-  float d01 = dep(c + ivec2(-1, 0)), d21 = dep(c + ivec2(1, 0));
-  float d02 = dep(c + ivec2(-1, 1)), d12 = dep(c + ivec2(0, 1)), d22 = dep(c + ivec2(1, 1));
-  float gx = (d20 + 2.0 * d21 + d22) - (d00 + 2.0 * d01 + d02);
-  float gy = (d02 + 2.0 * d12 + d22) - (d00 + 2.0 * d10 + d20);
-  float g = length(vec2(gx, gy)) * 9.0;
-  float l00 = lu(c + ivec2(-1, -1)), l20 = lu(c + ivec2(1, -1)), l02 = lu(c + ivec2(-1, 1)), l22 = lu(c + ivec2(1, 1));
-  float lx = (l20 + l22) - (l00 + l02), ly = (l02 + l22) - (l00 + l20);
-  float lg = length(vec2(lx, ly));
-  float idx;
-  float L = clamp(pow(lum * uExpo, 0.6), 0.0, 0.999);
-  float level = floor(L * 10.0);
-  float v = floor(h21(vec2(c) + uSeed) * 5.0);
-  idx = level * 5.0 + v;
-  vec3 gc = cell.rgb * 1.75 + 0.03;
-  float near = 1.0 - smoothstep(0.62, 0.74, dep(c));
-  if (cell.a > 0.62 && near > 0.5 && (g > uEdge || lg > 0.6)) {
-    float ex = g > uEdge ? gx : lx, ey = g > uEdge ? gy : ly;
-    float an = atan(ey, ex);
-    float a = abs(an); a = a > 1.5708 ? 3.14159 - a : a;
-    if (a < 0.39) idx = 50.0;                  // gradient horizontal -> vertical edge
-    else if (a > 1.18) idx = 51.0 + step(0.5, h21(vec2(c) * 1.3)) * 3.0; // horizontal edge: - or _
-    else idx = (ex * ey > 0.0) ? 53.0 : 52.0;  // diagonals
-    gc = cell.rgb * 2.1 + 0.06;
-  }
-  o = vec4(min(gc, vec3(1.0)), idx / 255.0);
-}`;
+// bloom: emissive pixels -> quarter-res blurred glow
 const FS_BLOOM = `
-uniform sampler2D tCell;
-uniform vec2 uCells;
+in vec2 vUV;
+uniform sampler2D tC;
+uniform vec2 uPx;
 out vec4 o;
 void main() {
-  vec2 uv = gl_FragCoord.xy / uCells;
   vec3 acc = vec3(0.0); float w = 0.0;
-  for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) {
-    float k = exp(-float(i * i + j * j) * 0.35);
-    vec3 c = texture(tCell, uv + vec2(i, j) * 1.5 / uCells).rgb;
-    float l = max(c.r, max(c.g, c.b));
-    float m = texture(tCell, uv + vec2(i, j) * 1.5 / uCells).a;
-    acc += c * smoothstep(0.62, 0.98, l) * (1.0 - m * 0.85) * k; w += k;
+  for (int j = -3; j <= 3; j++) for (int i = -3; i <= 3; i++) {
+    float k = exp(-float(i * i + j * j) * 0.22);
+    vec4 c = texture(tC, vUV + vec2(i, j) * uPx * 2.5);
+    acc += c.rgb * c.a * k; w += k;
   }
   o = vec4(acc / w, 1.0);
 }`;
-const FS_FINAL = `
+// composite: id/depth outlines + bloom + grade
+const FS_COMP = `
 in vec2 vUV;
-uniform sampler2D tScene, tCell, tGlyph, tAtlas, tBloom;
-uniform vec2 uCell, uRes, uCells;
-uniform float uTime, uBloomK, uVig, uFlashA, uFadeA, uGrain, uSat;
-uniform vec3 uFlashC;
+uniform sampler2D tC, tA, tD, tB;
+uniform vec2 uPx;
+uniform float uNear, uFar, uBloomK, uVig, uFlashA, uFadeA, uSat, uLineW, uLineK, uBright;
+uniform vec3 uFlashC, uGrade;
 out vec4 o;
-float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float lin(float d) { float z = d * 2.0 - 1.0; return (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear)); }
+float idOf(vec4 a) { return floor(a.r * 255.0 + 0.5) + floor(a.g * 255.0 + 0.5) * 256.0; }
 void main() {
-  vec2 fc = gl_FragCoord.xy;
-  vec2 cf = fc / uCell;
-  ivec2 ci = ivec2(floor(cf));
-  vec2 f = fract(cf);
-  vec4 cell = texelFetch(tCell, ci, 0);
-  vec4 g = texelFetch(tGlyph, ci, 0);
-  float idx = floor(g.a * 255.0 + 0.5);
-  vec2 slot = vec2(mod(idx, 8.0), floor(idx / 8.0));
-  vec2 auv = (slot + vec2(f.x, 1.0 - f.y)) / 8.0;
-  float cov = textureGrad(tAtlas, auv, vec2(1.0 / (uCell.x * 8.0), 0.0), vec2(0.0, 1.0 / (uCell.y * 8.0))).a;
-  vec3 bg = cell.rgb * 0.3;
-  vec3 asc = mix(bg, g.rgb, cov);
-  vec3 sc = texture(tScene, vUV).rgb;
-  float m = smoothstep(0.3, 0.8, cell.a);
-  vec3 col = mix(sc, asc, m);
-  col += texture(tBloom, vUV).rgb * uBloomK;
+  vec4 c = texture(tC, vUV);
+  vec2 sz = vec2(textureSize(tA, 0));
+  ivec2 ip = ivec2(vUV * sz);
+  vec4 a0 = texelFetch(tA, ip, 0);
+  float d0 = lin(texelFetch(tD, ip, 0).r), id0 = idOf(a0), w0 = a0.b;
+  float edge = 0.0;
+  int L = int(uLineW + 0.5);
+  ivec2 offs[8] = ivec2[](ivec2(L, 0), ivec2(-L, 0), ivec2(0, L), ivec2(0, -L), ivec2(L, L), ivec2(-L, -L), ivec2(L, -L), ivec2(-L, L));
+  for (int i = 0; i < 8; i++) {
+    ivec2 q = clamp(ip + offs[i], ivec2(0), ivec2(sz) - 1);
+    vec4 an = texelFetch(tA, q, 0);
+    float dn = lin(texelFetch(tD, q, 0).r), idn = idOf(an), wn = an.b;
+    float k = i < 4 ? 1.0 : 0.6;
+    if (abs(idn - id0) > 0.5) {
+      if (d0 <= dn + 0.02 * d0) edge = max(edge, w0 * k);
+      else edge = max(edge, wn * k * 0.0);
+    }
+    if (dn - d0 > max(0.28, d0 * 0.045)) edge = max(edge, w0 * k);
+  }
+  vec3 col = c.rgb;
+  vec3 line = col * 0.22 + vec3(0.015, 0.012, 0.03);
+  col = mix(col, line, clamp(edge, 0.0, 1.0) * uLineK);
+  col += texture(tB, vUV).rgb * uBloomK;
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
-  col = mix(vec3(lum), col, uSat);
-  col = clamp(col, 0.0, 1.0); col = col * col * (3.0 - 2.0 * col) * 0.55 + col * 0.45;
+  col = mix(vec3(lum), col, uSat) * uGrade * uBright;
   vec2 q = vUV - 0.5;
-  col *= 1.0 - uVig * dot(q, q) * 2.2;
-  col += (h21(fc + fract(uTime * 7.13) * 91.7) - 0.5) * uGrain;
+  col *= 1.0 - uVig * dot(q, q) * 1.8;
   col = mix(col, uFlashC, uFlashA);
   col *= 1.0 - uFadeA;
-  o = vec4(col, 1.0);
+  o = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
-
-// ---------- glyph atlas (8x8 slots, generated at runtime) ----------
-const GLYPHS = [
-  '  .  ', '.,`.\'', ':;-~:', '=+ric', 'vzxnu', 'eosac', 'wpqdb', '%kh&Q', '#BMWD', '@0N8@', '|-/\\_', '~*+o '
-].join('');
-function buildAtlas() {
-  const SW0 = 48, SH0 = 64, cv = mkCanvas(SW0 * 8, SH0 * 8), x = cv.getContext('2d');
-  x.clearRect(0, 0, cv.width, cv.height);
-  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.font = 'bold 52px ui-monospace,Menlo,Consolas,"DejaVu Sans Mono","Liberation Mono","Courier New",monospace';
-  for (let i = 0; i < GLYPHS.length && i < 64; i++) {
-    const ch = GLYPHS[i]; if (ch === ' ') continue;
-    const cx = (i % 8) * SW0 + SW0 / 2, cy = Math.floor(i / 8) * SH0 + SH0 / 2 + 3;
-    if (ch === '_') x.fillRect(cx - SW0 / 2 + 2, cy + 20, SW0 - 4, 6);
-    else if (ch === '-') x.fillRect(cx - SW0 / 2 + 3, cy - 3, SW0 - 6, 6);
-    else if (ch === '|') x.fillRect(cx - 3, cy - SH0 / 2 + 4, 6, SH0 - 8);
-    else x.fillText(ch, cx, cy);
-  }
-  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cv);
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  return t;
-}
 
 function glFail(why) {
   GLOK = false;
@@ -376,15 +307,12 @@ function initGL() {
     if (!gl || typeof gl.createShader !== 'function' || typeof gl.texImage3D !== 'function' || !gl.getParameter(gl.VERSION)) { glFail('No WebGL2 context.'); return; }
     PR.mesh = program(VS_MESH, FS_MESH);
     PR.sky = program(VS_FULL, FS_SKY);
-    PR.cell = program(VS_FULL, FS_CELL);
-    PR.glyph = program(VS_FULL, FS_GLYPH);
     PR.bloom = program(VS_FULL, FS_BLOOM);
-    PR.final = program(VS_FULL, FS_FINAL);
+    PR.comp = program(VS_FULL, FS_COMP);
     QUADVAO = gl.createVertexArray(); gl.bindVertexArray(QUADVAO);
     const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.bindVertexArray(null);
-    ATLAS = buildAtlas();
     initScene();
     GLOK = true;
     glc.addEventListener && glc.addEventListener('webglcontextlost', e => { e.preventDefault(); glFail('The graphics context was lost. Reload the page.'); });
@@ -393,15 +321,12 @@ function initGL() {
 function makeTargets() {
   for (const k in RT) { const v = RT[k]; if (!v) continue; if (v instanceof WebGLTexture) gl.deleteTexture(v); else if (v instanceof WebGLFramebuffer) gl.deleteFramebuffer(v); }
   RT = {};
-  RT.sc = tex2D(SW, SH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
-  RT.sd = tex2D(SW, SH, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST);
-  RT.sf = fbo([RT.sc], RT.sd);
-  RT.c0 = tex2D(CW, CH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
-  RT.c1 = tex2D(CW, CH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST);
-  RT.cf = fbo([RT.c0, RT.c1]);
-  RT.g = tex2D(CW, CH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST);
-  RT.gf = fbo([RT.g]);
-  RT.b = tex2D(CW, CH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+  RT.c = tex2D(SW, SH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+  RT.a = tex2D(SW, SH, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST);
+  RT.d = tex2D(SW, SH, gl.DEPTH_COMPONENT24, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, gl.NEAREST);
+  RT.f = fbo([RT.c, RT.a], RT.d);
+  BW2 = Math.max(8, Math.round(SW / 4)); BH2 = Math.max(8, Math.round(SH / 4));
+  RT.b = tex2D(BW2, BH2, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
   RT.bf = fbo([RT.b]);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
@@ -415,10 +340,7 @@ function resize() {
   if (glc) {
     RW = Math.max(1, Math.round(VW * GDPR)); RH = Math.max(1, Math.round(VH * GDPR));
     glc.width = RW; glc.height = RH;
-    const cssCell = MOBILE || Math.min(VW, VH) < 560 ? 4.5 : 6;
-    CELLX = Math.max(3, Math.round(cssCell * GDPR)); CELLY = Math.max(4, Math.round(cssCell * 1.36 * GDPR));
-    CW = Math.ceil(RW / CELLX); CH = Math.ceil(RH / CELLY);
-    const scale = MOBILE ? 0.5 : 0.62;
+    const scale = MOBILE ? 0.8 : 1.0;
     SW = Math.max(16, Math.round(RW * scale)); SH = Math.max(16, Math.round(RH * scale));
     if (GLOK) makeTargets();
   }
@@ -427,26 +349,45 @@ function resize() {
 
 // ---------- camera ----------
 let camGH = null;
+function camFocus() {
+  // follow the player, look a little ahead in screen-up direction, lean toward a locked target
+  let fx = P.x, fy = P.y;
+  const tg = S.mode === 'play' && P.lock && !P.lock.dead ? P.lock : null;
+  if (tg) { let dx = tg.x - P.x, dy = tg.y - P.y; const d = Math.hypot(dx, dy); if (d > 0.1) { const k = Math.min(d * 0.32, 5) / d; fx += dx * k; fy += dy * k; } }
+  const ahead = PORTRAIT ? 2.4 : 1.4;
+  return [fx + Math.cos(CAMK.yaw) * ahead, fy + Math.sin(CAMK.yaw) * ahead];
+}
+function updateCamera(dt, snap) {
+  if (S.mode === 'title') CAMK.yawT += dt * 0.06;
+  CAMK.yaw += angDiff(CAMK.yaw, CAMK.yawT) * Math.min(1, dt * 6);
+  const near = S.mode === 'play' && (P.lock || S.ents.some(e => e.team === 1 && !e.dead && Math.abs(e.x - P.x) < 15 && Math.abs(e.y - P.y) < 15));
+  const zt = (P.mounted ? 1.16 : 1) * (near ? 1.1 : 1) * (S.mode === 'title' ? 1.12 : 1);
+  CAMK.zoom += (zt - CAMK.zoom) * Math.min(1, dt * 1.6);
+  const f = camFocus();
+  if (snap || !CAMK.init) { CAMK.fx = f[0]; CAMK.fy = f[1]; CAMK.init = true; CAMK.zoom = zt; }
+  const k = Math.min(1, dt * 7);
+  CAMK.fx += (f[0] - CAMK.fx) * k; CAMK.fy += (f[1] - CAMK.fy) * k;
+  CAM.a = CAMK.yaw; CAM.c = Math.cos(CAM.a); CAM.s = Math.sin(CAM.a);
+  CAM.x = CAMK.fx; CAM.y = CAMK.fy;
+}
 function setupCamera(dt) {
   const asp = RW / RH;
-  const hf = 0.92; // minimum horizontal fov (rad) on narrow screens
-  let fy = 58 * Math.PI / 180;
-  fy = Math.max(fy, 2 * Math.atan(Math.tan(hf / 2) / asp)); fy = Math.min(fy, 80 * Math.PI / 180);
+  const wantW = PORTRAIT ? 10.5 : 15.5; // world units visible across at the focus point
+  const D = CAMK.dist * CAMK.zoom;
+  let fx = 2 * Math.atan((wantW / 2) / CAMK.dist);
+  let fy = 2 * Math.atan(Math.tan(fx / 2) / asp);
+  fy = clamp(fy, 26 * Math.PI / 180, 66 * Math.PI / 180);
   CAM.fovY = fy;
-  const m = P.mounted && S.mode !== 'title';
-  const dist = PORTRAIT ? 11.5 : 10.5, hgt = PORTRAIT ? 9.5 : 7.2, ahead = PORTRAIT ? 3.5 : 2.6;
-  const k = m ? 1.15 : 1, tgtH = m ? 1.9 : 1.1;
-  const fx = Math.cos(CAM.a), fz = Math.sin(CAM.a);
   const gh = groundH(CAM.x, CAM.y);
   camGH = camGH === null || dt === 0 ? gh : camGH + (gh - camGH) * Math.min(1, dt * 4);
   let sx = 0, sy = 0;
-  if (S.shake > 0) { const a = S.shake * 0.35; sx = rr(-a, a); sy = rr(-a, a); }
+  if (S.shake > 0) { const a = S.shake * 0.28; sx = rr(-a, a); sy = rr(-a, a); }
+  const cp = Math.cos(CAMK.pitch), sp = Math.sin(CAMK.pitch), cx = Math.cos(CAMK.yaw), cz = Math.sin(CAMK.yaw);
   const e = CAM.eye;
-  e[0] = CAM.x - fx * dist * k + sx; e[1] = camGH + hgt * k + sy; e[2] = CAM.y - fz * dist * k;
-  const eh = groundH(e[0], e[2]) + 1.5; if (e[1] < eh) e[1] = eh;
-  const t = [CAM.x + fx * ahead + sx * 0.5, camGH + tgtH, CAM.y + fz * ahead];
+  e[0] = CAM.x - cx * D * cp + sx; e[1] = camGH + 0.9 + D * sp + sy; e[2] = CAM.y - cz * D * cp;
+  const t = [CAM.x + sx * 0.5, camGH + 0.9, CAM.y];
   m4look(CAM.view, e, t, [0, 1, 0]);
-  m4persp(CAM.proj, fy, asp, 0.3, 420);
+  m4persp(CAM.proj, fy, asp, 0.5, 300);
   m4mul(CAM.vp, CAM.proj, CAM.view);
   m4inv(CAM.ivp, CAM.vp);
   const l = Math.hypot(t[0] - e[0], t[1] - e[1], t[2] - e[2]);
@@ -461,6 +402,13 @@ function project(x, h, z, out) {
   if (out[0] < -60 || out[0] > VW + 60 || out[1] < -60 || out[1] > VH + 60) return null;
   return out;
 }
+// screen CSS px -> world point on the plane y = h (for mouse aim)
+function unproject(sx, sy, h) {
+  const nx = sx / VW * 2 - 1, ny = 1 - sy / VH * 2, m = CAM.ivp;
+  const p = (z) => { const x = m[0] * nx + m[4] * ny + m[8] * z + m[12], y = m[1] * nx + m[5] * ny + m[9] * z + m[13], zz = m[2] * nx + m[6] * ny + m[10] * z + m[14], w = m[3] * nx + m[7] * ny + m[11] * z + m[15]; return [x / w, y / w, zz / w]; };
+  const a = p(-1), b = p(1), dy = b[1] - a[1]; if (Math.abs(dy) < 1e-6) return null;
+  const t = (h - a[1]) / dy; return [a[0] + (b[0] - a[0]) * t, a[2] + (b[2] - a[2]) * t];
+}
 // frustum test of a sphere in world space
 function inView(x, y, z, r) {
   const m = CAM.vp;
@@ -471,43 +419,49 @@ function inView(x, y, z, r) {
 }
 
 // ---------- environment: sun/moon, fog, ambient by time + biome ----------
-const ENV = { sun: [0, 1, 0], sunC: [1, 1, 1], sky: [0.3, 0.35, 0.4], gnd: [0.1, 0.1, 0.1], fog: [0.4, 0.45, 0.5], fogD: 0.02, fogH: 0.2, zen: [0, 0, 0], hor: [0, 0, 0], moon: [0, 1, 0], moonC: [0, 0, 0], sunVis: [0, -1, 0], stars: 0, emK: 0, wind: 1 };
+const ENV = { sun: [0, 1, 0], sunC: [1, 1, 1], sky: [0.3, 0.35, 0.4], gnd: [0.1, 0.1, 0.1], fog: [0.4, 0.45, 0.5], fogD: 0.02, fogH: 0.2, zen: [0, 0, 0], hor: [0, 0, 0], moon: [0, 1, 0], moonC: [0, 0, 0], sunVis: [0, -1, 0], stars: 0, emK: 0, wind: 1, shTint: [0.7, 0.74, 0.95], rim: 0.5, sat: 1.1, grade: [1, 1, 1], bloom: 0.5, bright: 1 };
 const BIOME_FOG = [
-  [0.3, 0.36, 0.42], [0.22, 0.29, 0.3], [0.4, 0.46, 0.56], [0.27, 0.32, 0.3], [0.34, 0.33, 0.38], [0.56, 0.48, 0.38]
+  [0.66, 0.8, 0.94], [0.56, 0.72, 0.78], [0.8, 0.86, 0.96], [0.6, 0.68, 0.64], [0.74, 0.7, 0.8], [0.94, 0.84, 0.66]
 ];
-let envBiome = [0.3, 0.36, 0.42], envFogK = 1;
+let envBiome = [0.66, 0.8, 0.94], envFogK = 1;
 function mix3(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
 function updateEnv(dt) {
   const b = S.curBiome >= 0 ? S.curBiome : biomeAt(CAM.x, CAM.y);
   const tb = BIOME_FOG[b] || BIOME_FOG[0], k = dt ? Math.min(1, dt * 0.8) : 1;
   envBiome = mix3(envBiome, tb, k);
-  const fk = b === B_SWAMP ? 1.55 : b === B_SNOW ? 1.2 : b === B_FOREST ? 1.15 : b === B_DESERT ? 0.85 : 1;
+  const fk = b === B_SWAMP ? 1.7 : b === B_SNOW ? 1.25 : b === B_FOREST ? 1.1 : b === B_DESERT ? 0.9 : 1;
   envFogK += (fk - envFogK) * k;
   const d = S.darkness, blood = S.bloodMoon;
   const ang = (S.time - 0.25) * TAU, sy = Math.sin(ang), sx = Math.cos(ang);
-  const sun = [sx * 0.75, Math.max(0.12, sy), 0.42]; let l = Math.hypot(...sun); ENV.sunVis = [sx * 0.8, sy, 0.45].map(v => v / Math.hypot(sx * 0.8, sy, 0.45));
-  const moonDir = [-sx * 0.6 + 0.2, Math.max(0.25, -sy * 0.9 + 0.2), -0.55]; const ml = Math.hypot(...moonDir); ENV.moon = moonDir.map(v => v / ml);
+  // keep the sun high and from the "south-east" so shadows read well from the fixed camera
+  const sun = [sx * 0.5 + 0.25, Math.max(0.55, sy * 0.9 + 0.25), 0.55]; let l = Math.hypot(...sun);
+  ENV.sunVis = [sx * 0.8, sy, 0.45].map(v => v / Math.hypot(sx * 0.8, sy, 0.45));
+  const moonDir = [0.3, 0.75, 0.55]; const ml = Math.hypot(...moonDir); ENV.moon = moonDir.map(v => v / ml);
   const dusk = clamp(1 - Math.abs(d - 0.5) * 2.6, 0, 1);
-  // directional light: sun by day, moon by night
-  if (d < 0.5) { ENV.sun = sun.map(v => v / l); } else ENV.sun = ENV.moon.slice();
-  const dayC = [1.04, 0.96, 0.84], duskC = [1.0, 0.55, 0.32], nightC = blood ? [0.6, 0.12, 0.08] : [0.42, 0.52, 0.8];
-  let sc = mix3(dayC, nightC, d); sc = mix3(sc, duskC, dusk * 0.7);
-  ENV.sunC = sc.map(v => v * (1 - d * 0.2));
-  const skyDay = mix3([0.27, 0.31, 0.4], envBiome, 0.35), skyN = blood ? [0.22, 0.07, 0.08] : [0.19, 0.24, 0.36];
+  if (d < 0.5) ENV.sun = sun.map(v => v / l); else ENV.sun = ENV.moon.slice();
+  const dayC = [0.96, 0.92, 0.82], duskC = [1.0, 0.6, 0.4], nightC = blood ? [0.55, 0.14, 0.12] : [0.3, 0.4, 0.78];
+  let sc = mix3(dayC, nightC, d); sc = mix3(sc, duskC, dusk * 0.6);
+  ENV.sunC = sc;
+  const skyDay = [0.5, 0.55, 0.66], skyN = blood ? [0.2, 0.06, 0.08] : [0.1, 0.13, 0.32];
   ENV.sky = mix3(skyDay, skyN, d);
-  ENV.gnd = mix3([0.12, 0.11, 0.1], blood ? [0.08, 0.03, 0.03] : [0.05, 0.06, 0.09], d);
-  const fogDay = envBiome, fogN = blood ? [0.14, 0.04, 0.05] : mix3([0.06, 0.085, 0.14], envBiome, 0.15), fogDusk = [0.5, 0.36, 0.32];
-  let fc = mix3(fogDay, fogN, d); fc = mix3(fc, fogDusk, dusk * 0.45);
+  ENV.gnd = mix3([0.34, 0.32, 0.3], blood ? [0.08, 0.03, 0.03] : [0.05, 0.06, 0.12], d);
+  ENV.shTint = mix3([0.74, 0.78, 1.0], [0.7, 0.75, 1.0], d);
+  ENV.rim = 0.55 - d * 0.25;
+  const fogDay = envBiome, fogN = blood ? [0.14, 0.04, 0.06] : mix3([0.05, 0.07, 0.17], envBiome, 0.08), fogDusk = [0.82, 0.58, 0.5];
+  let fc = mix3(fogDay, fogN, d); fc = mix3(fc, fogDusk, dusk * 0.5);
   ENV.fog = fc;
-  ENV.hor = mix3(fc, [1, 1, 1], 0.06 * (1 - d));
-  ENV.zen = mix3(mix3([0.18, 0.24, 0.34], envBiome, 0.25), blood ? [0.05, 0.0, 0.01] : [0.01, 0.015, 0.04], d);
-  ENV.moonC = blood ? [1.0, 0.25, 0.18] : [0.75, 0.82, 1.0];
-  ENV.moonC = ENV.moonC.map(v => v * clamp(d * 1.3 - 0.2, 0, 1));
+  ENV.hor = mix3(fc, [1, 1, 1], 0.1 * (1 - d));
+  ENV.zen = mix3([0.32, 0.56, 0.9], blood ? [0.05, 0.0, 0.01] : [0.01, 0.02, 0.06], d);
+  ENV.moonC = (blood ? [1.0, 0.25, 0.18] : [0.9, 0.95, 1.0]).map(v => v * clamp(d * 1.3 - 0.2, 0, 1));
   ENV.stars = clamp(d * 1.4 - 0.4, 0, 1);
-  ENV.fogD = 0.0158 * envFogK;
-  ENV.fogH = (0.14 + d * 0.1) * envFogK;
+  ENV.fogD = 0.008 * envFogK;
+  ENV.fogH = (0.08 + d * 0.06) * envFogK * (b === B_SWAMP ? 1.6 : 1);
   ENV.emK = clamp(d * 1.6 - 0.25, 0, 1);
   ENV.wind = b === B_SNOW || b === B_HEATH ? 1.6 : 1;
+  ENV.sat = lerp(1.16, 0.92, d);
+  ENV.grade = blood ? mix3([1, 1, 1], [1.08, 0.86, 0.86], d) : mix3([1.02, 1.0, 0.97], [0.9, 0.96, 1.14], d);
+  ENV.bloom = 0.35 + d * 0.6;
+  ENV.bright = 1.03;
 }
 
 // ---------- point lights (torch, campfires, windows, fireballs, burning foes) ----------
@@ -519,23 +473,21 @@ function collectLights() {
   const L = [];
   const add = (x, z, r, c, k, h) => L.push([x, groundH(x, z) + (h || 1.2), z, r, c[0] * k, c[1] * k, c[2] * k, (x - CAM.x) ** 2 + (z - CAM.y) ** 2]);
   const torch = S.mode !== 'title' && hasTorch();
-  if (torch) add(P.x + Math.cos(P.a) * 0.3, P.y + Math.sin(P.a) * 0.3, 11 * fl, [1.0, 0.62, 0.3], 1.25 * (0.35 + d * 0.9), P.mounted ? 2.6 : 1.7);
-  else if (d > 0.3) add(P.x, P.y, 4.5, [0.35, 0.45, 0.7], 0.5 * d, 2);
+  if (torch) add(P.x + Math.cos(P.a) * 0.3, P.y + Math.sin(P.a) * 0.3, 9 * fl, [1.0, 0.6, 0.3], 0.12 + d * 0.6, P.mounted ? 2.6 : 1.7);
+  else if (d > 0.3) add(P.x, P.y, 4.5, [0.45, 0.55, 0.9], 0.3 * d, 2);
   if (d > 0.08) {
     const pcx = Math.floor(CAM.x / CS), pcy = Math.floor(CAM.y / CS);
     for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
       const c = CHUNKS.get((pcx + i) + ',' + (pcy + j)); if (!c) continue;
       for (const o of c.statics) {
-        if (o.light) add(o.x, o.y, 13 * fl, [1.0, 0.55, 0.22], 1.4 * d + 0.25, 1.0);
-        else if (o.type === 'house') add(o.x + Math.cos(o.rot) * 2.4, o.y + Math.sin(o.rot) * 2.4, 6.5, [1.0, 0.68, 0.32], 0.65 * d, 1.4);
+        if (o.light) add(o.x, o.y, 8 * fl, [1.0, 0.6, 0.26], 0.55 * d + 0.1, 1.0);
+        else if (o.type === 'house') add(o.x + Math.cos(o.rot) * 2.4, o.y + Math.sin(o.rot) * 2.4, 4, [1.0, 0.72, 0.4], 0.3 * d, 1.4);
       }
     }
-  } else {
-    const pcx = Math.floor(CAM.x / CS), pcy = Math.floor(CAM.y / CS);
-    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const c = CHUNKS.get((pcx + i) + ',' + (pcy + j)); if (c) for (const o of c.statics) if (o.light) add(o.x, o.y, 8 * fl, [1.0, 0.55, 0.22], 0.35, 1.0); }
   }
-  for (const e of S.ents) { if (e.dead) continue; if (e.burnT > 0) add(e.x, e.y, 5, [1, 0.5, 0.2], 1.1, 1.2); else if (e.state === 'cast') add(e.x, e.y, 5, [0.55, 1.0, 0.4], 1.0, 2.6); }
-  for (const p of S.projs) if (p.kind === 'fire') add(p.x, p.y, 7, [1.0, 0.45, 0.15], 1.5, p.elev + 0.2);
+  for (const e of S.ents) { if (e.dead) continue; if (e.burnT > 0) add(e.x, e.y, 5, [1, 0.5, 0.2], 0.6, 1.2); else if (e.kind === 'witch' && e.state === 'wind') add(e.x, e.y, 5, [0.55, 1.0, 0.4], 0.6, 2.6); }
+  for (const p of S.projs) if (p.kind === 'fire') add(p.x, p.y, 6, [1.0, 0.45, 0.15], 0.8, p.elev + 0.2);
+  if (S.fxLight > 0) add(P.x, P.y, 6, [1, 0.9, 0.6], S.fxLight, 1.5);
   L.sort((a, b) => a[7] - b[7]);
   for (let i = 0; i < Math.min(8, L.length); i++) LIGHTS.push(L[i]);
 }
@@ -545,8 +497,10 @@ function useLit(pr) {
   gl.uniformMatrix4fv(U.uVP, false, CAM.vp);
   gl.uniform3fv(U.uCamPos, CAM.eye); gl.uniform3fv(U.uSunDir, ENV.sun); gl.uniform3fv(U.uSunCol, ENV.sunC);
   gl.uniform3fv(U.uSkyAmb, ENV.sky); gl.uniform3fv(U.uGndAmb, ENV.gnd); gl.uniform3fv(U.uFogCol, ENV.fog);
+  if (U.uShadowTint) gl.uniform3fv(U.uShadowTint, ENV.shTint);
+  if (U.uRim) gl.uniform1f(U.uRim, ENV.rim);
   gl.uniform1f(U.uFogD, ENV.fogD); gl.uniform1f(U.uFogH, ENV.fogH); gl.uniform1f(U.uFogMul, 1); gl.uniform1f(U.uTime, S.t);
-  if (U.uPlayer) gl.uniform3f(U.uPlayer, P.x, 0, P.y);
+  if (U.uPlayer) gl.uniform3f(U.uPlayer, P.x, groundH(P.x, P.y), P.y);
   if (U.uLP) {
     LPU.fill(0); LCU.fill(0);
     LIGHTS.forEach((l, i) => { LPU.set([l[0], l[1], l[2], l[3]], i * 4); LCU.set([l[4], l[5], l[6], 1], i * 4); });

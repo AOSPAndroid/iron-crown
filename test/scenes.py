@@ -1,42 +1,62 @@
 """Playwright screenshots of test scenes -> shots/ (headless Chrome with SwiftShader WebGL2).
-Usage: python3 test/scenes.py [d|m] [scene ...]"""
+Usage: python3 test/scenes.py [d|m] [scene ...]      then: python3 test/scenes.py grid"""
 import pathlib, asyncio, sys
 from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 URL = (ROOT / 'index.html').as_uri()
-(ROOT / 'shots').mkdir(exist_ok=True)
+SHOTS = ROOT / 'shots'; SHOTS.mkdir(exist_ok=True)
 ARGS = ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
 SETUP = """
 window.scene = function(opts){
-  S.mode='play'; P.drawing=false; P.draw=0; P.blocking=false; P.anim=[0,0]; P.v=opts.v||0; P.step=opts.step||0;
-  S.ents = S.ents.filter(e=>e.team===2||e.post); S.projs=[]; S.parts=[]; S.drops=[]; S.corpses=[]; S.banner=null; S.msgs=[]; S.texts=[];
-  P.x=opts.x; P.y=opts.y; P.a=opts.a===undefined?-Math.PI/2:opts.a; P.mounted=!!opts.mounted; P.hp=P.maxHp;
-  S.horse.x=P.x+2.2*Math.cos(P.a+1.2); S.horse.y=P.y+2.2*Math.sin(P.a+1.2); S.horse.a=P.a+0.6; S.horse.state=P.mounted?'ridden':'idle';
+  window.__FREEZE=false; S.mode='play'; P.drawing=false; P.draw=0; P.blocking=false; P.act=null; P.lock=null; P.iframes=0; P.parryT=0; P.counterT=0; P.riposteT=0;
+  P.v=opts.v||0; P.step=opts.step||0; P.vx=0; P.vy=0; S.slowT=0; S.hitstop=0; S.pflash=0; S.flash=0; S.cueT=0; S.style=opts.style||0;
+  S.ents = S.ents.filter(e=>e.team===2||e.post); S.projs=[]; S.parts=[]; S.drops=[]; S.corpses=[]; S.banner=null; S.msgs=[]; S.texts=[]; S.fx=[]; S.ghosts=[]; S.marks=[];
+  S.tok.clear(); S.tokR.clear();
+  P.x=opts.x; P.y=opts.y; P.a=opts.a===undefined?-Math.PI/2:opts.a; P.mounted=!!opts.mounted; P.hp=P.maxHp; P.st=opts.st===undefined?P.stMax:opts.st;
+  S.horse.x=P.x+2.4*Math.cos(P.a+1.9); S.horse.y=P.y+2.4*Math.sin(P.a+1.9); S.horse.a=P.a+0.6; S.horse.state=P.mounted?'ridden':'idle';
   S.time=opts.time===undefined?0.45:opts.time; S.darkness=darkAt(S.time); S.tut=3; S.dirT=999; S.bloodMoon=false;
   P.armor=opts.armor||'chainmail'; P.hands=opts.hands||['kite_shield','iron_sword'];
-  manageChunks(80); updateCamera(0,true); S.curBiome=biomeAt(P.x,P.y);
-  const f=P.a, ax=Math.cos(f), ay=Math.sin(f), rx=-ay, ry=ax;
-  for (const s of (opts.ents||[])) { const e=spawnEnt(s[0], P.x+ax*s[1]+rx*s[2], P.y+ay*s[1]+ry*s[2], {D:0}); e.a=Math.atan2(P.y-e.y,P.x-e.x); if(s[3]) Object.assign(e,s[3]); e.cd=99; e.tT=99; e.target=null; }
+  if (opts.speed) { P.vx=Math.cos(P.a)*opts.speed; P.vy=Math.sin(P.a)*opts.speed; }
+  manageChunks(80); S.curBiome=biomeAt(P.x,P.y);
+  const f=P.a, ax=Math.cos(f), ay=Math.sin(f), rx=-ay, ry=ax; window.E=[];
+  for (const s of (opts.ents||[])) { const e=spawnEnt(s[0], P.x+ax*s[1]+rx*s[2], P.y+ay*s[1]+ry*s[2], {D:0}); e.a=Math.atan2(P.y-e.y,P.x-e.x); e.cd=99; e.tT=99; e.target=P;
+    if (s[3]) { const o=s[3]; if (o.atk!==undefined) { beginFoeAttack(e, EATK[e.kind][o.atk], P); e.wt=(o.frac||0.5)*(e.state==='aim'?e.atk.aim:foeWind(e.atk,e.hitIdx)); if (o.locked) e.locked=true; delete o.atk; delete o.frac; } Object.assign(e,o); }
+    E.push(e); }
+  if (opts.lock!==undefined) P.lock=E[opts.lock];
+  if (opts.pre) opts.pre();
+  updateCamera(0,true);
   for (let i=0;i<40 && prewarmScene(9)>0;i++);
-  updateGrassMap(true);
-  for (let i=0;i<6;i++){ S.t+=0.05; render(0.05); }
-  S.mode='paused';
+  window.__FREEZE=true;
+  for (let i=0;i<6;i++){ S.t+=0.05; updateCamera(0.05); render(0.05); }
   return 0;
-}
-window.findBiome = function(b, minR){ for(let r=minR||150;r<2600;r+=40) for(let k=0;k<24;k++){const a=k/24*Math.PI*2,x=Math.cos(a)*r,y=Math.sin(a)*r; if(biomeAt(x,y)===b && biomeAt(x,y-14)===b && biomeAt(x+8,y)===b && biomeAt(x-8,y)===b) return [x,y];} return [0,0]; };
+};
+// player mid-swing (weapon move index, fraction of the active frames) + matching slash ribbon
+window.swing = function(wk, idx, frac, dir){
+  const mv=MOVES[wk][idx], it=mainItem(); dir = dir===undefined ? P.a : dir; P.a=dir;
+  P.act={k:'atk', mv, step:idx, wk, it, t:mv.w+mv.a*frac, dir, hit:new Set(), queued:false, mashed:false, sharp:false, crit:0, hand:mainHand(), fxDone:true, cue:true};
+  const f=fx({k:'slash', x:P.x, y:P.y, h:P.mounted?1.9:1.05, dir, arc:mv.arc, r:moveRange(mv,it)*0.92, side:mv.sw||1, dur:0.16, col:[1,1,1,0.9], thrust:mv.sw===0}); f.t=0.16*Math.min(0.95, 0.35+frac*0.5);
+};
+window.findBiome = function(b, minR){ for(let r=minR||150;r<2600;r+=40) for(let k=0;k<24;k++){const a=k/24*Math.PI*2,x=Math.cos(a)*r,y=Math.sin(a)*r; if(biomeAt(x,y)===b && biomeAt(x,y-14)===b && biomeAt(x+8,y)===b && biomeAt(x-8,y)===b && !nearVillage(x,y,30)) return [x,y];} return [0,0]; };
 """
 SCENES = {
-  'field': "scene({x:16,y:-70, time:0.36, hands:['buckler','iron_sword'], armor:'leather', v:3.5, step:2})",
-  'fight': "scene({x:16,y:-60, time:0.62, ents:[['soldier',4.5,-1.8,{state:'wind',wt:0.15}],['pikeman',7,1.8],['musketeer',11,-4,{state:'aim'}],['archer',10,4.5,{state:'aim'}],['bandit',3.6,2.4,{hurtT:0.1}],['dragoon',14,0,{moving:true}],['ally',1.5,-3,{state:'wind',wt:0.1}]]}); P.anim[1]=0.1; S.mode='play'; render(0.016); S.mode='paused';",
-  'night': "scene({x:16,y:-78, a:-1.2, time:0.93, hands:['torch','steel_sword'], armor:'gambeson', v:2, step:1, ents:[['vampire',6,-1.5,{state:'wind',wt:0.2}],['witch',9,3,{state:'cast',elev:1.3}],['vampire',11,-4]]})",
-  'mounted': "scene({x:16,y:-92, mounted:true, time:0.4, hands:['torch','longsword'], armor:'halfplate', v:9, step:3, ents:[['soldier',12,-3],['soldier',13,2],['dragoon',18,4,{moving:true}]]})",
-  'village': "scene({x:16,y:31, a:-Math.PI/2, time:0.9, hands:['torch','iron_sword'], armor:'tunic'})",
-  'giants': "scene({x:16,y:-60, time:0.55, hands:['torch','steel_sword'], armor:'leather', ents:[['giant',9,-3,{state:'slam',wt:0.3}],['frostgiant',13,5,{state:'throw',wt:0.3}]]})",
+  'field': "scene({x:16,y:-70, time:0.36, hands:['buckler','iron_sword'], armor:'leather', v:3.5, speed:4, step:2})",
+  'fight': """scene({x:16,y:-60, time:0.5, style:340, lock:0, ents:[['soldier',2.6,0.6,{atk:0,frac:0.55,hurtT:0.1}],['pikeman',5.5,-2.6,{atk:0,frac:0.6}],['musketeer',10,2.5,{atk:0,frac:0.85,locked:true}],['bandit',3.4,3.4,{atk:0,frac:0.3}],['archer',9,-5,{atk:0,frac:0.4}]],
+     pre:()=>{ swing('sword',1,0.5,Math.atan2(E[0].y-P.y,E[0].x-P.x)); sparks(E[0].x-0.3,E[0].y+0.3,1.1,'!#fff4c0',12,true); addText(E[0].x,E[0].y,2.2,'24','#ffffff'); addText(E[3].x,E[3].y,2.0,'17!','#ff9a3a',true); S.cueT=0.15; }})""",
+  'perfect': """scene({x:16,y:-64, time:0.6, style:560, ents:[['soldier',1.5,-1.6,{atk:1,frac:0.98}],['bandit',3.5,2.6]],
+     pre:()=>{ const sx=P.x-Math.cos(P.a)*0, sy=P.y; for(let i=0;i<5;i++) S.ghosts.push({x:P.x+0.75*(i+1),y:P.y+0.25*(i+1),a:P.a,t:0.22-i*0.04}); S.slowT=0.4; P.counterT=1.2; S.pflash=0.12; addText(P.x,P.y,2.4,'PERFECT!','#7af0ff',true); const f=fx({k:'ring',x:P.x,y:P.y,h:0.9,r0:0.4,r1:3.2,dur:0.45,col:[0.5,0.95,1,0.9]}); f.t=0.12; P.iframes=0.05; P.act={k:'dash',t:0.2,dur:0.28,a:Math.PI,dist:4.4,done:0.9,sx:P.x+3,sy:P.y}; }})""",
+  'parry': """scene({x:16,y:-66, time:0.45, hands:['kite_shield','steel_sword'], style:300, ents:[['soldier',1.4,0,{state:'stagger',stT:1}],['soldier',4,2.5,{atk:0,frac:0.4}],['vampire',5.5,-2.5,{atk:1,frac:0.6}]],
+     pre:()=>{ P.parryT=0.1; P.riposteT=1; const mx=(P.x+E[0].x)/2, my=(P.y+E[0].y)/2; sparks(mx,my,1.3,'!#fff4c0',16,true); const f=fx({k:'ring',x:mx,y:my,h:1.2,r0:0.2,r1:1.8,dur:0.3,col:[1,0.95,0.6,1]}); f.t=0.08; addText(P.x,P.y,2.4,'PARRY!','#ffe070',true); }})""",
+  'giant': """scene({x:16,y:-60, time:0.55, hands:['torch','steel_sword'], armor:'leather', lock:0, ents:[['giant',6,-2.5,{atk:0,frac:0.55}],['frostgiant',14,5,{atk:2,frac:0.5}]],
+     pre:()=>{ E[0].poise=E[0].poiseMax*0.35; S.marks.push({x:P.x-3,y:P.y-3,t:0.6,T0:1.4,rad:2.5}); }})""",
+  'night': "scene({x:16,y:-78, a:-1.2, time:0.93, hands:['torch','steel_sword'], armor:'gambeson', v:2, step:1, ents:[['vampire',4.5,-1.5,{atk:0,frac:0.6}],['witch',8,3,{elev:1.3,atk:0,frac:0.5}],['vampire',9,-4]]})",
+  'village': "scene({x:16,y:28, a:-Math.PI/2, time:0.9, hands:['torch','iron_sword'], armor:'tunic'})",
+  'mounted': """scene({x:16,y:-92, mounted:true, time:0.4, hands:['torch','longsword'], armor:'halfplate', v:9, step:3, ents:[['soldier',3,-2.2,{hurtT:0.1}],['soldier',7,2],['dragoon',12,4,{atk:0,frac:0.5}]],
+     pre:()=>{ const mv=MOVES.ride[0]; P.act={k:'atk', mv, step:0, wk:'ride', it:mainItem(), t:mv.w+mv.a*0.5, dir:P.a-Math.PI/2, hit:new Set(), hand:1, fxDone:true}; const f=fx({k:'slash',x:P.x,y:P.y,h:1.9,dir:P.a-Math.PI/2,arc:1.25,r:3.4,side:1,dur:0.16,col:[1,1,1,0.9]}); f.t=0.08; }})""",
 }
 async def shoot(pg, name, js):
     await pg.evaluate(js)
-    await pg.wait_for_timeout(350)
-    await pg.screenshot(path=str(ROOT / 'shots' / f'sc_{name}.png'))
+    await pg.wait_for_timeout(300)
+    await pg.screenshot(path=str(SHOTS / f'sc_{name}.png'))
 async def main(w, h, touch, tag, only):
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=ARGS)
@@ -45,28 +65,51 @@ async def main(w, h, touch, tag, only):
         pg.on('console', lambda m: errs.append(m.text) if m.type in ('error', 'warning') else None)
         pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)))
         await pg.goto(URL); await pg.wait_for_timeout(1500)
-        await pg.screenshot(path=str(ROOT / 'shots' / f'sc_{tag}_title.png'))
+        await pg.screenshot(path=str(SHOTS / f'sc_{tag}_title.png'))
         await pg.evaluate("document.getElementById('btnNew').click()"); await pg.wait_for_timeout(2500)
+        if not only or 'tutorial' in only:
+            await pg.wait_for_timeout(600)
+            await pg.screenshot(path=str(SHOTS / f'sc_{tag}_tutorial.png'))
         await pg.evaluate(SETUP + '; 0')
         for k, js in SCENES.items():
             if only and k not in only: continue
             await shoot(pg, tag + '_' + k, js)
         if not only or 'snow' in only:
             s = await pg.evaluate("findBiome(2)")
-            await shoot(pg, tag + '_snow', f"scene({{x:{s[0]},y:{s[1]}, time:0.5, hands:['torch','longsword'], armor:'chainmail', v:2, step:1, ents:[['frostgiant',10,-4,{{state:'throw',wt:0.3}}],['bandit',5,3]]}})")
+            await shoot(pg, tag + '_snow', f"scene({{x:{s[0]},y:{s[1]}, time:0.5, hands:['torch','longsword'], armor:'chainmail', v:2, step:1, ents:[['frostgiant',9,-3,{{atk:1,frac:0.5}}],['bandit',3.5,2.5]]}})")
         if not only or 'swamp' in only:
             s = await pg.evaluate("findBiome(3)")
-            await shoot(pg, tag + '_swamp', f"scene({{x:{s[0]},y:{s[1]}, time:0.82, hands:['torch','iron_sword'], armor:'leather', ents:[['witch',8,2,{{elev:1.3}}]]}})")
+            await shoot(pg, tag + '_swamp', f"scene({{x:{s[0]},y:{s[1]}, time:0.82, hands:['torch','iron_sword'], armor:'leather', ents:[['witch',7,2,{{elev:1.3,atk:1,frac:0.5}}]], pre:()=>{{ S.projs.push({{x:P.x+2,y:P.y-3,elev:1.3,vx:-6,vy:8,vz:0,team:1,dmg:10,life:3,kind:'fire',col:'y',target:P}}); }}}})")
         if not only or 'desert' in only:
             s = await pg.evaluate("findBiome(5)")
-            await shoot(pg, tag + '_desert', f"scene({{x:{s[0]},y:{s[1]}, time:0.42, ents:[['archer',8,0,{{state:'aim'}}]]}})")
-        info = await pg.evaluate("[GLOK, RW, RH, SW, SH, CW, CH, GCH.size, lastRenderMs.toFixed(1)]")
-        print(tag, 'GLOK, canvas, scene, cells, chunks, last render ms:', info)
-        print(tag, 'errors', errs[:10])
+            await shoot(pg, tag + '_desert', f"scene({{x:{s[0]},y:{s[1]}, time:0.42, hands:[null,'long_bow'], ents:[['archer',8,0,{{atk:0,frac:0.6}}]], pre:()=>{{ P.hands=['long_bow','long_bow']; P.act={{k:'bow',t:0.8}}; P.drawing=true; P.draw=0.8; }}}})")
+        info = await pg.evaluate("[GLOK, RW, RH, SW, SH, GCH.size, lastRenderMs.toFixed(1)]")
+        print(tag, 'GLOK, canvas, scene, chunks, last render ms:', info)
+        errs = [e for e in errs if 'GPU stall due to ReadPixels' not in e]
+        print(tag, 'console errors:', len(errs), errs[:10])
         await b.close()
+def grid():
+    from PIL import Image, ImageDraw
+    order = ['field', 'fight', 'perfect', 'parry', 'giant', 'night', 'village', 'snow', 'mounted', 'swamp', 'desert', 'tutorial']
+    for tag, cols, tw in (('d', 3, 640), ('m', 6, 260)):
+        ims = [(n, Image.open(SHOTS / f'sc_{tag}_{n}.png').convert('RGB')) for n in order if (SHOTS / f'sc_{tag}_{n}.png').exists()]
+        if not ims: continue
+        th = int(ims[0][1].height * tw / ims[0][1].width)
+        rows = (len(ims) + cols - 1) // cols
+        G = Image.new('RGB', (cols * tw, rows * (th + 18)), (14, 12, 20)); d = ImageDraw.Draw(G)
+        for i, (n, im) in enumerate(ims):
+            x, y = (i % cols) * tw, (i // cols) * (th + 18)
+            G.paste(im.resize((tw, th), Image.LANCZOS), (x, y + 18)); d.text((x + 6, y + 3), n, fill=(240, 220, 160))
+        G.save(SHOTS / f'grid_toon_{tag}.png')
+    a, b = Image.open(SHOTS / 'grid_toon_d.png'), Image.open(SHOTS / 'grid_toon_m.png')
+    s = a.width / b.width; b = b.resize((a.width, int(b.height * s)), Image.LANCZOS)
+    G = Image.new('RGB', (a.width, a.height + b.height + 8), (0, 0, 0)); G.paste(a, (0, 0)); G.paste(b, (0, a.height + 8)); G.save(SHOTS / 'grid_toon.png')
+    print('grid ->', SHOTS / 'grid_toon.png')
 async def run():
     tags = [a for a in sys.argv[1:] if a in ('d', 'm')] or ['d', 'm']
     only = [a for a in sys.argv[1:] if a not in ('d', 'm')]
     if 'd' in tags: await main(1280, 720, False, 'd', only)
     if 'm' in tags: await main(390, 844, True, 'm', only)
-asyncio.run(run())
+if __name__ == '__main__':
+    if sys.argv[1:2] == ['grid']: grid()
+    else: asyncio.run(run())

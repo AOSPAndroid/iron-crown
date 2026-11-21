@@ -93,6 +93,29 @@ function drawMinimap(x0, y0, sz) {
   ctx.fillStyle = '#000'; ctx.fillRect(Math.round(qx) - 6, Math.round(qy) - 7, 12, 13);
   ctx.font = HUD_FONT; hudText('N', qx, qy - 6, '#ffd84a', 'center');
 }
+// STYLE rank: grows with clean combos, perfect dodges and parries; any hit taken drops it. Multiplies XP and gold.
+const RANK_COL = { D: '#a8b0c0', C: '#7ad0ff', B: '#7aff9a', A: '#ffd84a', S: '#ff7a4a' };
+function drawStyle(xr, y) {
+  if (S.style <= 0.5) return;
+  const r = styleRank(), i = STYLE_RANKS.indexOf(r), nx = STYLE_RANKS[i + 1], f = nx ? (S.style - r[1]) / (nx[1] - r[1]) : 1;
+  const pop = 1 + (S.rankPop || 0) * 0.5, px = Math.round(30 * pop);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.font = 'bold ' + px + 'px "Trebuchet MS",Verdana,sans-serif'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(16,10,24,0.95)';
+  ctx.strokeText(r[0], xr - 2, y); ctx.fillStyle = RANK_COL[r[0]]; ctx.fillText(r[0], xr - 2, y);
+  ctx.font = 'bold 10px ui-monospace,Menlo,monospace'; hudText('STYLE x' + r[2].toFixed(2), xr - 38, y + 4, '#e8dcc0', 'right');
+  hudBar(xr - 112, y + 20, 74, 3, f, RANK_COL[r[0]], '#20202a');
+  ctx.font = HUD_FONT; ctx.textAlign = 'left';
+}
+function drawCombo(x, y) {
+  const a = P.act, it = mainItem(), list = MOVES[weaponKey(it)] || MOVES.fists;
+  if (list.length < 2 || (!a && P.comboT <= 0)) return;
+  const done = a && a.k === 'atk' && a.step < 99 ? a.step + (a.t >= a.mv.w ? 1 : 0) : P.comboStep;
+  for (let i = 0; i < list.length; i++) {
+    ctx.fillStyle = '#000'; ctx.fillRect(x + i * 12 - 1, y - 1, 10, 6);
+    ctx.fillStyle = i < done ? (list[i].fin ? '#ff9a3a' : '#f4f0ff') : '#3a3448'; ctx.fillRect(x + i * 12, y, 8, 4);
+  }
+  if (S.cueT > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (S.cueT / 0.22).toFixed(2) + ')'; ctx.fillRect(x - 3, y - 3, list.length * 12 + 4, 10); }
+}
 function shadeMsg(col, t) { const c = rgbOf(col.replace('!', '')); const k = clamp(t, 0.2, 1); return css(c[0] * k, c[1] * k, c[2] * k); }
 function drawHUD() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.imageSmoothingEnabled = false;
@@ -100,18 +123,24 @@ function drawHUD() {
   const narrow = VW < 520;
   // --- health / level panel
   const pw = Math.min(narrow ? 168 : 230, Math.floor(VW * 0.43)), x0 = 6, y0 = 6;
-  hudPanel(x0, y0, pw, 38);
+  hudPanel(x0, y0, pw, 50);
   icon('heart', x0 + 6, y0 + 6, 2);
   const fr = clamp(P.hp / P.maxHp, 0, 1), hc = fr > 0.5 ? '#5ad04a' : fr > 0.25 ? '#e8c050' : '#ff4a3a';
   const bw = pw - 64;
   hudBar(x0 + 24, y0 + 8, bw, 8, fr, hc, '#3a1a14');
   hudText(String(Math.ceil(P.hp)), x0 + 28 + bw, y0 + 5, hc);
-  hudText('LV' + P.level, x0 + 6, y0 + 22, '#9ae0ff');
-  hudBar(x0 + 44, y0 + 26, pw - 52, 3, P.xp / xpNext(), '#7ab0ff', '#1a2a3a');
+  // stamina: dashes, attacks and blocking drain it; flashes when too low to dash
+  const sf = clamp(P.st / P.stMax, 0, 1), low = P.st < DASH.minSt;
+  ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; hudText('ST', x0 + 7, y0 + 21, '#c8e890'); ctx.font = HUD_FONT;
+  hudBar(x0 + 24, y0 + 22, bw, 5, sf, low ? (((S.t * 8) | 0) % 2 ? '#ff7a4a' : '#8a3a2a') : '#c8f060', '#22301a');
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(Math.round(x0 + 24 + bw * DASH.minSt / P.stMax), y0 + 21, 1, 7);
+  hudText('LV' + P.level, x0 + 6, y0 + 33, '#9ae0ff');
+  hudBar(x0 + 44, y0 + 37, pw - 52, 3, P.xp / xpNext(), '#7ab0ff', '#1a2a3a');
   // --- hands, armour, purse
-  const two = twoHanded() ? ITEMS[P.hands[1]] : null, hy = y0 + 44;
-  if (two) { slot(x0, hy, two, '2H', P.drawing || P.anim[1] > 0); slot(x0 + 26, hy, null, '', false); ctx.fillStyle = 'rgba(12,9,6,0.9)'; ctx.fillRect(x0 + 27, hy + 1, 22, 22); }
-  else { slot(x0, hy, P.hands[0] ? ITEMS[P.hands[0]] : null, 'L', P.anim[0] > 0 || (P.blocking && shieldItem() && P.hands[0] && ITEMS[P.hands[0]].type === 'shield')); slot(x0 + 26, hy, P.hands[1] ? ITEMS[P.hands[1]] : null, 'R', P.anim[1] > 0); }
+  const two = twoHanded() ? ITEMS[P.hands[1]] : null, hy = y0 + 56, act = P.act;
+  const busy = h => !!(act && (act.k === 'atk' || act.k === 'shoot' || act.k === 'charge') && (act.hand === h || (act.k === 'charge' && mainHand() === h)));
+  if (two) { slot(x0, hy, two, '2H', P.drawing || busy(1)); slot(x0 + 26, hy, null, '', false); ctx.fillStyle = 'rgba(12,9,6,0.9)'; ctx.fillRect(x0 + 27, hy + 1, 22, 22); }
+  else { slot(x0, hy, P.hands[0] ? ITEMS[P.hands[0]] : null, 'L', busy(0) || (P.blocking && P.hands[0] && ITEMS[P.hands[0]].type === 'shield')); slot(x0 + 26, hy, P.hands[1] ? ITEMS[P.hands[1]] : null, 'R', busy(1)); }
   slot(x0 + 52, hy, ITEMS[P.armor], '', false);
   let px2 = x0 + 82, py2 = hy + 6;
   if (narrow && px2 + 150 > pw + 40) { px2 = x0 + 4; py2 = hy + 30; }
@@ -126,6 +155,8 @@ function drawHUD() {
   icon(night ? 'moon' : 'sun', mx + 3, 8, 2, night && S.bloodMoon ? { W: '#ff4040' } : null);
   hudText('D' + S.day + ' ' + clockStr(), mx + mmS - 2, 9, '#e8dcc0', 'right');
   drawMinimap(mx, my, mmS);
+  drawStyle(VW - 8, my + mmS + 10);
+  drawCombo(x0 + 4, hy + 28);
   // --- boss bar
   let boss = null, bd = 45;
   for (const e of S.ents) if (e.k.boss && !e.dead) { const d = dist(e, P); if (d < bd) { bd = d; boss = e; } }
@@ -134,6 +165,7 @@ function drawHUD() {
     const w = narrow ? Math.min(200, VW - mmS - 40) : Math.min(220, VW - 40), bx = (VW - w) / 2, by = narrow ? hy + 54 : 36;
     hudText(boss.k.name.toUpperCase(), VW / 2, by, '#ff7a5a', 'center');
     hudBar(bx, by + 16, w, 6, boss.hp / boss.maxHp, '#e8443a', '#3a1414');
+    hudBar(bx, by + 24, w, 2, boss.poise / boss.poiseMax, boss.state === 'stagger' ? '#ff9a3a' : '#ffd84a', '#2a2410');
     if (narrow) ty = Math.max(ty, by + 28);
   }
   // --- messages (left column)
@@ -225,6 +257,17 @@ function sfx(n) {
       case 'hiss': nz(0.45, 'highpass', 3000, 6000, 0.12); break;
       case 'cackle': for (let i = 0; i < 4; i++) tn(900 - i * 80, 700 - i * 80, 0.08, 'square', 0.03, i * 0.1); break;
       case 'death': tn(300, 60, 1.2, 'sawtooth', 0.14); break;
+      case 'dash': nz(0.16, 'bandpass', 900, 2600, 0.16, 1.2); break;
+      case 'perfect': tn(1200, 2400, 0.25, 'sine', 0.12); tn(600, 1800, 0.35, 'triangle', 0.06, 0.03); break;
+      case 'parry': tn(2200, 1800, 0.22, 'triangle', 0.14); tn(3300, 3000, 0.18, 'sine', 0.06); nz(0.06, 'highpass', 4000, 4000, 0.18); break;
+      case 'parrytry': nz(0.05, 'bandpass', 3500, 2500, 0.05, 3); break;
+      case 'heavy': nz(0.22, 'bandpass', 1800, 400, 0.3, 1.5); break;
+      case 'chargeup': tn(220, 440, 0.3, 'triangle', 0.04); break;
+      case 'charged': tn(1500, 1500, 0.08, 'square', 0.05); tn(2000, 2000, 0.1, 'sine', 0.06, 0.05); break;
+      case 'tele': tn(1800, 1800, 0.06, 'square', 0.035); break;
+      case 'lock': tn(900, 1300, 0.06, 'triangle', 0.05); break;
+      case 'nope': tn(200, 160, 0.08, 'square', 0.04); break;
+      case 'rank': tn(880, 1320, 0.15, 'triangle', 0.07); break;
     }
   } catch (e) { }
 }
@@ -233,19 +276,25 @@ function setMute(m) { AU.muted = m; try { localStorage.setItem('ironcrown1700_mu
 // ---------- input ----------
 const keys = {}, edge = {};
 let mouseL = false, mouseR = false;
-const touch = { active: false, jx: 0, jy: 0, L: false, R: false, horse: false, pot: false, use: false };
-const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
+const touch = { active: false, jx: 0, jy: 0, atk: false, off: false, dash: false, lock: false, horse: false, pot: false, use: false };
+const MOUSE = { x: 0, y: 0, ok: false, t: 0 };
+const GAME_KEYS = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight'];
 function consume(code) { const v = edge[code]; edge[code] = false; return !!v; }
+// camera-relative movement: my = screen up, mx = screen right
 function readInput() {
-  let fwd = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
-  let turn = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
-  if (touch.active) { fwd += -touch.jy; turn += Math.sign(touch.jx) * Math.pow(Math.abs(touch.jx), 1.4); }
+  let my = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  let mx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  if (touch.active) { mx += touch.jx; my -= touch.jy; }
+  const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; }
+  S.mouseAim = !IS_TOUCH && MOUSE.ok && performance.now() - MOUSE.t < 4000;
   const inp = {
-    fwd: clamp(fwd, -1, 1), turn: clamp(turn, -1, 1),
-    L: !!(keys.KeyK || keys.KeyQ || mouseR || touch.L), R: !!(keys.KeyJ || keys.Space || mouseL || touch.R),
+    mx, my,
+    atk: !!(keys.KeyJ || mouseL || touch.atk), off: !!(keys.KeyK || keys.KeyQ || mouseR || touch.off),
+    dash: consume('Space') || consume('ShiftLeft') || consume('ShiftRight') || touch.dash,
+    lock: consume('KeyL') || consume('Tab') || touch.lock,
     horse: consume('KeyH') || touch.horse, pot: consume('KeyR') || touch.pot, use: consume('KeyE') || touch.use
   };
-  touch.horse = touch.pot = touch.use = false;
+  touch.horse = touch.pot = touch.use = touch.dash = touch.lock = false;
   return inp;
 }
 function onKeyDown(e) {
@@ -257,10 +306,13 @@ function onKeyDown(e) {
   const c = e.code;
   if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); }
   else if (c === 'KeyM') setMute(!AU.muted);
-  else if (c === 'KeyI' || c === 'Tab' || c === 'KeyB') { if (S.mode === 'play') openInv(); else if (S.mode === 'inv') closeInv(); if (c === 'Tab') e.preventDefault(); }
+  else if (c === 'KeyI' || c === 'KeyB') { if (S.mode === 'play') openInv(); else if (S.mode === 'inv') closeInv(); }
+  else if (c === 'Tab') e.preventDefault();
+  else if (c === 'KeyZ' && S.mode === 'play') CAMK.yawT -= Math.PI / 4;
+  else if (c === 'KeyX' && S.mode === 'play') CAMK.yawT += Math.PI / 4;
 }
 function onKeyUp(e) { keys[e.code] = false; }
-function clearInputs() { for (const k in keys) keys[k] = false; mouseL = mouseR = false; touch.L = touch.R = false; touch.active = false; touch.jx = touch.jy = 0; }
+function clearInputs() { for (const k in keys) keys[k] = false; mouseL = mouseR = false; touch.atk = touch.off = false; touch.active = false; touch.jx = touch.jy = 0; }
 
 function bindTouch() {
   const zone = $('zone'), base = $('base'), knob = $('knob');
@@ -294,7 +346,9 @@ function bindTouch() {
     const up = () => el.classList.remove('down');
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
   };
-  hold('bR', 'R'); hold('bL', 'L');
+  hold('bAtk', 'atk'); hold('bOff', 'off');
+  tap('bDash', () => { touch.dash = true; });
+  tap('bLock', () => { touch.lock = true; });
   tap('bHorse', () => { touch.horse = true; });
   tap('bUse', () => { touch.use = true; });
   tap('bPot', () => { touch.pot = true; });
@@ -306,22 +360,28 @@ function layoutTouch() {
   if (pb) { pb.style.top = '6px'; pb.style.height = '26px'; }
 }
 let uiKey = '';
-function handBtn(s) {
-  if (twoHanded()) { const it = ITEMS[P.hands[1]]; return it.type === 'bow' ? 'DRAW' : it.short.toUpperCase(); }
-  const id = P.hands[s]; if (!id) return 'PUNCH';
-  const it = ITEMS[id];
-  return it.type === 'shield' ? 'BLOCK' : it.type === 'gun' ? 'FIRE' : it.type === 'torch' ? 'TORCH' : 'SLASH';
+function atkBtn() {
+  const it = mainItem();
+  if (!it) return P.mounted ? 'SWEEP' : 'ATTACK';
+  return it.type === 'bow' ? 'DRAW' : it.type === 'gun' ? 'FIRE' : P.mounted ? 'SWEEP' : 'ATTACK';
+}
+function offBtn() {
+  const k = offKind(), it = offItem();
+  return k === 'shield' ? 'BLOCK' : k === 'parryW' ? 'PARRY' : k === 'grab' ? 'PARRY' : k === 'gun' ? 'FIRE' : k === 'torch' ? 'TORCH' : it ? 'SLASH' : 'PARRY';
 }
 function syncUI() {
   if (typeof document === 'undefined') return;
   const showTouch = IS_TOUCH && S.mode === 'play';
-  const k = [showTouch, S.mode, S.interact ? S.interact.label : '', handBtn(0), handBtn(1), invCount('potion'), P.mounted, S.horse.state].join('|');
+  const k = [showTouch, S.mode, S.interact ? S.interact.label : '', atkBtn(), offBtn(), invCount('potion'), P.mounted, S.horse.state, !!P.lock].join('|');
   if (k === uiKey) return; uiKey = k;
   $('touch').classList.toggle('on', showTouch);
   $('bPause').classList.toggle('hidden', S.mode !== 'play');
   const u = $('bUse'); u.style.display = S.interact && showTouch && S.interact.type !== 'mount' ? 'flex' : 'none'; if (S.interact) u.textContent = S.interact.label;
-  $('bL').innerHTML = '<small>LEFT</small>' + handBtn(0);
-  $('bR').innerHTML = '<small>RIGHT</small>' + handBtn(1);
+  const mi = mainItem();
+  $('bAtk').innerHTML = atkBtn() + '<small>' + (mi ? mi.short : 'fists') + (mi && (mi.type === 'bow' || mi.type === 'gun') ? '' : ' · hold') + '</small>';
+  $('bOff').innerHTML = offBtn() + (offKind() === 'grab' ? '<small>grab</small>' : '');
+  $('bLock').innerHTML = P.lock ? 'NEXT' : 'LOCK';
+  $('bLock').classList.toggle('lit', !!P.lock);
   $('bPot').innerHTML = '<small>POT</small>' + invCount('potion');
   $('bHorse').innerHTML = P.mounted ? 'DIS<br>MOUNT' : (dist(S.horse, P) < 3.2 ? 'MOUNT' : 'CALL<br>HORSE');
 }
@@ -378,8 +438,8 @@ function startNew() {
   resetWorld();
   startLoading(() => {
     spawnEnt('bandit', 16, -12, { tut: true, hp: 22, maxHp: 22, D: 0 });
-    S.tut = 0; S.time = 0.29;
-    banner(TUT[0][0], TUT[0][1], 8, '#9ae0ff');
+    S.tut = 0; S.tutStep = 0; S.time = 0.29;
+    const tp = tutPrompt(); banner(tp[0], tp[1], 99, '#9ae0ff');
     msg('Ashford, Anno Domini 1700.', '#ffe070', 6);
     sfx('horn');
   });
@@ -516,6 +576,7 @@ function overClick(e) {
 // ---------- main loop ----------
 let lastT = 0;
 function step(dt) {
+  if (typeof window !== 'undefined' && window.__FREEZE) { render(dt); syncUI(); return; } // test hook: hold a staged frame
   if (S.mode === 'play' || S.mode === 'dying') update(dt, readInput());
   else if (S.mode === 'title') {
     S.t += dt; P.a += dt * 0.1; S.time = 0.735; S.darkness = darkAt(S.time);
@@ -542,7 +603,8 @@ function init() {
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('blur', () => { clearInputs(); if (S.mode === 'play') openPause(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'play') openPause(); });
-  canvas.addEventListener('pointerdown', e => { audioInit(); if (e.pointerType !== 'mouse') return; if (e.button === 0) mouseL = true; if (e.button === 2) mouseR = true; });
+  window.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; MOUSE.x = e.clientX; MOUSE.y = e.clientY; MOUSE.ok = true; MOUSE.t = performance.now(); });
+  canvas.addEventListener('pointerdown', e => { audioInit(); if (e.pointerType !== 'mouse') return; MOUSE.t = performance.now(); if (e.button === 0) mouseL = true; if (e.button === 2) mouseR = true; });
   window.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') return; if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   $('btnNew').addEventListener('click', () => {
