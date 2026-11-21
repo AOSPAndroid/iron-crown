@@ -44,10 +44,11 @@ Open `index.html` in any modern browser. It is one self-contained file with no d
 
 The game uses **sprite-stacked pixel art** ([technique](https://www.spritecook.ai/blog/sprite-stacking-pixel-art)):
 
-- **Models.** Each character, tree and building is a small voxel model built in code. It is cut into horizontal slices. Each slice is drawn rotated, squashed vertically to 0.75 and lifted 1 px above the one below it. The finished sprite gets an outline once and is cached per angle.
+- **Models.** Each character, tree and building is a detailed voxel model built in code, at 16 voxels per world unit (people stand about 14 px wide and 30 px tall). It is cut into horizontal slices. Each slice is drawn rotated, squashed vertically to 0.75 and lifted 1 px above the one below it. The finished sprite gets a 1 px darker outline once and is cached per angle (64 angles for characters, 32 for scenery).
+- **Resolution.** The game renders at about 1 CSS px per art pixel on phones and 2 on desktop, and the browser scales that canvas up with nearest-neighbour filtering. The HUD is a separate canvas at full device resolution.
 - **Camera.** Top-down and turning with you, so your heading always points up the screen.
-- **Ground.** Pixel textures are pre-rendered for each 32×32 chunk.
-- **Night.** A light map lets torches, campfires, windows and fireballs light up the dark.
+- **Ground.** Each 32×32-unit chunk gets a 512×512 pixel texture with grass blades, flowers, pebbles, snow sparkle, sand ripples, wheat, reeds and cobbles. Textures are built in time slices and evicted when far away.
+- **Night.** A light map lets torches, campfires, windows and fireballs light up the dark; glowing voxels are layered on top.
 
 | | |
 |---|---|
@@ -60,12 +61,14 @@ The game uses **sprite-stacked pixel art** ([technique](https://www.spritecook.a
 ```
 src/1_core.js     utilities, palette, item + creature data
 src/2_world.js    biomes, tiles, infinite chunk generation, villages, collisions
-src/3_render.js   sprite-stacking renderer, voxel models, ground textures, lighting
+src/3_render.js   sprite-stacking renderer, voxel toolkit, caches, ground textures, lighting
+src/3_models.js   voxel models: people, armour, weapons, horse, giants, trees, buildings, loot
 src/4_game.js     game state, player, two-hand combat, AI, events, day/night, saves
 src/5_ui.js       HUD, minimap, input (keyboard / touch), overlays, sound, main loop
 src/shell.html    page shell: CSS, overlays, touch controls
 build.py          inlines src/*.js into shell.html -> index.html (and test/game.js)
 test/harness.js   Node vm harness with DOM/canvas stubs
+test/sim.js       scripted play-through on the harness (fights, biomes, death, saves)
 test/scenes.py    Playwright screenshots of test scenes -> shots/
 ```
 

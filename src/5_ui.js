@@ -147,7 +147,9 @@ function drawHUD() {
   if (S.banner) {
     const b = S.banner, w = Math.min(460, VW - 24), inner = Math.floor((w - 24) / 7.3);
     const lines = wrapText(b.sub, inner), h = 30 + lines.length * 15;
-    const bx = Math.round((VW - w) / 2), by = narrow ? Math.round(Math.max(ty + 6, VH * 0.24)) : (boss ? 64 : 36);
+    const bx = Math.round((VW - w) / 2);
+    // below the stats panels when it would overlap them (narrow or short landscape screens)
+    const by = narrow ? Math.round(Math.max(ty + 6, VH * 0.24)) : bx < pw + 16 ? Math.max(hy + 30, boss ? 64 : 36) : (boss ? 64 : 36);
     const a = clamp(b.t * 2, 0, 1);
     ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(14,10,6,0.88)'; ctx.fillRect(bx, by, w, h);

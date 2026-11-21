@@ -189,13 +189,17 @@ function genChunk(cx, cy) {
     if (localNear(c, x, y, 1.6)) continue;
     let roll = R(), type = plan.list[0][0];
     for (const [tp, w] of plan.list) { if (roll < w) { type = tp; break; } roll -= w; }
+    // trees follow the ground they stand on at biome borders
+    if (t === T_SNOW || t === T_DRIFT) { if (type === 'pine' || type === 'oak') type = 'snowpine'; else if (type === 'bush' || type === 'palm') type = 'deadtree'; }
+    else if (type === 'snowpine') type = 'pine';
+    if ((t === T_SAND || t === T_DUNE) && (type === 'pine' || type === 'oak' || type === 'snowpine')) type = 'palm';
     addStaticTo(c, type, x, y);
   }
   for (let i = 0; i < plan.rocks; i++) {
     const x = ox + R() * CS, y = oy + R() * CS;
     const t = tileL(x, y);
     if (isWet(t) || t === T_DIRT || nearVil(x, y, 14) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
-    addStaticTo(c, 'rock', x, y);
+    addStaticTo(c, 'rock', x, y, (t === T_SNOW || t === T_DRIFT) ? { snow: 1 } : (t === T_SAND || t === T_DUNE) ? { sand: 1 } : null);
   }
   return c;
 }

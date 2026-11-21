@@ -25,7 +25,7 @@ const document = { readyState: 'complete', getElementById: id => els[id] || (els
 const store = {};
 const window = { innerWidth: +process.env.W || 1280, innerHeight: +process.env.H || 720, devicePixelRatio: +process.env.DPR || 1, addEventListener() {}, __NO_AUTOSTART: true };
 const ctx = vm.createContext({ window, document, navigator: { maxTouchPoints: 0, vibrate() {} }, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = String(v); } },
-  performance: { now: () => Date.now() }, requestAnimationFrame() {}, console, Math, Date, JSON, Set, Map, Float32Array, Int16Array, Uint8Array, Uint8ClampedArray, Array, Object, String, Number, setTimeout, Proxy });
+  performance: { now: () => Date.now() }, requestAnimationFrame() {}, console, Math, Date, JSON, Set, Map, Float32Array, Int16Array, Uint8Array, Uint16Array, Uint8ClampedArray, Uint32Array, Array, Object, String, Number, setTimeout, Proxy });
 vm.runInContext(code, ctx);
 const run = s => vm.runInContext(s, ctx);
 module.exports = { run, ctx, els, store, stats: () => draws };
