@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Iron Crown 1700</title>
+<style>
+:root{--ink:#e8dcc0;--gold:#e8c050;--blood:#c0392b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;font-family:ui-monospace,Menlo,Consolas,"DejaVu Sans Mono","Courier New",monospace;color:var(--ink)}
+canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.hidden{display:none!important}
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,4,2,.78);z-index:20;padding:14px;overflow:auto;touch-action:pan-y}
+#title{background:radial-gradient(ellipse at center,rgba(6,4,2,.45),rgba(6,4,2,.88))}
+.panel{max-width:660px;width:100%;text-align:center;margin:auto}
+.logo{font-size:clamp(5px,2.1vw,12px);line-height:1.1;color:var(--gold);margin:0 0 6px;white-space:pre;text-shadow:0 0 10px rgba(232,192,80,.35);display:inline-block;text-align:left}
+.yr{letter-spacing:.6em;color:#d0453a;font-size:clamp(11px,3vw,15px);margin:4px 0 12px}
+p.lore{font-size:clamp(12px,3.2vw,14px);line-height:1.55;opacity:.88;margin:0 auto 14px;max-width:540px}
+.btn{font:inherit;font-weight:700;letter-spacing:.12em;background:#1a130c;color:var(--gold);border:1px solid var(--gold);padding:12px 22px;margin:6px;cursor:pointer;text-transform:uppercase;font-size:14px;min-width:220px}
+.btn:active,.btn:hover{background:#3a2a14}
+.btn.ghost{border-color:#6a5a40;color:#c8b898;background:transparent}
+.keys{font-size:12px;opacity:.72;line-height:1.75;margin-top:14px;text-align:left;display:inline-block}
+.keys b{color:var(--gold);font-weight:700}
+.touchdev .kb{display:none}
+body:not(.touchdev) .tc{display:none}
+#loading .bar{width:min(320px,80vw);height:10px;border:1px solid #6a5a40;margin:14px auto 0}
+#loadbar{height:100%;width:0;background:var(--gold);transition:width .1s}
+.card{background:#120d08;border:1px solid #6a5a40;text-align:left;padding:12px 14px;max-width:560px;width:100%;margin:auto;font-size:13px}
+.hdr{display:flex;justify-content:space-between;align-items:center;color:var(--gold);letter-spacing:.12em;margin-bottom:8px}
+.x{background:none;border:1px solid #6a5a40;color:var(--ink);font:inherit;padding:4px 10px;cursor:pointer}
+.stats{font-size:12px;line-height:1.6;opacity:.9;margin-bottom:6px}
+.sec{color:#8a7a60;letter-spacing:.2em;font-size:11px;margin:12px 0 4px;border-bottom:1px dashed #3a2e20;padding-bottom:3px}
+.row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #22190f}
+.row .slot{width:84px;flex:none;color:#8a7a60;font-size:11px}
+.row .gl{width:20px;flex:none;color:var(--gold);font-weight:700;text-align:center}
+.row .nm{flex:1;min-width:0;line-height:1.35}
+.row .bt{flex:none;display:flex;gap:5px}
+.row button,.tabs button,.foot button{font:inherit;font-size:12px;font-weight:700;background:#1f160d;color:var(--gold);border:1px solid #8a6a30;padding:8px 10px;cursor:pointer;min-width:40px}
+.row button:disabled{opacity:.35;cursor:default}
+.row button.dim2{color:#a89878;border-color:#4a3a28}
+.tabs{display:flex;gap:6px;margin:6px 0}
+.tabs button.on{background:#3a2a14}
+.foot{text-align:center;margin-top:12px}
+.foot .big{padding:10px 20px}
+.dim{opacity:.6;font-size:11px}
+.small{font-size:11px;margin:2px 0 8px}
+.pad{padding:10px 0}
+.gold{color:var(--gold)}
+.dead{font-size:clamp(20px,6vw,32px);color:#e04a3a;letter-spacing:.15em;margin-bottom:10px}
+#over p,#pause p{line-height:1.6;opacity:.9}
+/* touch controls */
+#touch{position:fixed;inset:0;z-index:5;pointer-events:none;display:none}
+#touch.on{display:block}
+#zone{position:absolute;left:0;bottom:0;width:50%;height:64%;pointer-events:auto;touch-action:none}
+#base{position:absolute;left:22px;bottom:30px;width:118px;height:118px;border-radius:50%;border:2px solid rgba(232,220,192,.25);background:rgba(20,14,8,.22);pointer-events:none}
+#base.on{border-color:rgba(232,192,80,.6);background:rgba(20,14,8,.35)}
+#knob{position:absolute;left:33px;top:33px;width:48px;height:48px;border-radius:50%;background:rgba(232,192,80,.3);border:2px solid rgba(232,192,80,.7)}
+.tb{position:absolute;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 11px/1.15 ui-monospace,Menlo,monospace;letter-spacing:.03em;color:#f0e2c0;background:rgba(20,14,8,.5);border:2px solid rgba(232,192,80,.55);pointer-events:auto;touch-action:none;text-align:center}
+.tb small{font-size:8px;opacity:.65;font-weight:400}
+.tb.down{background:rgba(232,192,80,.45)}
+#bR{width:86px;height:86px;right:12px;bottom:16px;font-size:12px}
+#bL{width:70px;height:70px;right:106px;bottom:20px}
+#bHorse{width:60px;height:60px;right:18px;bottom:112px;font-size:10px}
+#bUse{width:60px;height:60px;right:100px;bottom:104px;font-size:11px;border-color:#ffd84a;color:#ffd84a;display:none}
+#bPot{width:48px;height:48px;right:20px;bottom:182px;font-size:12px}
+#bBag{width:48px;height:48px;right:76px;bottom:176px;font-size:10px}
+#bPause{position:fixed;left:50%;top:0;transform:translateX(-50%);width:38px;height:28px;z-index:6;display:flex;align-items:center;justify-content:center;font:700 12px ui-monospace,monospace;color:#c8b898;background:rgba(13,10,7,.6);border:1px solid #4a3a28;cursor:pointer;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="touch">
+  <div id="zone"></div>
+  <div id="base"><div id="knob"></div></div>
+  <div class="tb" id="bR">SLASH</div>
+  <div class="tb" id="bL">PUNCH</div>
+  <div class="tb" id="bHorse">HORSE</div>
+  <div class="tb" id="bUse">USE</div>
+  <div class="tb" id="bPot">POT</div>
+  <div class="tb" id="bBag">BAG</div>
+</div>
+<div id="bPause" class="hidden">II</div>
+
+<div id="title" class="ov hidden">
+  <div class="panel">
+    <pre class="logo" id="logo"></pre>
+    <div class="yr">~ 1 7 0 0 ~</div>
+    <p class="lore">Anno Domini 1700. The Usurper's redcoats march on the realm by day; when the sun sets, vampires and witches rise from the moors, and giants walk the frozen north. You wake in Ashford with a linen tunic and your bare fists.</p>
+    <button class="btn" id="btnCont">Continue</button><br>
+    <button class="btn" id="btnNew">New Game</button>
+    <div class="keys kb">
+      <b>W S / ↑ ↓</b> ride &amp; walk · <b>A D / ← →</b> turn<br>
+      <b>J / Space / L-click</b> right hand · <b>K / Q / R-click</b> left hand (hold)<br>
+      <b>E</b> use (trade, rest, loot) · <b>H</b> horse (mount / call)<br>
+      <b>I</b> inventory · <b>R</b> potion · <b>P</b> pause · <b>M</b> mute
+    </div>
+    <div class="keys tc">
+      <b>Left thumb</b>: joystick (up = forward, sideways = turn)<br>
+      <b>RIGHT / LEFT</b>: what each hand holds (hold to block or draw)<br>
+      <b>HORSE</b> mount / call · <b>USE</b> trade, rest, loot<br>
+      <b>BAG</b> inventory · <b>POT</b> drink · <b>II</b> pause
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="ov hidden"><div class="panel"><div class="gold" style="letter-spacing:.2em">FORGING THE REALM…</div><div class="bar"><div id="loadbar"></div></div></div></div>
+
+<div id="inv" class="ov hidden"><div class="card" id="invPanel"></div></div>
+<div id="shop" class="ov hidden"><div class="card" id="shopPanel"></div></div>
+
+<div id="pause" class="ov hidden">
+  <div class="panel">
+    <div class="gold" style="letter-spacing:.3em;font-size:20px;margin-bottom:14px">PAUSED</div>
+    <button class="btn" id="btnResume">Resume</button><br>
+    <button class="btn ghost" id="btnSound">Sound: On</button><br>
+    <button class="btn ghost" id="btnQuit">Save &amp; quit to title</button>
+  </div>
+</div>
+
+<div id="over" class="ov hidden"><div class="panel" id="overPanel"></div></div>
+
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

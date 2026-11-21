@@ -40,7 +40,33 @@ Open `index.html` in any modern browser. It is one self-contained file with no d
 | Inventory | I, Tab, B | BAG |
 | Pause / mute | P, Esc / M | II |
 
-## Status
+## Graphics
 
-- `index.html` here is v1, which draws everything with ASCII characters in a chase-camera view.
-- A rewrite to **sprite-stacked pixel art** is in progress: voxel models are drawn as stacks of slices, with a rotating top-down camera ([technique](https://www.spritecook.ai/blog/sprite-stacking-pixel-art)). It will arrive with the split source (`src/`), a build script and tests.
+The game uses **sprite-stacked pixel art** ([technique](https://www.spritecook.ai/blog/sprite-stacking-pixel-art)):
+
+- **Models.** Each character, tree and building is a small voxel model built in code. It is cut into horizontal slices. Each slice is drawn rotated, squashed vertically to 0.75 and lifted 1 px above the one below it. The finished sprite gets an outline once and is cached per angle.
+- **Camera.** Top-down and turning with you, so your heading always points up the screen.
+- **Ground.** Pixel textures are pre-rendered for each 32×32 chunk.
+- **Night.** A light map lets torches, campfires, windows and fireballs light up the dark.
+
+| | |
+|---|---|
+| ![Fight (mobile)](docs/screenshots/sc_m_fight.png) | ![Night](docs/screenshots/sc_d_night.png) |
+| ![Frostlands](docs/screenshots/sc_d_snow.png) | ![Mounted](docs/screenshots/sc_d_mounted.png) |
+| ![Village](docs/screenshots/sc_d_village.png) | ![Giants](docs/screenshots/sc_d_giants.png) |
+
+## Project structure
+
+```
+src/1_core.js     utilities, palette, item + creature data
+src/2_world.js    biomes, tiles, infinite chunk generation, villages, collisions
+src/3_render.js   sprite-stacking renderer, voxel models, ground textures, lighting
+src/4_game.js     game state, player, two-hand combat, AI, events, day/night, saves
+src/5_ui.js       HUD, minimap, input (keyboard / touch), overlays, sound, main loop
+src/shell.html    page shell: CSS, overlays, touch controls
+build.py          inlines src/*.js into shell.html -> index.html (and test/game.js)
+test/harness.js   Node vm harness with DOM/canvas stubs
+test/scenes.py    Playwright screenshots of test scenes -> shots/
+```
+
+To build, run `python3 build.py`. `index.html` is generated, so don't edit it by hand.
