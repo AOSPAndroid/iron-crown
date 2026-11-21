@@ -197,7 +197,12 @@ const HUMANS = {
   archer: { coat: '#b84a32', pants: '#7a6a48', hat: 'hood', hatC: '#5a7a34', straps: true, boots: '#4a3420', L: { t: 'bow' } },
   vampire: { coat: '#3a2450', pants: '#2a1a38', boots: '#18101e', skin: '#ece8f8', hair: '#1a1424', eye: '#ff2a3a', eyeEm: true, cape: '#2a1440', capeIn: '#c81e3a', collar: true, buttons: true },
   witch: { robe: '#7a3aa8', coat: '#6a3098', skin: '#9ad070', hair: '#e8e0f0', eye: '#ffe040', eyeEm: true, hat: 'witch', hatC: '#4a2270', broom: true },
-  merchant: { coat: '#3a9a5a', pants: '#7a5a38', apron: '#f4ecd8', hat: 'cap', hatC: '#a86a32', pack: true, buttons: true, hair: '#7a4a24' }
+  merchant: { coat: '#3a9a5a', pants: '#7a5a38', apron: '#f4ecd8', hat: 'cap', hatC: '#a86a32', pack: true, buttons: true, hair: '#7a4a24' },
+  smith: { coat: '#6a5a4a', pants: '#3a3028', boots: '#2a2018', apron: '#3e2c1e', belt: '#2a1c12', hair: '#2a1e14', skin: '#e0b088' },
+  innkeeper: { coat: '#8a6a44', pants: '#4e3e2c', apron: '#e0d6c0', belt: '#4a3018', hair: '#5a3a20', buttons: true },
+  quartermaster: { coat: '#36589e', pants: '#e8e0cc', facing: '#a83a32', hat: 'tricorn', lace: '#ffd84a', buttons: true, boots: '#2a2228', pack: true },
+  priest: { coat: '#2e2a34', robe: '#2e2a34', skin: '#f0c8a0', hair: '#8a8478', belt: '#c8b070' },
+  villager: { coat: '#7a7458', pants: '#5a4a34', hat: 'cap', hatC: '#6a5a3a', belt: '#4a3018', hair: '#4a3020' }
 };
 const ARMOR_LOOK = {
   tunic: { coat: '#e8dcbc', pants: '#9a8462', boots: '#6a4a2c', belt: '#a07a48', hair: '#6a3e1e' },
@@ -515,7 +520,6 @@ const STATIC_BUILD = {
     for (let k = 0; k < 5; k++) { const a = k / 5 * TAU; mb.sph(Math.cos(a) * 0.07, 0.32, Math.sin(a) * 0.07, 0.05, 0.02, 0.05, '#ff6a9a', 0); } mb.sph(0, 0.33, 0, 0.035, 0.025, 0.035, '#fff0a0', 0); return mb; },
   reed: () => { const mb = new MB(74); mb.wind = 1; for (let k = 0; k < 4; k++) { const a = k * 1.7, x = Math.cos(a) * 0.1, z = Math.sin(a) * 0.1; mb.tube([x, 0, z], [x * 1.5, 0.9 + k * 0.08, z * 1.5], 0.02, 0.012, 4, '#8aa84a'); if (k % 2) mb.cap([x * 1.5, 0.75 + k * 0.08, z * 1.5], [x * 1.5, 0.92 + k * 0.08, z * 1.5], 0.035, '#7a4a2a', 5); } return mb; },
   menhir: () => { const mb = new MB(12); mb.ico(0, 1.4, 0, 0.45, 1.55, 0.32, '#a8a49c', 0.08, 1, 4); mb.bc(0, 1.5, 0.31, 0.06, 0.8, 0.02, '#5ad0ff'); mb.bc(0, 1.7, 0.31, 0.3, 0.06, 0.02, '#5ad0ff'); return mb; },
-  house: () => mkHouseM(''), housesnow: () => mkHouseM('snow'), housesand: () => mkHouseM('sand'),
   ruin: () => { const mb = new MB(13), st = '#a8a296', st2 = '#968e82', moss = '#5cac48';
     const wall = (x0, z0, x1, z1, h) => { const n = Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 0.8); for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, hh = h * (0.4 + 0.6 * hash2(i * 7 + x0 * 3, z0 * 5)); mb.box(Math.min(x0 + (x1 - x0) * t0, x0 + (x1 - x0) * t1) - 0.2, 0, Math.min(z0 + (z1 - z0) * t0, z0 + (z1 - z0) * t1) - 0.2, Math.max(x0 + (x1 - x0) * t0, x0 + (x1 - x0) * t1) + 0.2, hh, Math.max(z0 + (z1 - z0) * t0, z0 + (z1 - z0) * t1) + 0.2, i % 2 ? st : st2, moss); } };
     wall(-4, -3, 4, -3, 4.5); wall(-4, -3, -4, 3, 3.2); wall(4, -3, 4, 1, 2.6);
@@ -524,7 +528,7 @@ const STATIC_BUILD = {
     return mb; },
   well: () => { const mb = new MB(14); mb.cyl(0, 0, 0, 0.85, 0.85, 0.85, 12, '#b8b0a2', '#968e82'); mb.cyl(0, 0.8, 0, 0.66, 0.66, 0.02, 12, '#3a7ab0');
     mb.box(-0.8, 0, -0.08, -0.65, 2.1, 0.08, '#8a5a32'); mb.box(0.65, 0, -0.08, 0.8, 2.1, 0.08, '#8a5a32'); mb.beam([-0.8, 1.7, 0], [0.8, 1.7, 0], 0.07, '#8a5a32');
-    mb.push().ry(Math.PI / 2).roof(0.5, 1.9, 2.05, 0.55, '#d0503a', 0.25).pop(); mb.bc(0.2, 1.3, 0, 0.18, 0.2, 0.18, '#7a4a24'); return mb; },
+    mb.push().ry(Math.PI / 2).roof(0.7, 1.9, 2.05, 0.55, '#7e4a3a', 0.25).pop(); mb.bc(0.2, 1.3, 0, 0.18, 0.2, 0.18, '#7a4a24'); return mb; },
   fire: () => { const mb = new MB(15); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; mb.sph(Math.cos(a) * 0.62, 0.1, Math.sin(a) * 0.62, 0.2, 0.15, 0.2, '#a09a90', 0); }
     mb.beam([-0.5, 0.12, -0.2], [0.5, 0.2, 0.2], 0.14, '#6a4020'); mb.beam([-0.4, 0.2, 0.35], [0.4, 0.12, -0.35], 0.14, '#6a4020');
     mb.em = 1; mb.cyl(0, 0.15, 0, 0.38, 0, 0.95, 8, '#ff6a1a'); mb.cyl(0.05, 0.15, 0, 0.24, 0, 1.3, 7, '#ffb030'); mb.cyl(-0.08, 0.15, 0.05, 0.13, 0, 0.8, 6, '#fff0a0'); return mb; },
@@ -534,8 +538,7 @@ const STATIC_FAR = {
   oak: () => { const mb = new MB(5); mb.tube([0, 0, 0], [0, 2.2, 0], 0.3, 0.2, 6, '#8a5a32', false); const g = ['#4e7a3a', '#5a8644', '#466f36'];
     [[0, 3.1, 0, 1.4], [0.9, 2.6, 0.4, 1.0], [-0.8, 2.7, -0.5, 1.0]].forEach((c, i) => mb.ico(c[0], c[1], c[2], c[3], c[3] * 0.86, c[3], g[i], 0, 0, 30 + i)); return mb; },
   pine: () => mkPineM(false, true), snowpine: () => mkPineM(true, true),
-  bush: () => { const mb = new MB(11); mb.ico(0, 0.45, 0, 0.7, 0.5, 0.7, '#4e7a3c', 0, 0, 2); return mb; },
-  house: () => mkHouseM(''), housesnow: () => mkHouseM('snow'), housesand: () => mkHouseM('sand')
+  bush: () => { const mb = new MB(11); mb.ico(0, 0.45, 0, 0.7, 0.5, 0.7, '#4e7a3c', 0, 0, 2); return mb; }
 };
 function mkPineM(snow, far) {
   const mb = new MB(3); mb.tube([0, 0, 0], [0, 1.5, 0], 0.22, 0.16, 7, '#8a5a32', false);
@@ -553,31 +556,6 @@ function mkRockM(k, small) {
   const mb = new MB(21 + k); const base = k === 2 ? '#d8b880' : '#a8a4a0';
   mb.ico(0, 0.35, 0, 0.75, 0.6, 0.68, k === 1 ? (n => n[1] > 0.45 ? '#ffffff' : base) : base, small ? 0.15 : 0.2, 1, 5 + k);
   if (!small) mb.ico(0.5, 0.2, 0.3, 0.4, 0.32, 0.38, k === 1 ? (n => n[1] > 0.5 ? '#ffffff' : '#989490') : '#989490', 0.15, 1, 8);
-  return mb;
-}
-function mkHouseM(v) {
-  const mb = new MB(31), snow = v === 'snow', sand = v === 'sand';
-  const wall = sand ? '#f0d8a8' : '#fbf2e0', timber = '#8a5a36', roofC = snow ? '#4a7ad0' : sand ? '#d8904a' : '#a8503c', roofT = snow ? '#ffffff' : null;
-  const W = 4.2, D = 3.4, H = 2.5;
-  mb.box(-W / 2, 0, -D / 2, W / 2, H, D / 2, wall);
-  mb.box(-W / 2 - 0.08, 0, -D / 2 - 0.08, W / 2 + 0.08, 0.38, D / 2 + 0.08, '#b0a898');
-  if (!sand) {
-    for (const x of [-W / 2, W / 2]) for (const z of [-D / 2 - 0.04, D / 2 + 0.04]) mb.bc(x, H / 2, z, 0.16, H, 0.08, timber);
-    for (const z of [-D / 2 - 0.045, D / 2 + 0.045]) { mb.bc(0, H - 0.08, z, W, 0.16, 0.08, timber); mb.bc(0, 1.15, z, W, 0.1, 0.08, timber); }
-    mb.push().ry(Math.PI / 2).roof(D, W, H, 1.7, roofC, 0.4).pop();
-    if (roofT) mb.push().ry(Math.PI / 2).roof(D * 0.55, W, H + 0.9, 0.85, roofT, 0.42).pop();
-    mb.tri([-W / 2, H, -D / 2], [-W / 2, H, D / 2], [-W / 2, H + 1.7, 0], wall); mb.tri([W / 2, H, -D / 2], [W / 2, H, D / 2], [W / 2, H + 1.7, 0], wall);
-    mb.box(W / 2 - 1.0, H, -0.7, W / 2 - 0.45, H + 2.4, -0.15, '#b0a898'); mb.box(W / 2 - 1.06, H + 2.3, -0.76, W / 2 - 0.39, H + 2.45, -0.09, '#8a8478');
-  } else { mb.box(-W / 2 - 0.12, H, -D / 2 - 0.12, W / 2 + 0.12, H + 0.28, D / 2 + 0.12, roofC); mb.box(-0.6, H + 0.28, -0.6, 0.6, H + 1.1, 0.6, wall); mb.cyl(0, H + 1.1, 0, 0.75, 0, 0.6, 12, '#e0a050'); }
-  // door (front = +z)
-  mb.box(-0.45, 0.38, D / 2 + 0.01, 0.45, 1.8, D / 2 + 0.06, '#7a4628'); mb.box(-0.55, 1.78, D / 2 + 0.01, 0.55, 1.9, D / 2 + 0.08, timber); mb.sph(0.28, 1.1, D / 2 + 0.08, 0.04, 0.04, 0.03, '#ffd84a', 0);
-  // windows glow at night
-  mb.em = 1;
-  for (const [x, z, r] of [[-1.35, D / 2 + 0.04, 0], [1.35, D / 2 + 0.04, 0], [-1.0, -D / 2 - 0.04, 0], [1.0, -D / 2 - 0.04, 0], [W / 2 + 0.04, 0, 1], [-W / 2 - 0.04, 0, 1]]) {
-    if (r) mb.box(x - 0.02, 1.3, z - 0.32, x + 0.02, 1.9, z + 0.32, '#ffc860'); else mb.box(x - 0.32, 1.3, z - 0.02, x + 0.32, 1.9, z + 0.02, '#ffc860');
-  }
-  mb.em = 0;
-  for (const [x, z] of [[-1.35, D / 2 + 0.07], [1.35, D / 2 + 0.07], [-1.0, -D / 2 - 0.07], [1.0, -D / 2 - 0.07]]) { mb.bc(x, 1.6, z, 0.05, 0.62, 0.04, timber); mb.bc(x, 1.6, z, 0.68, 0.05, 0.04, timber); mb.bc(x, 1.27, z, 0.8, 0.06, 0.14, '#5a8644'); }
   return mb;
 }
 function mkChestM(open) {

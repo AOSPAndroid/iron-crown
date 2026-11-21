@@ -13,11 +13,16 @@ function heightRaw(x, y) {
   const b = biomeAt(x, y), lake = fbm(x * 0.011 + 300, y * 0.011 + 300), thr = LAKE_THR[b];
   const w = smooth(clamp((lake - thr + 0.085) / 0.085, 0, 1));
   if (w > 0) h = lerp(h, b === B_SNOW ? -0.45 : -1.15, w);
-  const v = nearVillage(x, y, 26);
+  const v = nearVillage(x, y, 40);
   if (v) {
     if (v.gh === undefined) v.gh = Math.max(0.2, heightBase(v.x, v.y));
-    const d = Math.hypot(x - v.x, y - v.y), k = smooth(clamp((26 - d) / 11, 0, 1));
+    const d = Math.hypot(x - v.x, y - v.y), k = smooth(clamp((40 - d) / 12, 0, 1));
     h = lerp(h, v.gh, k);
+  }
+  const cs = castleGround(x, y);
+  if (cs) {
+    const l = w2l(cs, x, y), d = Math.max(Math.abs(l[0]), Math.abs(l[1]) - (l[1] > 0 && Math.abs(l[0]) < 6 ? 8 : 0));
+    h = lerp(h, cs.gh, smooth(clamp((74 - d) / 28, 0, 1)));
   }
   return h;
 }
@@ -70,15 +75,15 @@ function freeChunkGPU(g) {
 function staticKey(o) {
   switch (o.type) {
     case 'rock': return o.snow ? 'rocksnow' : o.sand ? 'rocksand' : 'rock';
-    case 'house': return o.v === 'snow' ? 'housesnow' : o.v === 'sand' ? 'housesand' : 'house';
-    case 'chest': return null;
+    case 'chest': case 'col': return null;
+    case 'bld': return o.mesh;
     default: return STATIC_BUILD[o.type] ? o.type : null;
   }
 }
-const OCCR = { pine: 1.7, snowpine: 1.7, oak: 2.3, palm: 1.4, deadtree: 1.2, house: 3.6, housesnow: 3.6, housesand: 3.6, ruin: 4.8, menhir: 1.0 };
+const OCCR = { pine: 1.7, snowpine: 1.7, oak: 2.3, palm: 1.4, deadtree: 1.2, ruin: 4.8, menhir: 1.0 };
 const SSCALE = { pine: [0.85, 1.2], snowpine: [0.85, 1.2], oak: [0.85, 1.15], deadtree: [0.8, 1.2], palm: [0.85, 1.15], bush: [0.85, 1.2], rock: [1.0, 1.6], rocksnow: [1.0, 1.6], rocksand: [1.0, 1.6], pebble: [0.22, 0.48], menhir: [0.9, 1.15] };
 // outline weight per scenery mesh (decor and pebbles get none: keeps the ground clean)
-const OWK = { pine: 0.9, snowpine: 0.9, oak: 0.9, palm: 0.9, deadtree: 0.9, bush: 0.7, rock: 0.85, rocksnow: 0.85, rocksand: 0.85, house: 1, housesnow: 1, housesand: 1, ruin: 1, menhir: 1, well: 1, fire: 0.8 };
+const OWK = { pine: 0.9, snowpine: 0.9, oak: 0.9, palm: 0.9, deadtree: 0.9, bush: 0.7, rock: 0.85, rocksnow: 0.85, rocksand: 0.85, ruin: 1, menhir: 1, well: 1, fire: 0.8 };
 function buildChunkGPU(c) {
   const ox = c.cx * CS, oy = c.cy * CS;
   const H = new Float32Array(35 * 35);
@@ -119,11 +124,13 @@ function buildChunkGPU(c) {
   c.hg = hg;
   for (const o of c.statics) {
     if (o.type === 'chest') { chests.push(o); continue; }
-    if (o.type === 'fire') fires.push(o); if (o.type === 'house') houses.push(o);
+    if (o.type === 'fire') fires.push(o); if (o.chim) houses.push(o);
     const k = staticKey(o); if (!k) continue;
     const h = hash2(Math.round(o.x * 7), Math.round(o.y * 7)), sr = SSCALE[k] || [1, 1];
     const rot = o.rot !== undefined ? yawOf(o.rot) : h * TAU;
-    (groups[k] = groups[k] || []).push(o.x, groundH(o.x, o.y) - (k === 'house' || k === 'housesnow' || k === 'housesand' || k === 'ruin' ? 0.15 : 0.05), o.y, rot, lerp(sr[0], sr[1], hash2(Math.round(o.y * 13), Math.round(o.x * 5))), 0.92 + h * 0.16, h * 40, OCCR[k] || 0);
+    const yo = o.yo !== undefined ? o.yo : k === 'ruin' ? -0.15 : -0.05, bld = o.type === 'bld';
+    if (bld) o.struct.gy = groundH(o.x, o.y) + yo;
+    (groups[k] = groups[k] || []).push(o.x, groundH(o.x, o.y) + yo, o.y, rot, o.sc || lerp(sr[0], sr[1], hash2(Math.round(o.y * 13), Math.round(o.x * 5))), bld ? 0.97 + h * 0.06 : 0.92 + h * 0.16, h * 40, o.occ !== undefined ? o.occ : OCCR[k] || 0);
   }
   // pebbles + sparse decor (tufts, flowers, reeds): soft detail, no noisy grass blades
   { const R = mulberry(((c.cx * 7919) ^ (c.cy * 104729)) + 17), pk = [], dec = { tuft: [], flower: [], flower2: [], reed: [] };
@@ -131,10 +138,10 @@ function buildChunkGPU(c) {
       const x = ox + R() * CS, y = oy + R() * CS, t = c.tiles[(Math.floor(y - oy)) * CS + Math.floor(x - ox)], r = R();
       if (n < 60) {
         const p = t === T_ROCKY ? 0.8 : t === T_DIRT || t === T_SNOW || t === T_SAND || t === T_MUD ? 0.18 : 0.03;
-        if (r < p) pk.push(x, groundH(x, y) - 0.06, y, R() * TAU, 0.22 + R() * 0.3, 0.9 + R() * 0.2, 0, 0);
+        if (r < p && !c.structs.some(s => s.roof && structContains(s, x, y)) && !blockedAt(x, y, 0.2)) pk.push(x, groundH(x, y) - 0.06, y, R() * TAU, 0.22 + R() * 0.3, 0.9 + R() * 0.2, 0, 0);
         continue;
       }
-      if (nearVillage(x, y, 9)) continue;
+      if (nearVillage(x, y, 9) || c.structs.some(s => structContains(s, x, y))) continue;
       let k = null;
       if (t === T_GRASS) k = r < 0.2 ? 'tuft' : r < 0.25 ? 'flower' : r < 0.28 ? 'flower2' : null;
       else if (t === T_TALL) k = r < 0.4 ? 'tuft' : r < 0.44 ? 'flower' : null;
@@ -223,13 +230,14 @@ function stepAmbient(dt) {
   const d = S.darkness, b = S.curBiome >= 0 ? S.curBiome : biomeAt(CAM.x, CAM.y), fx = CAM.x, fz = CAM.y;
   const run = S.mode !== 'paused' && S.mode !== 'inv' && S.mode !== 'shop';
   const dd = run ? dt : 0;
-  // snowfall
-  const ns = b === B_SNOW ? (MOBILE ? 320 : 700) : 0;
+  // snowfall (not inside the building you stand in)
+  const ns = b === B_SNOW ? (MOBILE ? 320 : 700) : 0, inRoof = S.cut && S.cut.s && S.cut.s.roof ? S.cut.s : null;
   MOTE(AMB.snow, ns, () => ({ x: fx + rr(-22, 22), y: rr(0, 14), z: fz + rr(-22, 22), v: rr(1.2, 2.4), s: rr(0.07, 0.13), p: rr(0, TAU) }));
   for (const f of AMB.snow) {
     f.y -= f.v * dd; f.x += (Math.sin(S.t * 0.9 + f.p) * 0.6 - 0.8) * dd; f.z += Math.cos(S.t * 0.7 + f.p) * 0.4 * dd;
     const gy = camGH - 2; if (f.y < gy) { f.y = gy + 15; f.x = fx + rr(-22, 22); f.z = fz + rr(-22, 22); }
     if (f.x < fx - 23) f.x += 46; if (f.x > fx + 23) f.x -= 46; if (f.z < fz - 23) f.z += 46; if (f.z > fz + 23) f.z -= 46;
+    if (inRoof && (Math.abs(f.x - P.x) < 15 && Math.abs(f.z - P.y) < 15 || structContains(inRoof, f.x, f.z))) continue;
     pAlp(f.x, f.y, f.z, f.s, 1, 1, 1, 0.95, 3);
   }
   // fireflies at night over grass
@@ -249,6 +257,7 @@ function stepAmbient(dt) {
   for (const s of AMB.spark) {
     s.t += dd; if (s.t > s.l) { s.t = 0; s.x = fx + rr(-16, 16); s.z = fz + rr(-16, 16); }
     const t = tileNoGen(s.x, s.z); if (t !== T_WATER && t !== T_ICE && t !== T_SNOW && t !== T_DRIFT) continue;
+    if (inRoof && structContains(inRoof, s.x, s.z)) continue;
     const k = Math.sin(s.t / s.l * Math.PI) * (1 - d * 0.6);
     pAdd(s.x, (t === T_WATER ? WATER_Y + 0.05 : groundH(s.x, s.z) + 0.08), s.z, 0.32, 1, 1, 1, k, 1);
   }
@@ -256,9 +265,9 @@ function stepAmbient(dt) {
   for (const g of GCH.values()) {
     if (Math.abs(g.cx * CS + 16 - CAM.x) > 50 || Math.abs(g.cy * CS + 16 - CAM.y) > 50) continue;
     for (const o of g.fires) if (run && Math.random() < dt * 14) AMB.ember.push({ x: o.x + rr(-0.3, 0.3), y: groundH(o.x, o.y) + 0.6, z: o.y + rr(-0.3, 0.3), vx: rr(-0.3, 0.3), vy: rr(1.2, 2.6), vz: rr(-0.3, 0.3), t: rr(0.8, 1.6) });
-    for (const o of g.houses) if (run && o.v !== 'sand' && Math.random() < dt * 1.6) {
-      const yw = yawOf(o.rot), cx = 1.35, cz = -0.45, wx = o.x + cx * Math.cos(yw) + cz * Math.sin(yw), wz = o.y - cx * Math.sin(yw) + cz * Math.cos(yw);
-      AMB.smoke.push({ x: wx, y: groundH(o.x, o.y) + 4.9, z: wz, vx: rr(0.1, 0.4), vy: rr(0.6, 1.0), vz: rr(-0.2, 0.2), t: 0, l: rr(3, 5), s: rr(0.6, 0.9) });
+    for (const o of g.houses) if (run && Math.random() < dt * 1.6) {
+      const ch = o.chim;
+      AMB.smoke.push({ x: ch[0], y: groundH(o.x, o.y) + ch[2], z: ch[1], vx: rr(0.1, 0.4), vy: rr(0.6, 1.0), vz: rr(-0.2, 0.2), t: 0, l: rr(3, 5), s: rr(0.6, 0.9) });
     }
   }
   if (hasTorch() && S.mode !== 'title' && run && Math.random() < dt * 18 && TORCH_TIP) AMB.ember.push({ x: TORCH_TIP[0] + rr(-0.05, 0.05), y: TORCH_TIP[1] + 0.15, z: TORCH_TIP[2] + rr(-0.05, 0.05), vx: rr(-0.2, 0.2), vy: rr(0.8, 1.8), vz: rr(-0.2, 0.2), t: rr(0.4, 0.9) });
@@ -1002,6 +1011,17 @@ function drawHorseFree() {
 
 // ---------- frame ----------
 let RDT = 0.016;
+// cutaway for the building / castle the player is in: roof and upper walls dither away, camera-side walls drop to a stub
+function setCutUniforms(U) {
+  const C = S.cut, s = C && C.s;
+  if (!s || C.k <= 0 || S.mode === 'title') { gl.uniform4f(U.uCutB, 0, 0, 0, 0); return; }
+  if (s.gy === undefined) s.gy = groundH(s.x, s.y);
+  const tx = -Math.cos(CAMK.yaw), ty = -Math.sin(CAMK.yaw), lx = tx * s.s - ty * s.c, lz = tx * s.c + ty * s.s, ll = Math.hypot(lx, lz) || 1;
+  gl.uniform4f(U.uCutA, s.x, s.y, s.s, s.c);
+  gl.uniform4f(U.uCutB, s.hx, s.hz, s.gy, smooth(C.k));
+  gl.uniform4f(U.uCutC, lx / ll, lz / ll, s.stub, s.wallH);
+  gl.uniform4f(U.uCutD, s.band, s.margin, s.skipOcc ? 1 : 0, s.roof ? lerp(0.22, 0.5, S.darkness) : 0);
+}
 function drawStaticsAndTerrain(U) {
   gl.uniform1i(U.uMode, 0); gl.uniform1i(U.uMat, 1); gl.uniformMatrix4fv(U.uModel, false, UNITM);
   gl.uniform1f(U.uId, 0); gl.uniform1f(U.uOW, 0);
@@ -1018,6 +1038,7 @@ function drawStaticsAndTerrain(U) {
   for (const g of vis) if (g.water) { gl.bindVertexArray(g.water.vao); gl.drawArrays(gl.TRIANGLES, 0, g.water.n); }
   gl.uniform1i(U.uMat, 0);
   gl.uniform1i(U.uMode, 1);
+  gl.uniform1f(U.uCutOn, 1);
   const lod = MOBILE ? 34 : 46;
   let curOW = -1;
   for (const g of vis) for (const s of g.inst) {
@@ -1027,6 +1048,8 @@ function drawStaticsAndTerrain(U) {
     else { gl.bindVertexArray(s.vao); gl.drawArraysInstanced(gl.TRIANGLES, 0, s.mesh.n, s.n); }
   }
   gl.uniform1i(U.uMode, 0);
+  drawCastles(U);
+  gl.uniform1f(U.uCutOn, 0);
   for (const g of vis) for (const o of g.chests) {
     setId(0.9);
     m4trs(TMPM, o.x, groundH(o.x, o.y), o.y, hash2(o.x | 0, o.y | 0) * TAU, 0, 0, 1); const mesh = staticMesh(S.looted.has(o.id) ? 'chestopen' : 'chest');
@@ -1124,6 +1147,7 @@ function render(dt) {
   drawSky();
   const U = MESHU = useLit(PR.mesh);
   gl.uniform1f(U.uEmK, 0.35 + ENV.emK * 0.65); gl.uniform1f(U.uTintA, 0); gl.uniform1f(U.uWind, ENV.wind); gl.uniform1f(U.uGhost, 0); gl.uniform1f(U.uOW, 0); gl.uniform1f(U.uId, 0);
+  setCutUniforms(U); gl.uniform1f(U.uCutOn, 0); gl.uniform4f(U.uOcc, 0, 0, 0, 0);
   drawStaticsAndTerrain(U);
   drawActors(U);
   mrtColor();
@@ -1144,8 +1168,11 @@ function prewarmScene(n) {
   if (!GLOK) return 0;
   setupCamera(0);
   const left = syncChunks(40);
-  for (const k of ['soldier', 'bandit', 'ally', 'guard', 'merchant', 'archer', 'musketeer', 'pikeman']) humanMesh(k, entSpec(k));
+  for (const k of ['soldier', 'bandit', 'ally', 'guard', 'merchant', 'archer', 'musketeer', 'pikeman', 'innkeeper', 'smith', 'villager', 'priest', 'quartermaster']) humanMesh(k, entSpec(k));
   humanMesh('P|' + P.armor + '|' + (P.hands[0] || '-') + '|' + (P.hands[1] || '-'), playerSpec());
+  // castles close by: build every part now rather than one per frame
+  castleBuildBudget = 99;
+  for (const cs of castlesNear(P.x, P.y, 130)) { const G = castleGPU(cs, true); while (!G.ready && castleBuildBudget > 0) castleGPU(cs, true); }
   return left;
 }
 const prewarmStacks = prewarmScene;
@@ -1160,8 +1187,14 @@ function olText(s, x, y, col, px, lw) {
 function star4(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = i / 8 * TAU - Math.PI / 2, rr2 = i % 2 ? r * 0.28 : r; ctx.lineTo(x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } ctx.closePath(); ctx.fill(); }
 function drawWorldOverlays() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const here = structAt(P.x, P.y);
   for (const e of S.ents) {
     if (e.dead) continue;
+    if (e.team === 2 && e.struct && e.struct !== here) { // the trader is indoors: mark the door
+      if (!e.role || !e.struct.doors.length) continue;
+      const d = e.struct.doors[0], q = project(d.ox, groundH(d.ox, d.oy) + 3.4, d.oy, OV); if (!q) continue;
+      olText(e.role === 'inn' ? 'INN' : '$', q[0], q[1], e.role === 'inn' ? '#9ae0a0' : '#ffd84a', e.role === 'inn' ? 12 : 15); continue;
+    }
     const top = (GIANTS[e.kind] ? 5.6 : e.kind === 'dragoon' ? 3.0 : 2.0) + (e.elev || 0);
     const q = project(e.x, groundH(e.x, e.y) + top, e.y, OV); if (!q) continue;
     const sc = clamp(22 / q[2], 0.7, 1.3);
@@ -1179,7 +1212,7 @@ function drawWorldOverlays() {
       const pf = clamp(e.poise / e.poiseMax, 0, 1); ctx.fillStyle = '#ffd84a'; ctx.fillRect(x0, y + 3, Math.round(w * pf), 1);
       y -= 9;
     }
-    if (e.team === 2) { olText('$', q[0], y - 6, '#ffd84a', 15); y -= 14; }
+    if (e.team === 2 && e.role) { olText(e.role === 'inn' ? 'INN' : '$', q[0], y - 6, e.role === 'inn' ? '#9ae0a0' : '#ffd84a', e.role === 'inn' ? 12 : 15); y -= 14; }
     if (e === S.aim && e !== P.lock) { ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(q[0] - 7, y - 11); ctx.lineTo(q[0] + 7, y - 11); ctx.lineTo(q[0], y - 3); ctx.closePath(); ctx.fill(); }
   }
   // lock-on reticle

@@ -114,5 +114,10 @@ const KINDS = {
   frostgiant: { name: 'frost giant', team: 1, hp: 740, spd: 2.0, dmg: 34, range: 4.4, cd: 2.6, wind: 1.0, r: 1.6, h: 5.8, gold: 95, xp: 170, spr: 'frostgiant', ai: 'giant', boss: true, frost: true, prefP: 0.6, blood: '#9cc0dc', corpse: 'F', loot: [['$armor', 0.85], ['$any', 0.7], ['potion', 0.7], ['claymore', 0.15]] },
   ally: { name: 'royal soldier', team: 0, hp: 70, spd: 3.4, dmg: 10, range: 1.7, cd: 1.1, wind: 0.3, r: 0.45, h: 1.8, spr: 'ally', ai: 'melee', corpse: 'B' },
   guard: { name: 'village guard', team: 0, hp: 110, spd: 3.4, dmg: 12, range: 1.8, cd: 1.0, wind: 0.3, r: 0.45, h: 1.8, spr: 'guard', ai: 'melee', guard: true, corpse: 'B' },
-  merchant: { name: 'merchant', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.5, h: 1.8, spr: 'merchant', ai: 'none' }
+  merchant: { name: 'merchant', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.5, h: 1.8, spr: 'merchant', ai: 'none', role: 'trade' },
+  smith: { name: 'blacksmith', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'smith', ai: 'none', role: 'smith' },
+  innkeeper: { name: 'innkeeper', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'innkeeper', ai: 'none', role: 'inn' },
+  quartermaster: { name: 'quartermaster', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'quartermaster', ai: 'none', role: 'qm' },
+  priest: { name: 'priest', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'priest', ai: 'none' },
+  villager: { name: 'villager', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'villager', ai: 'none' }
 };

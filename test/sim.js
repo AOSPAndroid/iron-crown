@@ -71,6 +71,20 @@ console.log('snow: ents', run('S.ents.map(e=>e.kind).join(",")'), 'hp', run('Mat
 run(`horseAction(); for(let i=0;i<60;i++) step(0.033); S.dirT=0; spawnGroup('dragoons'); sim(30)`);
 console.log('mounted fights: kills', run('S.kills'), 'mounted', run('P.mounted'));
 run(`P.x=0; P.y=500; sim(20); P.x=900; P.y=0; sim(20); P.x=-900; P.y=200; sim(20);`);
+// buildings: walk into Ashford's tavern, rest at the inn, trade with the blacksmith; then storm a castle, its keep, and a ruin at night
+run(`P.x=16; P.y=22; S.horse.x=20; S.horse.y=22; P.mounted=false; for(let i=0;i<40;i++) step(0.033);
+{ const L=villageLayout(villageFor(0,0)), tav=L.structs.find(s=>s.type==='tavern'), d=tav.doors[0]; for(let i=0;i<400 && structAt(P.x,P.y)!==tav;i++){ stick(Math.hypot(P.x-d.ox,P.y-d.oy)>1.2 && !structAt(P.x,P.y) ? d.ox : d.ix, Math.hypot(P.x-d.ox,P.y-d.oy)>1.2 && !structAt(P.x,P.y) ? d.oy : d.iy, 0.3); step(0.033); }
+  release(); var inTavern = structAt(P.x,P.y)===tav; S.ents=S.ents.filter(e=>e.team!==1); const ip=l2w(tav,3.0,-0.6); P.x=ip[0]; P.y=ip[1]; P.hp=10; P.gold+=20; for(let i=0;i<3;i++) step(0.033); S.interact=findInteract(); doInteract(); for(let i=0;i<30;i++) step(0.033); }
+const sm=S.ents.find(e=>e.kind==='smith'); if(sm){ openShop(sm); shopClick({target:{closest:()=>({dataset:{a:'buy',i:'0'}})}}); closeShop(); }`);
+console.log('tavern entered', run('inTavern'), 'hp after inn', run('Math.round(P.hp)'), 'cut', run('S.cut.s && S.cut.s.type'));
+run(`{ const cs=nearestCastle(16,16,900), g=l2w(cs,0,CAS_S+12); P.x=g[0]; P.y=g[1]; S.horse.x=P.x+3; S.horse.y=P.y; S.time=0.4; for(let i=0;i<60;i++) step(0.033);
+  if (P.mounted) horseAction(); const gi=l2w(cs,0,CAS_S-12); P.hp=P.maxHp=2000; for(let i=0;i<450 && castleAt(P.x,P.y)!==cs;i++){ stick(gi[0],gi[1],0.5); keys.KeyJ = i % 8 < 2; step(0.033); } release(); var inCastle=castleAt(P.x,P.y)===cs; var garrisonSeen=S.ents.filter(e=>e.castle===cs).length; sim(45);
+  const K=castleWorld(cs).keep, kd=K.doors[0]; P.x=kd.ox; P.y=kd.oy; for(let i=0;i<200 && structAt(P.x,P.y)!==K;i++){ stick(kd.ix,kd.iy,0.3); step(0.033); } release(); var inKeep=structAt(P.x,P.y)===K;
+  for (const c of castlePlan(cs).chests) { const p=l2w(cs,c.x,c.z+1.3); P.x=p[0]; P.y=p[1]; S.ents=S.ents.filter(e=>e.team!==1); for(let i=0;i<5;i++) step(0.033); S.interact=findInteract(); doInteract(); } sim(20); }`);
+console.log('castle', run('inCastle'), 'garrison', run('garrisonSeen'), 'keep', run('inKeep'), 'looted', run('[...S.looted].filter(k=>k.startsWith("K")).length'), 'kills', run('S.kills'), 'mode', run('S.mode'));
+run(`{ let r=null, bd=1e9; for(let ry=-4;ry<=2;ry++) for(let rx=-4;rx<=3;rx++){ const c=castleFor(rx,ry); if(c && c.kind==='ruin'){ const d=Math.hypot(c.x,c.y); if(d<bd){bd=d;r=c;} } }
+  const p=l2w(r,0,10); P.x=p[0]; P.y=p[1]; S.time=0.88; for(let i=0;i<60;i++) step(0.033); var ruinFoes=S.ents.filter(e=>e.team===1 && castleGround(e.x,e.y)===r).map(e=>e.kind).join(','); sim(40); }`);
+console.log('ruin at night: woke', run('ruinFoes'), 'hp', run('Math.round(P.hp)'), 'mode', run('S.mode'));
 console.log('biomes visited', run('S.curBiome'), 'chunks', run('CHUNKS.size'));
 run(`hurtPlayer(9999,{x:P.x+1,y:P.y,k:{name:'test'}}); for(let i=0;i<80;i++) step(0.033);`);
 console.log('mode after death', run('S.mode'));

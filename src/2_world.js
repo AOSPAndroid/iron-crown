@@ -101,8 +101,9 @@ function nearVillage(x, y, rad) {
 // ---------- statics ----------
 const SDEF = {
   pine: { r: 0.7, h: 5 }, snowpine: { r: 0.7, h: 5 }, oak: { r: 1.0, h: 4.2 }, deadtree: { r: 0.5, h: 4 }, rock: { r: 0.6, h: 0.9 },
-  menhir: { r: 0.7, h: 3 }, palm: { r: 0.5, h: 5 }, bush: { r: 0.5, h: 1, block: false }, house: { r: 2.7, h: 4.5 }, fire: { r: 0.6, h: 1.0 },
-  well: { r: 0.9, h: 1.6 }, ruin: { r: 4.2, h: 7 }, chest: { r: 0.6, h: 0.8 }
+  menhir: { r: 0.7, h: 3 }, palm: { r: 0.5, h: 5 }, bush: { r: 0.5, h: 1, block: false }, fire: { r: 0.6, h: 1.0 },
+  well: { r: 0.9, h: 1.6 }, ruin: { r: 4.2, h: 7 }, chest: { r: 0.6, h: 0.8 },
+  col: { r: 1, h: 3 }, bld: { r: 4, h: 5, block: false }, fence: { r: 1.6, h: 1.0 }, lamp: { r: 0.2, h: 2.7 }, barrel: { r: 0.38, h: 0.9 }, crate: { r: 0.38, h: 0.8 }
 };
 const GC = 8, MAXR = 4.6;
 let STAMP = 1;
@@ -125,43 +126,33 @@ function localNear(c, x, y, rad) {
 
 function genChunk(cx, cy) {
   const R = mulberry((Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663) ^ 0x1700) | 0);
-  const c = { cx, cy, key: cx + ',' + cy, tiles: new Uint8Array(CS * CS), statics: [], grid: [], village: null, biome: 0 };
+  const c = { cx, cy, key: cx + ',' + cy, tiles: new Uint8Array(CS * CS), statics: [], grid: [], village: null, biome: 0, structs: [], lights: [] };
   for (let i = 0; i < 16; i++) c.grid.push([]);
   const ox = cx * CS, oy = cy * CS;
   c.biome = biomeAt(ox + 16, oy + 16);
   const vils = [];
   for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const v = villageFor(cx + i, cy + j); if (v) vils.push(v); }
   const own = villageFor(cx, cy); c.village = own;
+  const lays = vils.map(v => villageLayout(v));
+  const cass = castlesNear(ox + 16, oy + 16, 16 + CAS_S + 50);
   for (let ty = 0; ty < CS; ty++) for (let tx = 0; tx < CS; tx++) {
     const wx = ox + tx + 0.5, wy = oy + ty + 0.5;
     let t = tileBase(wx, wy);
-    for (const v of vils) {
-      const d = Math.hypot(wx - v.x, wy - v.y);
-      if (d < 11.5) t = T_DIRT;
-      else if (v.farm && d < 17 && Math.cos(Math.atan2(wy - v.y, wx - v.x) - v.farmA) > 0.72 && !isWet(t)) t = T_WHEAT;
-    }
+    for (let k = 0; k < vils.length; k++) t = villageTile(vils[k], lays[k], wx, wy, t);
+    for (const cs of cass) t = castleTile(cs, wx, wy, t);
     c.tiles[ty * CS + tx] = t;
   }
   const tileL = (x, y) => c.tiles[(clamp(Math.floor(y - oy), 0, 31)) * CS + clamp(Math.floor(x - ox), 0, 31)];
   const nearVil = (x, y, rad) => vils.some(v => Math.hypot(v.x - x, v.y - y) < rad);
+  const nearCas = (x, y, pad) => cass.some(cs => { const l = w2l(cs, x, y); return Math.abs(l[0]) < CAS_S + pad && Math.abs(l[1]) < CAS_S + pad + (l[1] > 0 && Math.abs(l[0]) < 4 ? 40 : 0); });
 
-  // village structures
-  if (own) {
-    const v = own;
-    const snow = v.b === B_SNOW, sand = v.b === B_DESERT;
-    const hv = snow ? 'snow' : sand ? 'sand' : '';
-    const n = v.nh;
-    for (let i = 0; i < n; i++) {
-      const a = v.gap + 0.6 + i * ((TAU - 1.2) / (n - 1 || 1));
-      const rad = 8.5 + R() * 1.5;
-      addStaticTo(c, 'house', v.x + Math.cos(a) * rad, v.y + Math.sin(a) * rad, { v: hv, rot: a + Math.PI });
-    }
-    addStaticTo(c, 'fire', v.x, v.y, { light: 10, village: v });
-    addStaticTo(c, 'well', v.x - 3.2, v.y + 2.4);
-    c.spawnVillage = v;
-  }
+  // village structures (buildings of neighbouring villages reach into this chunk too)
+  for (const L of lays) injectLayout(c, L);
+  if (own) c.spawnVillage = own;
+  // castles
+  for (const cs of cass) { injectLayout(c, castleWorld(cs)); if (cs.ckey === c.key) c.castle = cs; }
   // ruins + chest
-  if (!own && !nearVil(ox + 16, oy + 16, 34) && R() < 0.06 && (c.biome === B_HEATH || c.biome === B_FOREST || c.biome === B_SNOW || c.biome === B_DESERT || c.biome === B_PLAINS)) {
+  if (!own && !nearVil(ox + 16, oy + 16, 40) && !nearCas(ox + 16, oy + 16, 30) && R() < 0.06 && (c.biome === B_HEATH || c.biome === B_FOREST || c.biome === B_SNOW || c.biome === B_DESERT || c.biome === B_PLAINS)) {
     const rx = ox + 8 + R() * 16, ry = oy + 8 + R() * 14;
     if (!isWet(tileL(rx, ry))) {
       addStaticTo(c, 'ruin', rx, ry);
@@ -184,7 +175,7 @@ function genChunk(cx, cy) {
     if (fbm(x * 0.04 + 50, y * 0.04 + 50) < plan.th) continue;
     const t = tileL(x, y);
     if (isWet(t) || t === T_DIRT || t === T_WHEAT) continue;
-    if (nearVil(x, y, 15)) continue;
+    if (nearVil(x, y, 31) || nearCas(x, y, 7)) continue;
     if (Math.hypot(x - 16, y + 2) < 8 || (Math.abs(x - 16) < 3 && y < 4 && y > -30)) continue; // keep the starting road clear
     if (localNear(c, x, y, 1.6)) continue;
     let roll = R(), type = plan.list[0][0];
@@ -198,7 +189,7 @@ function genChunk(cx, cy) {
   for (let i = 0; i < plan.rocks; i++) {
     const x = ox + R() * CS, y = oy + R() * CS;
     const t = tileL(x, y);
-    if (isWet(t) || t === T_DIRT || nearVil(x, y, 14) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
+    if (isWet(t) || t === T_DIRT || nearVil(x, y, 31) || nearCas(x, y, 7) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
     addStaticTo(c, 'rock', x, y, (t === T_SNOW || t === T_DRIFT) ? { snow: 1 } : (t === T_SAND || t === T_DUNE) ? { sand: 1 } : null);
   }
   return c;
@@ -228,16 +219,12 @@ function forStatics(x, y, rad, cb) {
   return false;
 }
 function blockedAt(x, y, r) {
-  return forStatics(x, y, r, o => { if (!o.block) return false; const dx = x - o.x, dy = y - o.y, rs = r + o.r; return dx * dx + dy * dy < rs * rs; });
+  return forStatics(x, y, r, o => o.block && hitCol(o, x, y, r));
 }
-function collide(e, r) {
+// push e out of every blocking static; (px, py) = its position before this step, so fast movers can't tunnel through walls
+function collide(e, r, px, py) {
   let hit = false;
-  forStatics(e.x, e.y, r, o => {
-    if (!o.block) return false;
-    const dx = e.x - o.x, dy = e.y - o.y, rs = r + o.r, d2 = dx * dx + dy * dy;
-    if (d2 < rs * rs) { const d = Math.sqrt(d2) || 0.01, p = rs - d; e.x += dx / d * p; e.y += dy / d * p; hit = true; }
-    return false;
-  });
+  forStatics(e.x, e.y, r, o => { if (o.block && pushCol(e, o, r, px, py)) hit = true; return false; });
   return hit;
 }
 function findFree(x, y, r, spread) {
@@ -262,4 +249,25 @@ function manageChunks(budget) {
       if (Math.max(Math.abs(c.cx - pcx), Math.abs(c.cy - pcy)) > 4) { onChunkRemoved(c); CHUNKS.delete(k); if (lastChunk === c) lastChunk = null; }
     }
   }
+}
+
+// village ground: a dirt square, paths to every door, the road out through the gap, fields
+function villageTile(v, L, wx, wy, t) {
+  const d = Math.hypot(wx - v.x, wy - v.y);
+  if (d > 50) return t;
+  if (d < 9.5) return T_DIRT;
+  for (const s of L.structs) if (structContains(s, wx, wy)) return T_DIRT;
+  for (const p of L.paths) { const q = segQ(p, wx, wy); if (Math.hypot(wx - q[0], wy - q[1]) < 1.0) return T_DIRT; }
+  const r = L.road, q = segQ(r, wx, wy); if (Math.hypot(wx - q[0], wy - q[1]) < 1.5 && !isWet(t)) return T_DIRT;
+  const F = L.farm;
+  if (F && d > F.r0 && d < F.r1 && Math.abs(angDiff(F.a, Math.atan2(wy - v.y, wx - v.x))) < F.hw && !isWet(t)) return T_WHEAT;
+  return t;
+}
+// castle ground: courtyard (snow stays in the north) and the road from the gate
+function castleTile(cs, wx, wy, t) {
+  const l = w2l(cs, wx, wy), ax = Math.abs(l[0]), az = Math.abs(l[1]);
+  if (ax < CAS_S + 1.5 && az < CAS_S + 1.5) return cs.snow ? (t === T_DRIFT || t === T_SNOW ? t : T_SNOW) : T_DIRT;
+  if (ax < 2.4 + Math.max(0, l[1] - CAS_S) * 0.02 && l[1] > 0 && l[1] < CAS_S + 48) return T_DIRT;
+  if ((ax < CAS_S + 6 && az < CAS_S + 6) && isWet(t)) return cs.snow ? T_SNOW : T_GRASS;
+  return t;
 }

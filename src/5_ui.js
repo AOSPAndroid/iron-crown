@@ -67,7 +67,10 @@ function drawMinimap(x0, y0, sz) {
     let mx = cx + rt * k, my = cy - fw * k;
     const inside = mx > x0 + 2 && mx < x0 + sz - 2 && my > y0 + 2 && my < y0 + sz - 2;
     if (!inside && !clampIt) return null;
-    if (!inside) { mx = clamp(mx, x0 + 2, x0 + sz - 2); my = clamp(my, y0 + 2, y0 + sz - 2); }
+    if (!inside) { // slide onto the rim along the true bearing
+      const ox = mx - cx, oy = my - cy, h = sz / 2 - 4, t = Math.min(Math.abs(ox) > 1e-6 ? h / Math.abs(ox) : 1e9, Math.abs(oy) > 1e-6 ? h / Math.abs(oy) : 1e9);
+      mx = cx + ox * t; my = cy + oy * t;
+    }
     return [mx, my, inside];
   };
   const dot = (q, col, s) => { ctx.fillStyle = '#000'; ctx.fillRect(Math.round(q[0] - s / 2) - 1, Math.round(q[1] - s / 2) - 1, s + 2, s + 2); ctx.fillStyle = col; ctx.fillRect(Math.round(q[0] - s / 2), Math.round(q[1] - s / 2), s, s); };
@@ -76,6 +79,33 @@ function drawMinimap(x0, y0, sz) {
     const v = villageFor(pcx + i, pcy + j); if (!v) continue;
     const q = toMM(v.x, v.y, Math.hypot(v.x - P.x, v.y - P.y) < 160); if (!q) continue;
     ctx.fillStyle = '#000'; ctx.fillRect(Math.round(q[0]) - 3, Math.round(q[1]) - 3, 7, 6); ctx.fillStyle = '#ffd84a'; ctx.fillRect(Math.round(q[0]) - 2, Math.round(q[1]) - 1, 5, 3); ctx.fillRect(Math.round(q[0]) - 1, Math.round(q[1]) - 2, 3, 1);
+  }
+  // buildings and castles: footprints in range, castles beyond it as markers on the rim
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, sz, sz); ctx.clip();
+  const seen = new Set(), poly = (T, lx0, lz0, lx1, lz1, fill, stroke) => {
+    const pts = [[lx0, lz0], [lx1, lz0], [lx1, lz1], [lx0, lz1]].map(p => { const w = l2w(T, p[0], p[1]); return toMM(w[0], w[1], true); });
+    ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.5; ctx.stroke(); }
+  };
+  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+    const c = CHUNKS.get((pcx + i) + ',' + (pcy + j)); if (!c || !c.structs) continue;
+    for (const st of c.structs) { if (seen.has(st.id) || st.kind !== 'bld') continue; seen.add(st.id); if (Math.abs(st.x - P.x) > MM_RANGE + 8 || Math.abs(st.y - P.y) > MM_RANGE + 8) continue; poly(st, -st.hx, -st.hz, st.hx, st.hz, st === S.cut.s ? '#e8c060' : '#5a4632', '#1a120a'); }
+  }
+  ctx.restore();
+  const cl = castlesNear(P.x, P.y, 700).sort((a, b) => Math.hypot(b.x - P.x, b.y - P.y) - Math.hypot(a.x - P.x, a.y - P.y));
+  for (const cs of cl) {
+    const d = Math.hypot(cs.x - P.x, cs.y - P.y), col = cs.kind === 'usurper' ? '#ff6a4a' : cs.kind === 'royal' ? '#7aa8ff' : '#b8b0a0', big = cs === cl[cl.length - 1] ? 1 : 0;
+    if (d < MM_RANGE + 40) {
+      ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, sz, sz); ctx.clip();
+      poly(cs, -CAS_S, -CAS_S, CAS_S, CAS_S, 'rgba(40,34,28,0.55)', col);
+      poly(cs, -11, -14, 11, 2, '#6a6258', '#1a120a');
+      ctx.restore();
+    } else {
+      const q = toMM(cs.x, cs.y, true); if (!q) continue;
+      const X = Math.round(q[0]), Y = Math.round(q[1]), g = big ? 2 : 1;
+      ctx.fillStyle = '#000'; ctx.fillRect(X - 3 * g - 1, Y - 3 * g - 1, 7 * g + 2, 7 * g + 2); ctx.fillStyle = col;
+      ctx.fillRect(X - 3 * g, Y - g, 7 * g, 4 * g); ctx.fillRect(X - 3 * g, Y - 3 * g, 2 * g, 2 * g); ctx.fillRect(X + 2 * g, Y - 3 * g, 2 * g, 2 * g); ctx.fillRect(X, Y - 3 * g, g, 2 * g);
+    }
   }
   if (!P.mounted) { const q = toMM(S.horse.x, S.horse.y, true); if (q) dot(q, q[2] ? '#d8a060' : '#8a6a40', 3); }
   for (const e of S.ents) {
@@ -495,14 +525,27 @@ function invClick(e) {
 
 // shop
 let shopRef = null, shopTab = 'buy';
+// stock by trade: the general merchant (supplies, bows, light gear), the blacksmith (arms and armour),
+// a royal quartermaster (two tiers better)
 function genStock(m) {
   const v = m.village || { seed: 1, tier: 0, name: 'the road' };
-  const R = mulberry(v.seed | 0), t = v.tier | 0, up = Math.min(4, t + 1);
-  const ids = new Set(['potion', 'arrows', 'torch', TIER.sword[t], TIER.sword[up], TIER.armor[t], TIER.armor[up], TIER.shield[up], TIER.bow[up]]);
-  if (t === 0) { ids.add('iron_sword'); ids.add('gambeson'); ids.add('buckler'); ids.add('short_bow'); ids.add('leather'); }
-  if (t >= 1 && R() < 0.6) ids.add('pistol');
-  if (t >= 1 && R() < 0.5) ids.add('claymore');
-  if (R() < 0.35) ids.add('kite_shield');
+  const R = mulberry((v.seed | 0) + (m.role === 'smith' ? 17 : m.role === 'qm' ? 29 : 0)), t = v.tier | 0, up = Math.min(4, t + 1);
+  let ids;
+  if (m.role === 'smith') {
+    ids = new Set([TIER.sword[t], TIER.sword[up], TIER.armor[t], TIER.armor[up], TIER.shield[t], TIER.shield[up]]);
+    if (t === 0) { ids.add('iron_sword'); ids.add('gambeson'); ids.add('leather'); ids.add('buckler'); }
+    if (t >= 1 || R() < 0.5) ids.add('claymore');
+    if (R() < 0.45) ids.add('kite_shield');
+    if (t >= 2) ids.add(TIER.armor[Math.min(4, t + 1)]);
+  } else if (m.role === 'qm') {
+    const q = Math.min(4, t), q0 = Math.max(0, q - 1);
+    ids = new Set(['potion', 'arrows', TIER.sword[q0], TIER.sword[q], TIER.armor[q0], TIER.armor[q], 'tower_shield', 'war_bow', 'pistol', 'claymore']);
+  } else {
+    ids = new Set(['potion', 'arrows', 'torch', TIER.bow[t], TIER.bow[up], 'buckler', TIER.armor[t]]);
+    if (t === 0) { ids.add('short_bow'); ids.add('gambeson'); ids.add('iron_sword'); }
+    if (t >= 1 && R() < 0.6) ids.add('pistol');
+    if (R() < 0.35) ids.add('kite_shield');
+  }
   const out = [];
   for (const id of ids) {
     const it = ITEMS[id];
@@ -516,7 +559,8 @@ function genStock(m) {
 function sellPrice(id) { return id === 'arrows' ? 8 : Math.max(1, Math.floor(ITEMS[id].price * 0.4)); }
 function shopHTML() {
   const m = shopRef, v = m.village;
-  let h = '<div class="hdr"><b>MERCHANT' + (v ? ' OF ' + esc(v.name.toUpperCase()) : '') + '</b><button class="x" data-a="close">✕</button></div>';
+  const title = m.role === 'smith' ? 'BLACKSMITH' : m.role === 'qm' ? 'QUARTERMASTER' : 'MERCHANT';
+  let h = '<div class="hdr"><b>' + title + (v ? ' OF ' + esc(v.name.toUpperCase()) : '') + '</b><button class="x" data-a="close">✕</button></div>';
   h += '<div class="stats">Your purse: <span class="gold">$' + P.gold + '</span> · Bag ' + P.inv.length + '/' + INV_MAX + '</div>';
   h += '<div class="tabs"><button data-a="tab" data-t="buy" class="' + (shopTab === 'buy' ? 'on' : '') + '">Buy</button><button data-a="tab" data-t="sell" class="' + (shopTab === 'sell' ? 'on' : '') + '">Sell</button></div>';
   if (shopTab === 'buy') {

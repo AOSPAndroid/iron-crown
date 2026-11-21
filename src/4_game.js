@@ -56,7 +56,7 @@ const EATK = {
   giant: [{ k: 'slam', wind: 1.1, col: 'r', rad: 5, dmg: 1.0, rec: 1.4 }, { k: 'sweep', wind: 0.8, col: 'y', rng: 4.8, arc: 0.85, dmg: 0.85, rec: 1.1 }, { k: 'throw', wind: 0.9, col: 'r', rad: 2.5, dmg: 0.8, rec: 1.3 }]
 };
 EATK.frostgiant = EATK.giant;
-const POISE = { bandit: 30, soldier: 45, pikeman: 50, musketeer: 30, archer: 30, dragoon: 60, vampire: 50, witch: 40, giant: 230, frostgiant: 250, ally: 60, guard: 70, merchant: 999 };
+const POISE = { bandit: 30, soldier: 45, pikeman: 50, musketeer: 30, archer: 30, dragoon: 60, vampire: 50, witch: 40, giant: 230, frostgiant: 250, ally: 60, guard: 70, merchant: 999, smith: 999, innkeeper: 999, quartermaster: 999, priest: 999, villager: 999 };
 const STYLE_RANKS = [['D', 0, 1.0], ['C', 120, 1.1], ['B', 300, 1.25], ['A', 520, 1.4], ['S', 800, 1.6]];
 
 function newState() {
@@ -66,7 +66,8 @@ function newState() {
     dirT: 6, battle: null, kills: 0, looted: new Set(), lastVillage: { x: 16, y: 16, name: 'Ashford' },
     curBiome: -1, curVillage: null, biomeT: 0, tut: 0, tutStep: 0, tutT: 0, shake: 0, flash: 0, fade: 0, pflash: 0, aim: null, dieT: 0, killer: '',
     interact: null, saveT: 40, flakes: [], horse: { x: 18, y: 3, a: Math.PI * 0.75, state: 'idle', fleeT: 0 },
-    slowT: 0, hitstop: 0, style: 0, styleT: 0, tok: new Set(), tokR: new Set(), fxLight: 0, cueT: 0, mouseAim: false
+    slowT: 0, hitstop: 0, style: 0, styleT: 0, tok: new Set(), tokR: new Set(), fxLight: 0, cueT: 0, mouseAim: false,
+    cut: { s: null, k: 0 }, curCastle: null, curStruct: null, cst: new Map()
   };
   P = {
     x: 16, y: 6, a: -Math.PI / 2, v: 0, vx: 0, vy: 0, kx: 0, ky: 0, hp: 100, maxHp: 100, mounted: false, r: 0.5, team: 0, isPlayer: true,
@@ -181,10 +182,40 @@ function spawnEnt(kind, x, y, opt) {
 }
 function spawnNear(kind, x, y, spread, opt) { const p = findFree(x, y, KINDS[kind].r, spread || 3); return spawnEnt(kind, p[0], p[1], opt); }
 function onChunkCreated(c) {
-  if (c.spawnVillage && S) {
-    const v = c.spawnVillage;
-    spawnEnt('merchant', v.x + 2.6, v.y - 0.4, { home: c.key, village: v, a: Math.PI / 2 });
-    for (let i = 0; i < 2; i++) { const a = v.gap + (i ? 0.35 : -0.35); spawnEnt('guard', v.x + Math.cos(a) * 6.5, v.y + Math.sin(a) * 6.5, { home: c.key, post: { x: v.x + Math.cos(a) * 6.5, y: v.y + Math.sin(a) * 6.5 } }); }
+  if (!S) return;
+  if (c.spawnVillage) {
+    const v = c.spawnVillage, L = villageLayout(v);
+    for (const n of L.npcs) {
+      const k = KINDS[n.kind], o = { home: c.key, village: v, a: n.a, homeA: n.a, struct: n.struct || null, role: k.role };
+      if (n.post) o.post = { x: n.x, y: n.y };
+      spawnEnt(n.kind, n.x, n.y, o);
+    }
+  }
+  if (c.castle) spawnGarrison(c.castle, c.key);
+}
+// redcoat garrisons (usurper), royal guards and a quartermaster (royal); ruins wake up at night (see castleNight)
+function spawnGarrison(cs, key) {
+  const P2 = castlePlan(cs), Wd = castleWorld(cs), D = cs.D + (S.day - 1) * 0.3;
+  const at = (i, jit) => { const p = P2.posts[i % P2.posts.length]; return l2w(cs, p[0] + (jit ? rr(-1, 1) : 0), p[1] + (jit ? rr(-1, 1) : 0)); };
+  if (cs.kind === 'usurper') {
+    const n = clamp(5 + Math.floor(D * 1.6), 5, 10), kinds = ['soldier', 'soldier', 'pikeman', 'musketeer', 'soldier', 'archer', 'soldier', 'pikeman', 'soldier', 'archer'];
+    for (let i = 0; i < n; i++) { const p = at(i, i > 1); const e = spawnEnt(kinds[i], p[0], p[1], { home: key, post: { x: p[0], y: p[1] }, leash: 46, aggroR: 22, D, castle: cs, a: cs.rot }); e.cd = rr(0.5, 1.5); }
+  } else if (cs.kind === 'royal') {
+    for (let i = 0; i < 5; i++) { const p = at(i, false); spawnEnt('ally', p[0], p[1], { home: key, post: { x: p[0], y: p[1] }, a: cs.rot, castle: cs }); }
+    const q = l2w(cs, 7.2, -4.2);
+    spawnEnt('quartermaster', q[0], q[1], { home: key, castle: cs, role: 'qm', struct: Wd.keep, a: headingOf(cs, -1, 0), homeA: headingOf(cs, -1, 0), village: { seed: cs.seed, tier: clamp(Math.floor(cs.D) + 2, 2, 4), name: cs.short } });
+  }
+}
+function castleNight(dt) {
+  if (S.darkness < 0.55) return;
+  for (const cs of castlesNear(P.x, P.y, 90)) {
+    if (cs.kind !== 'ruin' || Math.hypot(cs.x - P.x, cs.y - P.y) > 75) continue;
+    const st = S.cst.get(cs.id) || {}, night = S.day + (S.time < 0.5 ? -1 : 0);
+    if (st.night === night || !CHUNKS.has(cs.ckey)) continue;
+    st.night = night; S.cst.set(cs.id, st);
+    const P2 = castlePlan(cs), D = cs.D + (S.day - 1) * 0.3, n = 2 + Math.floor(D) + (S.bloodMoon ? 2 : 0);
+    for (let i = 0; i < n; i++) { const p = l2w(cs, P2.posts[(i * 3 + 2) % P2.posts.length][0], P2.posts[(i * 3 + 2) % P2.posts.length][1]); spawnEnt(i % 3 === 2 ? 'witch' : 'vampire', p[0], p[1], { home: cs.ckey, post: { x: p[0], y: p[1] }, leash: 50, aggroR: 26, D }); }
+    msg('Shapes stir among the ruins of ' + cs.short + '...', '#d08aff'); sfx('hiss');
   }
 }
 function onChunkRemoved(c) { for (const e of S.ents) if (e.home === c.key) e.dead = true; if (typeof freeChunkTex === 'function') freeChunkTex(c); }
@@ -192,7 +223,8 @@ function onChunkRemoved(c) { for (const e of S.ents) if (e.home === c.key) e.dea
 function pickTarget(e) {
   let best = null, bd = 1e9;
   if (e.team === 1) {
-    if (S.mode === 'play' && P.hp > 0) { bd = dist(e, P) * (e.k.prefP || 0.85); best = P; }
+    const guardP = !e.post || Math.hypot(P.x - e.post.x, P.y - e.post.y) < (e.target === P ? (e.leash || 24) : (e.aggroR || 24)) || (e.castle && castleAt(P.x, P.y) === e.castle);
+    if (S.mode === 'play' && P.hp > 0 && guardP) { bd = dist(e, P) * (e.k.prefP || 0.85); best = P; }
     for (const a of S.ents) { if (a.team !== 0 || a.dead) continue; const d = dist(e, a); if (d < bd) { bd = d; best = a; } }
     if (bd > 70) best = null;
   } else if (e.team === 0) {
@@ -203,9 +235,22 @@ function pickTarget(e) {
   }
   return best;
 }
+const WHISK = [0.55, 1.05, 1.6, 2.2];
 function moveToward(e, tx, ty, spd, dt) {
+  e.navT = (e.navT || 0) - dt;
+  if (e.navT <= 0) { e.navT = 0.25; e.navWP = navPoint(e, tx, ty); }
+  if (e.navWP && Math.hypot(e.navWP[0] - e.x, e.navWP[1] - e.y) > 0.3) { tx = e.navWP[0]; ty = e.navWP[1]; }
   let dx = tx - e.x, dy = ty - e.y; const d = Math.hypot(dx, dy) || 1; let ux = dx / d, uy = dy / d;
-  if (blockedAt(e.x + ux * 1.6, e.y + uy * 1.6, e.r)) { const s = e.strafe, ca = Math.cos(1.0 * s), sa = Math.sin(1.0 * s); const nx = ux * ca - uy * sa, ny = ux * sa + uy * ca; ux = nx; uy = ny; }
+  const look = Math.min(1.5, d + 0.3), rr0 = e.r * 0.9;
+  if (blockedAt(e.x + ux * look, e.y + uy * look, rr0)) {
+    // smallest turn that clears the obstacle; the foe's preferred side wins ties so it doesn't dither
+    let found = false;
+    for (const a of WHISK) {
+      for (const sg of [e.strafe, -e.strafe]) { const s = a * sg, ca = Math.cos(s), sa = Math.sin(s), nx = ux * ca - uy * sa, ny = ux * sa + uy * ca;
+        if (!blockedAt(e.x + nx * 1.2, e.y + ny * 1.2, rr0)) { ux = nx; uy = ny; found = true; e.strafe = sg; break; } }
+      if (found) break;
+    }
+  }
   const t = tileAt(e.x, e.y); const slow = (t === T_WATER || t === T_BOG) ? 0.6 : t === T_DRIFT ? 0.8 : 1;
   e.x += ux * spd * slow * dt; e.y += uy * spd * slow * dt; e.a += clamp(angDiff(e.a, Math.atan2(uy, ux)), -7 * dt, 7 * dt); e.moving = true;
 }
@@ -235,8 +280,10 @@ const inArc = (e, t, rng, arc, dir) => { const dx = t.x - e.x, dy = t.y - e.y, d
 const inLine = (e, t, len, w, dir) => { const dx = t.x - e.x, dy = t.y - e.y, c = Math.cos(dir), s = Math.sin(dir), along = dx * c + dy * s, perp = -dx * s + dy * c; return along > -0.4 && along < len + (t.r || 0.5) && Math.abs(perp) < w / 2 + (t.r || 0.5); };
 const inCircle = (x, y, t, rad) => Math.hypot(t.x - x, t.y - y) < rad + (t.r || 0.5);
 // strike every valid target inside a shape; returns true when the player was hit
-function strike(e, test, dmg, col, opts) {
+function strike(e, test0, dmg, col, opts) {
   opts = opts || {}; let hitP = false;
+  const ox = opts.ox !== undefined ? opts.ox : e.x, oy = opts.oy !== undefined ? opts.oy : e.y;
+  const test = q => test0(q) && !losBlocked(ox, oy, q.x, q.y);
   if (S.mode === 'play') {
     // a dash whose i-frames cover the impact, started inside the hitbox, is a perfect dodge
     const da = P.act, dodging = P.iframes > 0 && da && da.k === 'dash';
@@ -320,15 +367,15 @@ function resolveFoe(e, t) {
       break;
     }
     case 'line': {
-      e.x += Math.cos(e.wdir) * (a.lunge || 0); e.y += Math.sin(e.wdir) * (a.lunge || 0); collide(e, e.r);
+      { const ox = e.x, oy = e.y, Lf = rayFree(e.x, e.y, Math.cos(e.wdir), Math.sin(e.wdir), a.lunge || 0, e.r); e.x += Math.cos(e.wdir) * Lf; e.y += Math.sin(e.wdir) * Lf; collide(e, e.r, ox, oy); }
       strike(e, q => inLine(e, q, a.len, a.w, e.wdir), dm * a.dmg, a.col, { kb: 5 });
       fx({ k: 'thrust', x: e.x, y: e.y, dir: e.wdir, len: a.len, dur: 0.2, col: [1, 0.95, 0.8, 0.9] });
       if (dist(e, P) < 25) sfx('swing');
       break;
     }
     case 'lunge': {
-      const sx = e.x, sy = e.y, L = Math.min(a.len, Math.max(0, dist(e, t) - 0.6));
-      const ox = e.x, oy = e.y; e.x += Math.cos(e.wdir) * L; e.y += Math.sin(e.wdir) * L; collide(e, e.r);
+      const sx = e.x, sy = e.y, L = rayFree(e.x, e.y, Math.cos(e.wdir), Math.sin(e.wdir), Math.min(a.len, Math.max(0, dist(e, t) - 0.6)), e.r);
+      const ox = e.x, oy = e.y; e.x += Math.cos(e.wdir) * L; e.y += Math.sin(e.wdir) * L; collide(e, e.r, ox, oy);
       strike({ x: sx, y: sy, k: e.k, dmgM: e.dmgM }, q => inLine({ x: sx, y: sy }, q, L + 1.2, a.w, e.wdir), dm * a.dmg, a.col, {});
       burst(ox, oy, 1, '#6a2a7a', 8, ['*', '.'], 3, true);
       if (dist(e, P) < 25) sfx('hiss');
@@ -345,7 +392,7 @@ function resolveFoe(e, t) {
     case 'aoe': {
       const o = e.aoe; fx({ k: 'ring', x: o.x, y: o.y, h: 0.2, r0: 0.3, r1: a.rad + 0.4, dur: 0.4, col: [0.6, 1, 0.4, 0.95] });
       for (let i = 0; i < 18; i++) part(o.x + rr(-1.5, 1.5), o.y + rr(-1.5, 1.5), 0.2, 0, 0, rr(4, 8), rr(0.4, 0.8), '*', '#8aff5a', 9, true, 0.45);
-      strike(e, q => inCircle(o.x, o.y, q, a.rad), dm * a.dmg, a.col, { kb: 4 });
+      strike(e, q => inCircle(o.x, o.y, q, a.rad), dm * a.dmg, a.col, { kb: 4, ox: o.x, oy: o.y });
       sfx('fire');
       break;
     }
@@ -416,11 +463,11 @@ function updateFoe(e, t, dt) {
       return;
     }
     case 'gallop': {
-      const a = e.atk, c = Math.cos(e.wdir), s = Math.sin(e.wdir);
+      const a = e.atk, c = Math.cos(e.wdir), s = Math.sin(e.wdir), gx = e.x, gy = e.y;
       e.x += c * a.spd * dt; e.y += s * a.spd * dt; e.a = e.wdir; e.moving = true; e.gT -= dt;
       if (Math.random() < dt * 14) part(e.x - c, e.y - s, 0.1, rr(-1, 1), rr(-1, 1), 1, 0.4, '.', '#c8b898', 6);
       if (!e.hitDone) { const hit = strike(e, q => inCircle(e.x, e.y, q, 1.25), k.dmg * e.dmgM * a.dmg, a.col, { dismount: true, kb: 7 }); if (hit || dist(e, P) < 1.25 + P.r) e.hitDone = true; }
-      if (e.gT <= 0 || collide(e, e.r)) { e.state = 'rec'; e.rt = a.rec; e.cd = 0.6; tokFree(e); }
+      if (e.gT <= 0 || collide(e, e.r, gx, gy)) { e.state = 'rec'; e.rt = a.rec; e.cd = 0.6; tokFree(e); }
       return;
     }
   }
@@ -431,7 +478,8 @@ function updateFoe(e, t, dt) {
     if (d > 14) moveToward(e, t.x, t.y, k.spd, dt);
     else if (d < 7) moveToward(e, e.x - dx, e.y - dy, k.spd * 0.8, dt);
     else { moveToward(e, e.x - dy / d * e.strafe * 3, e.y + dx / d * e.strafe * 3, k.spd * 0.45, dt); if (Math.random() < dt * 0.3) e.strafe *= -1; }
-    if (canAtk && d < k.range && tokTake(e, t)) beginFoeAttack(e, A[0], t);
+    if (canAtk && d < k.range && !losBlocked(e.x, e.y, t.x, t.y, 1.1) && tokTake(e, t)) beginFoeAttack(e, A[0], t);
+    else if (canAtk && d < k.range && d > 7) moveToward(e, t.x, t.y, k.spd, dt);
     return;
   }
   if (k.ai === 'caster') {
@@ -439,7 +487,7 @@ function updateFoe(e, t, dt) {
     if (d > 14) moveToward(e, t.x, t.y, k.spd, dt);
     else if (d < 9) moveToward(e, e.x - dx, e.y - dy, k.spd, dt);
     else { moveToward(e, e.x - dy / d * e.strafe * 3, e.y + dx / d * e.strafe * 3, k.spd * 0.5, dt); if (Math.random() < dt * 0.4) e.strafe *= -1; }
-    if (canAtk && d < k.range && tokTake(e, t)) { beginFoeAttack(e, chooseFoeAttack(e, t, d), t); if (Math.random() < 0.4 && dist(e, P) < 30) sfx('cackle'); }
+    if (canAtk && d < k.range && !losBlocked(e.x, e.y, t.x, t.y, 1.1) && tokTake(e, t)) { beginFoeAttack(e, chooseFoeAttack(e, t, d), t); if (Math.random() < 0.4 && dist(e, P) < 30) sfx('cackle'); }
     return;
   }
   if (k.ai === 'cavalry') {
@@ -456,7 +504,7 @@ function updateFoe(e, t, dt) {
     if (hasTok || d > 4.6) moveToward(e, t.x, t.y, k.spd, dt);
     else { const orb = Math.atan2(e.y - t.y, e.x - t.x) + e.strafe * 0.8; moveToward(e, t.x + Math.cos(orb) * 4, t.y + Math.sin(orb) * 4, k.spd * 0.55, dt); if (Math.random() < dt * 0.25) e.strafe *= -1; e.a = ang; }
   } else e.a += clamp(angDiff(e.a, ang), -5 * dt, 5 * dt);
-  if (canAtk && d < want + 0.4) {
+  if (canAtk && d < want + 0.4 && !losBlocked(e.x, e.y, t.x, t.y)) {
     const a = chooseFoeAttack(e, t, d);
     if (a && tokTake(e, t)) beginFoeAttack(e, a, t);
   }
@@ -466,10 +514,10 @@ function updateAlly(e, t, dt) {
   const k = e.k, dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy), reach = k.range + (t.r || 0.5) + e.r * 0.5;
   if (e.state === 'wind') { e.wt -= dt; e.a = Math.atan2(dy, dx); if (e.wt <= 0) { e.state = 'move'; e.cd = k.cd * rr(0.85, 1.15); if (d < reach + 0.5) { hurtEnt(t, k.dmg * e.dmgM, e.x, e.y, 3, false); fx({ k: 'slash', x: e.x, y: e.y, h: 1.1, dir: e.a, arc: 1, r: 1.6, side: 1, dur: 0.16, col: [1, 1, 1, 0.5] }); if (dist(e, P) < 20) sfx('clang'); } } return; }
   if (d > reach * 0.8) moveToward(e, t.x, t.y, k.spd, dt);
-  if (d < reach && e.cd <= 0) { e.state = 'wind'; e.wt = k.wind; }
+  if (d < reach && e.cd <= 0 && !losBlocked(e.x, e.y, t.x, t.y)) { e.state = 'wind'; e.wt = k.wind; }
 }
 function updateEnt(e, dt) {
-  const k = e.k;
+  const k = e.k, px0 = e.x, py0 = e.y;
   e.cd -= dt; e.hurtT -= dt; e.invT -= dt; e.tpCd -= dt; e.throwCd -= dt; e.trampleCd -= dt; e.tT -= dt; e.moving = false; e.poiseT -= dt;
   if (e.poiseT <= 0 && e.poise < e.poiseMax) e.poise = Math.min(e.poiseMax, e.poise + e.poiseMax * 0.3 * dt);
   if (e.kx || e.ky) { e.x += e.kx * dt; e.y += e.ky * dt; const f = Math.pow(0.004, dt); e.kx *= f; e.ky *= f; if (Math.abs(e.kx) + Math.abs(e.ky) < 0.08) { e.kx = 0; e.ky = 0; } }
@@ -479,7 +527,11 @@ function updateEnt(e, dt) {
     if (Math.random() < dt * 12) part(e.x + rr(-0.4, 0.4), e.y + rr(-0.4, 0.4), rr(0.5, 1.8), 0, 0, 2, 0.35, pick(FLAME), '#ff8a2a', 0, true);
     if (e.dead) return;
   }
-  if (k.ai === 'none') { e.a = Math.atan2(P.y - e.y, P.x - e.x); return; }
+  if (k.ai === 'none') { // townsfolk: idle, turn to face you when you come close (and share their room)
+    const near = dist(e, P) < 6.5 && (!e.struct || structAt(P.x, P.y) === e.struct);
+    const want = near ? Math.atan2(P.y - e.y, P.x - e.x) : (e.homeA !== undefined ? e.homeA : e.a);
+    e.a += clamp(angDiff(e.a, want), -4 * dt, 4 * dt); return;
+  }
   if (e.downT > 0) { e.downT -= dt; e.state = 'move'; e.atk = null; tokFree(e); return; }
   const busy = e.state === 'wind' || e.state === 'aim' || e.state === 'gallop' || e.state === 'rec' || e.state === 'stagger';
   if (!busy && (e.tT <= 0 || !e.target || e.target.dead || (e.target.isPlayer && S.mode !== 'play'))) { e.target = pickTarget(e); e.tT = 0.4 + Math.random() * 0.3; }
@@ -492,11 +544,11 @@ function updateEnt(e, dt) {
     if (e.post) { if (Math.hypot(e.post.x - e.x, e.post.y - e.y) > 1.5) moveToward(e, e.post.x, e.post.y, k.spd * 0.7, dt); }
     else if (e.team === 0) { if (e.leave) moveToward(e, e.x + Math.cos(e.leave) * 5, e.y + Math.sin(e.leave) * 5, k.spd * 0.8, dt); else if (dist(e, P) > 6) moveToward(e, P.x, P.y, k.spd, dt); }
     else if (e.team === 1 && S.mode === 'play' && dist(e, P) < 90) moveToward(e, P.x, P.y, k.spd * 0.6, dt);
-    collide(e, e.r); return;
+    collide(e, e.r, px0, py0); return;
   }
   if (e.team === 1) updateFoe(e, t, dt); else updateAlly(e, t, dt);
-  if (e.post && Math.hypot(e.post.x - e.x, e.post.y - e.y) > 24) e.target = null;
-  collide(e, e.r);
+  if (e.post && Math.hypot(e.post.x - e.x, e.post.y - e.y) > (e.leash || 24)) e.target = null;
+  collide(e, e.r, px0, py0);
 }
 
 function hurtEnt(e, amt, sx, sy, kb, byPlayer, silent, opt) {
@@ -602,6 +654,7 @@ function attackHits(a) {
     if (d > range) continue;
     if (Math.abs(angDiff(a.dir, Math.atan2(dy, dx))) > arc && d > 0.5) continue;
     if (e.elev > 2.2 && !P.mounted) continue;
+    if (losBlocked(P.x, P.y, e.x, e.y)) continue;
     a.hit.add(e); any = true;
     const stg = e.state === 'stagger' || e.downT > 0;
     let dmg = base * mv.dmg * dmgMult() * (a.crit || 1) * (a.sharp ? 1.15 : 1) * (stg ? 1.3 : 1) * rr(0.95, 1.05);
@@ -716,7 +769,7 @@ function captureInput(inp, dt) {
   return { atkP };
 }
 function updatePlayer(dt, inp) {
-  const m = P.mounted;
+  const m = P.mounted, ppx = P.x, ppy = P.y;
   P.invT -= dt; P.hurtT -= dt; P.slowT -= dt; P.iframes -= dt; P.parryT -= dt; P.parryCd -= dt; P.counterT -= dt; P.riposteT -= dt; P.comboT -= dt; P.burstT -= dt;
   P.gunCd[0] -= dt; P.gunCd[1] -= dt; P.stDelay -= dt;
   for (const k in P.buf) P.buf[k] -= dt;
@@ -783,7 +836,7 @@ function updatePlayer(dt, inp) {
       case 'grab': {
         if (!a.thrown && a.t >= 0.22 && a.tgt && !a.tgt.dead) {
           a.thrown = true; const e = a.tgt;
-          e.x = P.x - Math.cos(P.a) * 1.3; e.y = P.y - Math.sin(P.a) * 1.3; collide(e, e.r);
+          const tl = rayFree(P.x, P.y, -Math.cos(P.a), -Math.sin(P.a), 1.3, e.r * 0.8); e.x = P.x - Math.cos(P.a) * tl; e.y = P.y - Math.sin(P.a) * tl; collide(e, e.r, P.x, P.y);
           e.downT = 1.8; e.state = 'move';
           hurtEnt(e, (14 + P.level * 1.5) * dmgMult(), P.x, P.y, 3, true, false, { crit: true });
           addText(e.x, e.y, 2.6, 'THROW!', '#ffd84a', true); S.hitstop = 0.1; S.shake = 0.35; sfx('takedown'); styleAdd(25);
@@ -856,7 +909,7 @@ function updatePlayer(dt, inp) {
   P.x += P.vx * (m ? slow : 1) * dt + P.kx * dt; P.y += P.vy * (m ? slow : 1) * dt + P.ky * dt;
   const kf = Math.pow(0.01, dt); P.kx *= kf; P.ky *= kf;
   P.r = m ? 0.85 : 0.5;
-  if (collide(P, P.r) && m && Math.abs(P.v) > 6) P.v *= 0.6;
+  if (collide(P, P.r, ppx, ppy) && m && Math.abs(P.v) > 6) P.v *= 0.6;
   P.step += Math.hypot(P.vx, P.vy) * dt;
   // weapons go back in their sheaths / holsters / on the back after a few calm seconds, and come out on any combat action
   const engaged = (P.act && P.act.k !== 'dash') || P.blocking || P.lock || P.drawing || NEAR_FOE || P.hurtT > 0;
@@ -897,7 +950,9 @@ function horseAction() {
     return;
   }
   const d = Math.hypot(h.x - P.x, h.y - P.y);
+  const inB = structAt(P.x, P.y);
   if (d < 3.2) mount();
+  else if (inB && inB.kind === 'bld' && inB.type !== 'barn') msg('Your horse waits outside. Step out to call it.');
   else { h.state = 'coming'; msg('You whistle for your horse...'); sfx('whistle'); }
 }
 function mount() { P.mounted = true; P.act = null; P.v = Math.hypot(P.vx, P.vy); S.horse.state = 'ridden'; sfx('neigh'); if (S.tut === 2) tutAdvance(); }
@@ -908,9 +963,17 @@ function updateHorse(dt) {
     const dx = P.x - h.x, dy = P.y - h.y, d = Math.hypot(dx, dy);
     if (d > 120) { const p = findFree(P.x - Math.cos(CAMK.yaw) * 30, P.y - Math.sin(CAMK.yaw) * 30, 0.8, 5); h.x = p[0]; h.y = p[1]; }
     if (d < 2.4) { if (S.mode === 'play') mount(); else h.state = 'idle'; }
-    else { h.x += dx / d * 13 * dt; h.y += dy / d * 13 * dt; h.a = Math.atan2(dy, dx); collide(h, 0.8); if (Math.random() < dt * 12) part(h.x, h.y, 0.1, rr(-1, 1), rr(-1, 1), 1, 0.4, '.', '#c8b898', 6); }
+    else {
+      const ox = h.x, oy = h.y, ent = { x: h.x, y: h.y, r: 0.8, strafe: h.strafe || 1 };
+      moveToward(ent, P.x, P.y, 13, dt); h.strafe = ent.strafe; h.x = ent.x; h.y = ent.y; h.a = Math.atan2(h.y - oy, h.x - ox); collide(h, 0.8, ox, oy);
+      // stuck behind a wall for a while: it finds its own way round
+      h.stuckT = Math.hypot(h.x - ox, h.y - oy) < 2 * dt ? (h.stuckT || 0) + dt : 0;
+      if (h.stuckT > 1.2) { const p = findFree(P.x - Math.cos(P.a) * 2.5, P.y - Math.sin(P.a) * 2.5, 0.8, 2); h.x = p[0]; h.y = p[1]; h.stuckT = 0; }
+      if (Math.random() < dt * 12) part(h.x, h.y, 0.1, rr(-1, 1), rr(-1, 1), 1, 0.4, '.', '#c8b898', 6);
+    }
   } else if (h.state === 'flee') {
-    h.fleeT -= dt; h.x += Math.cos(h.a) * 9 * dt; h.y += Math.sin(h.a) * 9 * dt; collide(h, 0.8);
+    const ox = h.x, oy = h.y;
+    h.fleeT -= dt; h.x += Math.cos(h.a) * 9 * dt; h.y += Math.sin(h.a) * 9 * dt; collide(h, 0.8, ox, oy);
     if (h.fleeT <= 0) h.state = 'idle';
   }
 }
@@ -939,12 +1002,17 @@ function hurtPlayer(amount, src, opts) {
 // ---------- interaction ----------
 function findInteract() {
   let best = null, bd = 3.2;
-  for (const e of S.ents) if (e.kind === 'merchant' && !e.dead) { const d = dist(e, P); if (d < bd + 0.6) { bd = d; best = { type: 'trade', ref: e, label: 'TRADE' }; } }
+  const here = structAt(P.x, P.y);
+  for (const e of S.ents) {
+    if (e.team !== 2 || e.dead || !e.role) continue;
+    const d = dist(e, P); if (d > bd + 0.6 || (e.struct && e.struct !== here) || losBlocked(P.x, P.y, e.x, e.y, 1.2) && d > 2.4) continue;
+    bd = d; best = e.role === 'inn' ? { type: 'inn', ref: e, label: 'REST ' + innCost(e) + 'g' } : { type: 'trade', ref: e, label: 'TRADE' };
+  }
   if (best) return best;
   forStatics(P.x, P.y, 3, o => {
     const d = Math.hypot(o.x - P.x, o.y - P.y) - o.r;
     if (d > 2.4) return false;
-    if (o.type === 'chest' && !S.looted.has(o.id)) best = { type: 'loot', ref: o, label: 'LOOT' };
+    if (o.type === 'chest' && !S.looted.has(o.id) && structAt(o.x, o.y) === here) best = { type: 'loot', ref: o, label: 'LOOT' };
     else if (o.type === 'fire' && !best) best = { type: 'rest', ref: o, label: 'REST' };
     return false;
   });
@@ -957,6 +1025,7 @@ function doInteract() {
   if (it.type === 'trade') openShop(it.ref);
   else if (it.type === 'loot') lootChest(it.ref);
   else if (it.type === 'rest') rest();
+  else if (it.type === 'inn') innRest(it.ref);
   else if (it.type === 'mount') mount();
 }
 function lootChest(o) {
@@ -969,19 +1038,32 @@ function lootChest(o) {
   banner('TREASURE!', '+' + g + ' gold · ' + got.join(', '), 4.5);
   burst(o.x, o.y, 1, '#ffd84a', 14, ['$', '*', '+'], 3, true);
 }
-function rest() {
-  for (const e of S.ents) if (e.team === 1 && !e.dead && dist(e, P) < 28) { msg('You cannot rest with enemies nearby!', '#ff9a7a'); return; }
+function rest(title) {
+  for (const e of S.ents) if (e.team === 1 && !e.dead && dist(e, P) < 28) { msg('You cannot rest with enemies nearby!', '#ff9a7a'); return false; }
   S.fade = 1.6; P.hp = P.maxHp; P.st = P.stMax;
-  const night = S.time > 0.72 || S.time < 0.24;
-  if (night) { if (S.time > 0.72) S.day++; S.time = 0.27; banner('You rest by the fire', 'Dawn breaks over day ' + S.day + '. You are fully healed.', 4); }
-  else banner('You rest by the fire', 'Your wounds are tended. Game saved.', 3.5);
-  const v = nearVillage(P.x, P.y, 20); if (v) S.lastVillage = { x: v.x, y: v.y, name: v.name };
+  const night = S.time > 0.72 || S.time < 0.24, t = title || 'You rest by the fire';
+  if (night) { if (S.time > 0.72) S.day++; S.time = 0.27; banner(t, 'Dawn breaks over day ' + S.day + '. You are fully healed.', 4); }
+  else banner(t, 'Your wounds are tended. Game saved.', 3.5);
+  const v = nearVillage(P.x, P.y, 30); if (v) S.lastVillage = { x: v.x, y: v.y, name: v.name };
   saveGame(); sfx('potion');
+  return true;
+}
+function innCost(e) { const v = e.village || {}; return 5 + 3 * (v.tier | 0); }
+function innRest(e) {
+  const cost = innCost(e), name = e.struct && e.struct.name ? e.struct.name : 'the inn';
+  if (P.gold < cost) { msg('A bed at ' + name + ' costs ' + cost + ' gold.', '#ff9a7a'); sfx('nope'); return; }
+  if (P.hp >= P.maxHp && !(S.time > 0.72 || S.time < 0.24)) { msg('"You look hale enough. Come back when you need a bed."', '#e8dcc0'); return; }
+  const g = P.gold; P.gold -= cost;
+  if (!rest('A night at ' + name)) P.gold = g; else { msg('You pay ' + cost + ' gold for a bed and a hot meal.', '#ffe6a0'); sfx('coin'); }
 }
 
 // ---------- projectiles / particles / drops ----------
-function projBlocked(x, y, elev) {
-  return forStatics(x, y, 0.5, o => { if (!o.block || o.h < elev) return false; const dx = x - o.x, dy = y - o.y, rs = o.r * 0.9; return dx * dx + dy * dy < rs * rs; });
+function projBlocked(x, y, elev, px, py) {
+  return forStatics(x, y, 0.5, o => {
+    if (!o.block || o.h < elev) return false;
+    if (o.seg || o.obox) return hitCol(o, x, y, 0.06) || (px !== undefined && lineHitsCol(o, px, py, x, y));
+    const dx = x - o.x, dy = y - o.y, rs = o.r * 0.9; return dx * dx + dy * dy < rs * rs;
+  });
 }
 function projHitsPlayer(p) {
   if (P.iframes > 0) { if (!p.dodged) { p.dodged = true; perfectDodge(p.src || p); } return false; }
@@ -1021,15 +1103,16 @@ function updateProjs(dt) {
         fx({ k: 'ring', x: p.x, y: p.y, h: 0.2, r0: 0.5, r1: (p.rad || 2.5) + 0.4, dur: 0.3, col: [1, 0.85, 0.6, 0.9] });
         if (dist(p, P) < 22) { sfx('slam'); S.shake = Math.max(S.shake, 0.35); }
         const R = p.rad || 2.5;
-        strike(p.src || p, q => inCircle(p.x, p.y, q, R), p.dmg, 'r', { heavy: true, kb: 6 });
+        strike(p.src || p, q => inCircle(p.x, p.y, q, R), p.dmg, 'r', { heavy: true, kb: 6, ox: p.x, oy: p.y });
         S.marks.shift();
       }
       continue;
     }
     const sp = Math.hypot(p.vx, p.vy), steps = Math.max(1, Math.ceil(sp * dt / 0.6));
     for (let s = 0; s < steps && !p.dead; s++) {
+      const qx = p.x, qy = p.y;
       p.x += p.vx * dt / steps; p.y += p.vy * dt / steps;
-      if (projBlocked(p.x, p.y, p.elev)) { p.dead = true; burst(p.x, p.y, p.elev, p.kind === 'fire' ? '#ff8a2a' : '#d8c8a8', 4, ['*', '.'], 2, p.kind === 'fire'); break; }
+      if (projBlocked(p.x, p.y, p.elev, qx, qy)) { p.dead = true; burst(p.x, p.y, p.elev, p.kind === 'fire' ? '#ff8a2a' : '#d8c8a8', 4, ['*', '.'], 2, p.kind === 'fire'); break; }
       if (p.team === 1) {
         if (S.mode === 'play' && Math.hypot(P.x - p.x, P.y - p.y) < P.r + 0.45) { if (projHitsPlayer(p)) break; else continue; }
         for (const e of S.ents) { if (e.team !== 0 || e.dead) continue; if (Math.hypot(e.x - p.x, e.y - p.y) < e.r + 0.45) { p.dead = true; hurtEnt(e, p.dmg, p.x - p.vx * 0.02, p.y - p.vy * 0.02, 3, false); break; } }
@@ -1102,14 +1185,16 @@ function separate() {
 }
 
 // ---------- world events (director) ----------
+function wildOK(x, y) { return !nearVillage(x, y, 30) && !isWet(tileAt(x, y)) && !inCastleArea(x, y, 8) && !structAt(x, y) && !blockedAt(x, y, 0.6); }
 function groupPos() {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     const a = rr(0, TAU), d = rr(34, 44);
     const x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d;
-    if (!nearVillage(x, y, 24) && !isWet(tileAt(x, y))) return [x, y];
+    if (wildOK(x, y)) return [x, y];
   }
   return null;
 }
+function ringPos(r0, r1) { for (let i = 0; i < 10; i++) { const a = rr(0, TAU), d = rr(r0, r1), x = P.x + Math.cos(a) * d, y = P.y + Math.sin(a) * d; if (wildOK(x, y)) return [x, y]; } return null; }
 function spawnGroup(g) {
   const D = danger(), extra = Math.floor(D * 0.8);
   const gp = groupPos(); if (!gp) return;
@@ -1135,12 +1220,12 @@ function spawnGroup(g) {
     }
     case 'vampires': {
       const n = ri(1, 2) + Math.floor(extra / 2) + (S.bloodMoon ? 2 : 0);
-      for (let i = 0; i < n; i++) { const a = rr(0, TAU), d = rr(26, 34); spawnNear('vampire', P.x + Math.cos(a) * d, P.y + Math.sin(a) * d, 3); }
+      for (let i = 0; i < n; i++) { const q = ringPos(26, 34); if (q) spawnNear('vampire', q[0], q[1], 3); }
       msg(S.bloodMoon ? 'The blood moon calls the vampires...' : 'Something hungry stalks you in the dark...', '#d08aff'); sfx('hiss'); break;
     }
     case 'witches': {
       const n = ri(1, 2) + Math.floor(extra / 3);
-      for (let i = 0; i < n; i++) { const a = rr(0, TAU), d = rr(20, 28); spawnNear('witch', P.x + Math.cos(a) * d, P.y + Math.sin(a) * d, 3); }
+      for (let i = 0; i < n; i++) { const q = ringPos(20, 28); if (q) spawnNear('witch', q[0], q[1], 3); }
       msg('Cackling echoes overhead. Witches!', '#d08aff'); sfx('cackle'); break;
     }
     case 'giant': case 'frostgiant':
@@ -1155,7 +1240,8 @@ function director(dt) {
   let hostile = 0; for (const e of S.ents) if (e.team === 1 && !e.dead && dist(e, P) < 80) hostile++;
   const cap = Math.min(14, (night ? 4 : 3) + Math.floor(D * 1.6));
   if (hostile >= cap) return;
-  const v = nearVillage(P.x, P.y, 34);
+  const v = nearVillage(P.x, P.y, 40);
+  if (inCastleArea(P.x, P.y, 20)) return;
   if (v && !night) return;
   if (v && Math.random() < 0.5) return;
   const b = biomeAt(P.x, P.y), opts = [];
@@ -1207,7 +1293,7 @@ const TUT = [
   ['A BANDIT!', ''],
   ['LOOT', 'He dropped a rusty sword. Walk over it to pick it up.'],
   ['YOUR HORSE', 'Sword equipped. Your horse waits nearby — press HORSE to ride. Riding attacks sweep to the side.'],
-  ['THE REALM', 'Explore! Ashford\'s merchant (by the fire) sells torches, shields, bows and armor. Nights are deadly — carry a torch.']
+  ['THE REALM', 'Explore! In Ashford the merchant sells torches, bows and potions, the blacksmith arms and armour, and the inn has beds. Walk through a door to go inside. Nights are deadly — carry a torch.']
 ];
 function tutPrompt() {
   switch (S.tutStep) {
@@ -1257,7 +1343,14 @@ function applySave(d) {
 }
 
 // ---------- main update ----------
+// cutaway: fade the roof / camera-side walls of the building (or castle) you stand in
+function updateCut(dt) {
+  const C = S.cut, want = S.mode === 'play' || S.mode === 'dying' ? structAt(P.x, P.y) : null, sp = dt / 0.32;
+  if (C.s !== want) { C.k -= sp; if (C.k <= 0) { C.k = 0; C.s = want; } }
+  else if (want) C.k = Math.min(1, C.k + sp);
+}
 function update(dt, inp) {
+  const ux0 = P.x, uy0 = P.y;
   // real-time effects first
   for (const f of S.fx) f.t += dt; S.fx = S.fx.filter(f => f.t < f.dur);
   for (const g of S.ghosts) g.t -= dt; S.ghosts = S.ghosts.filter(g => g.t > 0);
@@ -1276,7 +1369,8 @@ function update(dt, inp) {
   tokClean();
   for (let i = 0; i < S.ents.length; i++) { const e = S.ents[i]; if (!e.dead) updateEnt(e, dw); }
   separate();
-  if (S.mode === 'play') collide(P, P.r);
+  if (S.mode === 'play') collide(P, P.r, ux0, uy0);
+  updateCut(dt);
   updateProjs(dw); updateParts(dw); updateDrops(dt); updateBattle();
   for (const e of S.ents) if (!e.dead && !e.home && dist(e, P) > 110) e.dead = true;
   S.ents = S.ents.filter(e => !e.dead);
@@ -1289,8 +1383,16 @@ function update(dt, inp) {
     S.biomeT = 1;
     const b = biomeAt(P.x, P.y);
     if (b !== S.curBiome) { if (S.curBiome >= 0) msg('You enter ' + BIOME_NAMES[b] + '.', '#9ae0ff'); S.curBiome = b; }
-    const v = nearVillage(P.x, P.y, 15);
+    const v = nearVillage(P.x, P.y, 22);
     if (v !== S.curVillage) { if (v) { msg('Welcome to ' + v.name + '.', '#ffe070'); S.lastVillage = { x: v.x, y: v.y, name: v.name }; } S.curVillage = v; }
+    const cs = castleAt(P.x, P.y);
+    if (cs !== S.curCastle) {
+      if (cs) banner(cs.name.toUpperCase(), cs.kind === 'usurper' ? 'A stronghold of the Usurper. Redcoats hold the walls; the treasury lies in the great hall.' : cs.kind === 'royal' ? 'A seat of the Royal army. The quartermaster in the great hall trades in fine arms.' : 'Long abandoned. Something stirs here after dark.', 4.5, cs.kind === 'usurper' ? '#ff9a7a' : cs.kind === 'royal' ? '#9ac0ff' : '#c8b8a0');
+      S.curCastle = cs;
+    }
+    const st = structAt(P.x, P.y);
+    if (st !== S.curStruct) { if (st && st.name && st.kind !== 'court') msg(st.kind === 'keep' ? 'You enter ' + st.name + '.' : st.name, '#e8dcc0', 3); S.curStruct = st; }
+    if (S.mode === 'play') castleNight(1);
   }
   S.interact = S.mode === 'play' ? findInteract() : null;
   if (S.mode === 'dying') { S.dieT -= dt; if (S.dieT <= 0) showOver(); }

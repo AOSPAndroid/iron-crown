@@ -18,6 +18,9 @@ window.scene = function(opts){
   P.armor=opts.armor||'chainmail'; P.hands=opts.hands||['kite_shield','iron_sword'];
   if (opts.speed) { P.vx=Math.cos(P.a)*opts.speed; P.vy=Math.sin(P.a)*opts.speed; }
   manageChunks(80); S.curBiome=biomeAt(P.x,P.y);
+  CAMK.yaw = CAMK.yawT = opts.yaw===undefined ? -Math.PI/2 : opts.yaw; CAMK.zoomLock = opts.zoom || 0;
+  { const st = structAt(P.x, P.y); S.cut = { s: st, k: st ? 1 : 0 }; S.curCastle = castleAt(P.x, P.y); }
+  if (opts.horse) { S.horse.x = opts.horse[0]; S.horse.y = opts.horse[1]; } else if (structAt(P.x, P.y)) { S.horse.x = P.x + 60; S.horse.y = P.y + 60; }
   const f=P.a, ax=Math.cos(f), ay=Math.sin(f), rx=-ay, ry=ax; window.E=[];
   for (const s of (opts.ents||[])) { const e=spawnEnt(s[0], P.x+ax*s[1]+rx*s[2], P.y+ay*s[1]+ry*s[2], {D:0}); e.a=Math.atan2(P.y-e.y,P.x-e.x); e.cd=99; e.tT=99; e.target=P;
     if (s[3]) { const o=s[3]; if (o.atk!==undefined) { beginFoeAttack(e, EATK[e.kind][o.atk], P); e.wt=(o.frac||0.5)*(e.state==='aim'?e.atk.aim:foeWind(e.atk,e.hitIdx)); if (o.locked) e.locked=true; delete o.atk; delete o.frac; } Object.assign(e,o); }
@@ -36,6 +39,12 @@ window.swing = function(wk, idx, frac, dir){
   P.act={k:'atk', mv, step:idx, wk, it, t:mv.w+mv.a*frac, dir, hit:new Set(), queued:false, mashed:false, sharp:false, crit:0, hand:mainHand(), fxDone:true, cue:true};
   const f=fx({k:'slash', x:P.x, y:P.y, h:P.mounted?1.9:1.05, dir, arc:mv.arc, r:moveRange(mv,it)*0.92, side:mv.sw||1, dur:0.16, col:[1,1,1,0.9], thrust:mv.sw===0}); f.t=0.16*Math.min(0.95, 0.35+frac*0.5);
 };
+// a castle of a kind (and optionally biome) near the origin; returns the castle object
+window.castleOf = function(kind, biome){ let best=null, bd=1e9; for (let ry=-6; ry<=6; ry++) for (let rx=-6; rx<=6; rx++) { const c=castleFor(rx,ry); if (!c || c.kind!==kind || (biome!==undefined && c.b!==biome)) continue; const d=Math.hypot(c.x,c.y); if (d<bd) { bd=d; best=c; } } return best; };
+// world point from castle-local coords, and the camera yaw that looks along a castle-local direction
+window.cl = function(c, lx, lz){ return l2w(c, lx, lz); };
+window.cyaw = function(c, dx, dz){ const d = d2w(c, dx, dz); return Math.atan2(d[1], d[0]); };
+window.vb = function(type){ const L = villageLayout(villageFor(0,0)); return L.structs.find(s => s.type===type); };
 window.findBiome = function(b, minR){ for(let r=minR||150;r<2600;r+=40) for(let k=0;k<24;k++){const a=k/24*Math.PI*2,x=Math.cos(a)*r,y=Math.sin(a)*r; if(biomeAt(x,y)===b && biomeAt(x,y-14)===b && biomeAt(x+8,y)===b && biomeAt(x-8,y)===b && !nearVillage(x,y,30)) return [x,y];} return [0,0]; };
 """
 SCENES = {
@@ -52,6 +61,21 @@ SCENES = {
   'village': "scene({x:16,y:28, a:-Math.PI/2, time:0.9, hands:['torch','iron_sword'], armor:'tunic'})",
   'mounted': """scene({x:16,y:-92, mounted:true, time:0.4, hands:['torch','longsword'], armor:'halfplate', v:9, step:3, ents:[['soldier',3,-2.2,{hurtT:0.1}],['soldier',7,2],['dragoon',12,4,{atk:0,frac:0.5}]],
      pre:()=>{ const mv=MOVES.ride[0]; P.act={k:'atk', mv, step:0, wk:'ride', it:mainItem(), t:mv.w+mv.a*0.5, dir:P.a-Math.PI/2, hit:new Set(), hand:1, fxDone:true}; const f=fx({k:'slash',x:P.x,y:P.y,h:1.9,dir:P.a-Math.PI/2,arc:1.25,r:3.4,side:1,dur:0.16,col:[1,1,1,0.9]}); f.t=0.08; }})""",
+}
+# buildings and castles (positions come from the deterministic layouts)
+BSCENES = {
+  'vil_day': "(() => { const v=villageFor(0,0); return scene({x:v.x, y:v.y+3, a:-Math.PI/2, time:0.42, zoom:2.3, hands:['buckler','iron_sword'], armor:'leather'}); })()",
+  'vil_night': "(() => { const v=villageFor(0,0); return scene({x:v.x+1, y:v.y+2, a:-Math.PI/2, time:0.9, zoom:1.9, hands:['torch','iron_sword'], armor:'leather'}); })()",
+  'house': "(() => { const b=vb('cottage'), p=l2w(b, 0.6, 0.9); return scene({x:p[0], y:p[1], a:headingOf(b,0,-1), time:0.45, yaw:headingOf(b,0,-1), hands:[null,'iron_sword'], armor:'tunic'}); })()",
+  'tavern': "(() => { const b=vb('tavern'), p=l2w(b, -0.4, 1.2); return scene({x:p[0], y:p[1], a:headingOf(b,-1,-0.4), time:0.9, yaw:headingOf(b,0,-1), hands:['torch','iron_sword'], armor:'gambeson'}); })()",
+  'smithy': "(() => { const b=vb('smithy'), p=l2w(b, 0.6, 0.9); return scene({x:p[0], y:p[1], a:headingOf(b,-0.6,-1), time:0.62, yaw:headingOf(b,0,-1), hands:['buckler','iron_sword'], armor:'leather'}); })()",
+  'chapel': "(() => { const b=vb('chapel'), p=l2w(b, 0.0, 3.6); return scene({x:p[0], y:p[1], a:headingOf(b,0,-1), time:0.5, yaw:headingOf(b,0,-1), hands:[null,'iron_sword'], armor:'tunic'}); })()",
+  'castle': "(() => { const c=castleOf('usurper'), p=cl(c, 8, CAS_S+7); return scene({x:p[0], y:p[1], a:headingOf(c,-0.4,-1), time:0.44, yaw:headingOf(c,-0.55,-1), zoom:2.3, hands:['kite_shield','steel_sword'], armor:'chainmail', mounted:true}); })()",
+  'court': "(() => { const c=castleOf('usurper'), p=cl(c, -7, 10); return scene({x:p[0], y:p[1], a:headingOf(c,0,-1), time:0.5, yaw:headingOf(c,0.25,-1), zoom:2.0, hands:['kite_shield','steel_sword'], armor:'chainmail'}); })()",
+  'hall': "(() => { const c=castleOf('usurper'), p=cl(c, 2.8, -5.0); return scene({x:p[0], y:p[1], a:headingOf(c,-0.3,-1), time:0.86, yaw:headingOf(c,0,-1), zoom:1.28, hands:['torch','steel_sword'], armor:'chainmail'}); })()",
+  'royal': "(() => { const c=castleOf('royal'), p=cl(c, 5.0, -3.0); return scene({x:p[0], y:p[1], a:headingOf(c,1,-0.3), time:0.47, yaw:headingOf(c,0,-1), hands:['kite_shield','steel_sword'], armor:'halfplate'}); })()",
+  'ruin': "(() => { const c=castleOf('ruin', 2); return scene({x:c.x-10, y:c.y+CAS_S+9, a:-1.3, time:0.42, zoom:2.3, hands:['torch','longsword'], armor:'chainmail'}); })()",
+  'ruin_in': "(() => { const c=castleOf('ruin', 2), p=cl(c, 6, 16); return scene({x:p[0], y:p[1], a:headingOf(c,0,-1), time:0.86, yaw:headingOf(c,0,-1), zoom:1.6, hands:['torch','longsword'], armor:'chainmail', pre:()=>{ for (const [lx,lz,k] of [[2,8,'vampire'],[10,9,'vampire'],[7,3,'witch']]) { const q=l2w(c, lx, lz); const e=spawnEnt(k, q[0], q[1], {D:0}); e.a=Math.atan2(P.y-e.y,P.x-e.x); e.cd=99; e.tT=99; if(k==='witch') e.elev=1.3; } }}); })()",
 }
 async def shoot(pg, name, js):
     await pg.evaluate(js)
@@ -83,6 +107,10 @@ async def main(w, h, touch, tag, only):
         if not only or 'desert' in only:
             s = await pg.evaluate("findBiome(5)")
             await shoot(pg, tag + '_desert', f"scene({{x:{s[0]},y:{s[1]}, time:0.42, hands:[null,'long_bow'], ents:[['archer',8,0,{{atk:0,frac:0.6}}]], pre:()=>{{ P.hands=['long_bow','long_bow']; P.act={{k:'bow',t:0.8}}; P.drawing=true; P.draw=0.8; }}}})")
+        for k, js in BSCENES.items():
+            if only and k not in only and 'b' not in only: continue
+            if not only and False: continue
+            await shoot(pg, tag + '_' + k, js)
         info = await pg.evaluate("[GLOK, RW, RH, SW, SH, GCH.size, lastRenderMs.toFixed(1)]")
         print(tag, 'GLOK, canvas, scene, chunks, last render ms:', info)
         errs = [e for e in errs if 'GPU stall due to ReadPixels' not in e]
@@ -105,11 +133,30 @@ def grid():
     s = a.width / b.width; b = b.resize((a.width, int(b.height * s)), Image.LANCZOS)
     G = Image.new('RGB', (a.width, a.height + b.height + 8), (0, 0, 0)); G.paste(a, (0, 0)); G.paste(b, (0, a.height + 8)); G.save(SHOTS / 'grid_toon.png')
     print('grid ->', SHOTS / 'grid_toon.png')
+def grid_buildings():
+    from PIL import Image, ImageDraw
+    order = ['vil_day', 'vil_night', 'house', 'tavern', 'smithy', 'chapel', 'castle', 'court', 'hall', 'royal', 'ruin', 'ruin_in']
+    parts = []
+    for tag, cols, tw in (('d', 3, 640), ('m', 6, 260)):
+        ims = [(n, Image.open(SHOTS / f'sc_{tag}_{n}.png').convert('RGB')) for n in order if (SHOTS / f'sc_{tag}_{n}.png').exists()]
+        if not ims: continue
+        th = int(ims[0][1].height * tw / ims[0][1].width)
+        rows = (len(ims) + cols - 1) // cols
+        G = Image.new('RGB', (cols * tw, rows * (th + 18)), (14, 12, 20)); d = ImageDraw.Draw(G)
+        for i, (n, im) in enumerate(ims):
+            x, y = (i % cols) * tw, (i // cols) * (th + 18)
+            G.paste(im.resize((tw, th), Image.LANCZOS), (x, y + 18)); d.text((x + 6, y + 3), n, fill=(240, 220, 160))
+        G.save(SHOTS / f'grid_buildings_{tag}.png'); parts.append(G)
+    W = max(g.width for g in parts); parts = [g.resize((W, int(g.height * W / g.width)), Image.LANCZOS) for g in parts]
+    G = Image.new('RGB', (W, sum(g.height for g in parts) + 8 * (len(parts) - 1)), (0, 0, 0)); y = 0
+    for g in parts: G.paste(g, (0, y)); y += g.height + 8
+    G.save(SHOTS / 'grid_buildings.png'); print('grid ->', SHOTS / 'grid_buildings.png', G.size)
 async def run():
     tags = [a for a in sys.argv[1:] if a in ('d', 'm')] or ['d', 'm']
     only = [a for a in sys.argv[1:] if a not in ('d', 'm')]
     if 'd' in tags: await main(1280, 720, False, 'd', only)
     if 'm' in tags: await main(390, 844, True, 'm', only)
 if __name__ == '__main__':
-    if sys.argv[1:2] == ['grid']: grid()
+    if sys.argv[1:2] == ['grid']: grid(); grid_buildings()
+    elif sys.argv[1:2] == ['gridb']: grid_buildings()
     else: asyncio.run(run())

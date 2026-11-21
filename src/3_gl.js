@@ -65,6 +65,7 @@ uniform vec3 uCamPos, uSunDir, uSunCol, uSkyAmb, uGndAmb, uFogCol, uShadowTint;
 uniform float uFogD, uFogH, uFogMul, uTime, uRim;
 uniform vec4 uLP[8], uLC[8];
 uniform int uNL;
+float gDim = 1.0, gFill = 0.0; // per-fragment: indoor dimming of sun / moon, soft sky fill on shaded walls (architecture)
 // soft, naturalistic lighting: wrapped diffuse with a gradual terminator, hemisphere ambient,
 // faint specular, smooth point-light falloff and a subtle rim (name kept from the old cel shader)
 vec3 toon(vec3 p, vec3 n, vec3 base, vec3 V) {
@@ -73,8 +74,10 @@ vec3 toon(vec3 p, vec3 n, vec3 base, vec3 V) {
   lit = lit * lit * (3.0 - 2.0 * lit) * 0.4 + lit * 0.6;
   vec3 amb = mix(uGndAmb, uSkyAmb, n.y * 0.5 + 0.5);
   vec3 c = base * (amb * 0.85 + 0.05) * mix(mix(uShadowTint, vec3(1.0), 0.45), vec3(1.0), lit) + base * uSunCol * 0.82 * lit;
+  c += base * (uSkyAmb + 0.08) * gFill * (1.0 - lit) * (1.0 - abs(n.y));
   vec3 H = normalize(uSunDir + V);
   c += uSunCol * pow(max(dot(n, H), 0.0), 28.0) * 0.07 * lit;
+  c *= gDim;
   for (int i = 0; i < 8; i++) {
     if (i >= uNL) break;
     vec3 L = uLP[i].xyz - p; float dl = length(L) + 1e-4;
@@ -164,16 +167,43 @@ void main() {
 const FS_MESH = GLSL_LIGHT + `
 in vec3 vPos, vNrm; in vec4 vCol; in vec2 vEx; in float vCut; flat in float vId;
 uniform int uMat;
-uniform float uEmK, uTintA, uOW, uGhost;
-uniform vec3 uTint;
+uniform float uEmK, uTintA, uOW, uGhost, uCutOn;
+uniform vec3 uTint, uPlayer;
+// building cutaway: A = (centre x, z, sin rot, cos rot), B = (half x, half z, floor y, fade),
+// C = (toward-camera dir in the building frame, stub height, wall height), D = (wall band, outside margin, keep occluder off)
+uniform vec4 uCutA, uCutB, uCutC, uCutD, uOcc;
 layout(location=0) out vec4 o;
 layout(location=1) out vec4 o1;
 float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
 vec4 idOut(float w) { float id = vId; return vec4(mod(id, 256.0) / 255.0, floor(id / 256.0) / 255.0, w, 1.0); }
+const float BAY[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+float bayer(vec2 fc) { ivec2 q = ivec2(fc) & 3; return (BAY[q.x + q.y * 4] + 0.5) / 16.0; }
 void main() {
-  if (vCut > 0.5) { ivec2 q = ivec2(gl_FragCoord.xy) & 1; if (q.x + q.y != 0) discard; }
+  bool calm = false;
+  gFill = uCutOn * 0.55;
+  if (uCutB.w > 0.0) {
+    vec2 d = vPos.xz - uCutA.xy;
+    vec2 l = vec2(d.x * uCutA.z - d.y * uCutA.w, d.x * uCutA.w + d.y * uCutA.z);
+    vec2 e = uCutB.xy - abs(l);
+    if (e.x > 0.0 && e.y > 0.0) gDim = 1.0 - uCutD.w * uCutB.w;
+    if (uCutOn > 0.5 && e.x > -uCutD.y && e.y > -uCutD.y) {
+      float de = min(e.x, e.y);
+      vec2 nr = e.x < e.y ? vec2(sign(l.x), 0.0) : vec2(0.0, sign(l.y));
+      bool band = de < uCutD.x;
+      float lim = band && dot(nr, uCutC.xy) > 0.25 ? uCutC.z : uCutC.w;
+      if (uCutD.z > 0.5 && de < -0.12) lim = min(lim, uCutC.z + 1.1); // towers / chimneys outside a roofed building drop low too
+      calm = band || uCutD.z > 0.5;
+      if (vPos.y - uCutB.z > lim + 0.01 && bayer(gl_FragCoord.xy) < uCutB.w) discard;
+    }
+  }
+  if (!calm && vCut > 0.5) { ivec2 q = ivec2(gl_FragCoord.xy) & 1; if (q.x + q.y != 0) discard; }
+  if (uOcc.w > 0.5) { // see-through around the line from the eye to the player (big castle parts, pillars)
+    vec3 a = uCamPos, b = uPlayer + vec3(0.0, 1.1, 0.0), ab = b - a;
+    float t = clamp(dot(vPos - a, ab) / dot(ab, ab), 0.0, 1.0);
+    if (t > 0.04 && t < 0.93 && length(vPos - a - ab * t) < uOcc.z && vPos.y > uPlayer.y + 0.5) { ivec2 q = ivec2(gl_FragCoord.xy) & 1; if (q.x + q.y != 0) discard; }
+  }
   vec3 n = normalize(vNrm);
   vec3 V = normalize(uCamPos - vPos);
   if (dot(n, V) < 0.0) n = -n;
@@ -363,10 +393,14 @@ function updateCamera(dt, snap) {
   if (S.mode === 'title') CAMK.yawT += dt * 0.06;
   CAMK.yaw += angDiff(CAMK.yaw, CAMK.yawT) * Math.min(1, dt * 6);
   const near = S.mode === 'play' && (P.lock || S.ents.some(e => e.team === 1 && !e.dead && Math.abs(e.x - P.x) < 15 && Math.abs(e.y - P.y) < 15));
-  const zt = (P.mounted ? 1.16 : 1) * (near ? 1.1 : 1) * (S.mode === 'title' ? 1.12 : 1);
+  const inB = S.cut && S.cut.s && S.cut.s.roof ? S.cut.k : 0;
+  let cz = 0; { const cs = S.mode === 'play' && typeof castleGround === 'function' ? castleGround(P.x, P.y) : null; if (cs) { const l = w2l(cs, P.x, P.y), o = Math.max(Math.abs(l[0]), Math.abs(l[1])) - CAS_S; cz = clamp(1 - (o - 6) / 30, 0, 1); } }
+  CAMK.cz = (CAMK.cz || 0) + (cz - (CAMK.cz || 0)) * Math.min(1, dt * 1.2);
+  const zt = (P.mounted ? 1.16 : 1) * (near ? 1.1 : 1) * (S.mode === 'title' ? 1.12 : 1) * (1 - 0.13 * inB) * (1 + 0.2 * CAMK.cz * (1 - inB));
   CAMK.zoom += (zt - CAMK.zoom) * Math.min(1, dt * 1.6);
+  if (CAMK.zoomLock) CAMK.zoom = CAMK.zoomLock; // test hook (screenshots)
   const f = camFocus();
-  if (snap || !CAMK.init) { CAMK.fx = f[0]; CAMK.fy = f[1]; CAMK.init = true; CAMK.zoom = zt; }
+  if (snap || !CAMK.init) { CAMK.fx = f[0]; CAMK.fy = f[1]; CAMK.init = true; CAMK.zoom = CAMK.zoomLock || zt; }
   const k = Math.min(1, dt * 7);
   CAMK.fx += (f[0] - CAMK.fx) * k; CAMK.fy += (f[1] - CAMK.fy) * k;
   CAM.a = CAMK.yaw; CAM.c = Math.cos(CAM.a); CAM.s = Math.sin(CAM.a);
@@ -477,14 +511,18 @@ function collectLights() {
   const torch = S.mode !== 'title' && hasTorch();
   if (torch) add(P.x + Math.cos(P.a) * 0.3, P.y + Math.sin(P.a) * 0.3, 9 * fl, [1.0, 0.6, 0.3], 0.12 + d * 0.6, P.mounted ? 2.6 : 1.7);
   else if (d > 0.3) add(P.x, P.y, 4.5, [0.45, 0.55, 0.9], 0.3 * d, 2);
-  if (d > 0.08) {
+  const inS = S.cut && S.cut.s && S.cut.k > 0 ? S.cut.s : null;
+  const lit = (l, gy) => {
+    const inside = !!inS && l.s === inS;
+    if (d < 0.08 && !inside) return;
+    const k = inside ? l.k * 2.3 * Math.max(0.5, d) * (0.4 + 0.6 * S.cut.k) : l.k * d + (l.base || 0);
+    L.push([l.x, (gy === undefined ? groundH(l.x, l.y) : gy) + l.h, l.y, l.r * (l.flick ? fl : 1), l.c[0] * k, l.c[1] * k, l.c[2] * k, (l.x - CAM.x) ** 2 + (l.y - CAM.y) ** 2 - (inside ? 400 : 0)]);
+  };
+  {
     const pcx = Math.floor(CAM.x / CS), pcy = Math.floor(CAM.y / CS);
     for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
-      const c = CHUNKS.get((pcx + i) + ',' + (pcy + j)); if (!c) continue;
-      for (const o of c.statics) {
-        if (o.light) add(o.x, o.y, 8 * fl, [1.0, 0.6, 0.26], 0.55 * d + 0.1, 1.0);
-        else if (o.type === 'house') add(o.x + Math.cos(o.rot) * 2.4, o.y + Math.sin(o.rot) * 2.4, 4, [1.0, 0.72, 0.4], 0.3 * d, 1.4);
-      }
+      const c = CHUNKS.get((pcx + i) + ',' + (pcy + j)); if (!c || !c.lights) continue;
+      for (const l of c.lights) if (Math.abs(l.x - CAM.x) < 40 && Math.abs(l.y - CAM.y) < 40) lit(l, l.gy);
     }
   }
   for (const e of S.ents) { if (e.dead) continue; if (e.burnT > 0) add(e.x, e.y, 5, [1, 0.5, 0.2], 0.6, 1.2); else if (e.kind === 'witch' && e.state === 'wind') add(e.x, e.y, 5, [0.55, 1.0, 0.4], 0.6, 2.6); }
