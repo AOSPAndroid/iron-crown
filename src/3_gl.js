@@ -282,6 +282,7 @@ void main() {
   col += texture(tB, vUV).rgb * uBloomK;
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
   col = mix(vec3(lum), col, uSat) * uGrade * uBright;
+  col = mix(col, col * col * (3.0 - 2.0 * col), 0.35); // a little extra contrast for a moodier look
   vec2 q = vUV - 0.5;
   col *= 1.0 - uVig * dot(q, q) * 1.8;
   col = mix(col, uFlashC, uFlashA);
@@ -421,7 +422,7 @@ function inView(x, y, z, r) {
 // ---------- environment: sun/moon, fog, ambient by time + biome ----------
 const ENV = { sun: [0, 1, 0], sunC: [1, 1, 1], sky: [0.3, 0.35, 0.4], gnd: [0.1, 0.1, 0.1], fog: [0.4, 0.45, 0.5], fogD: 0.02, fogH: 0.2, zen: [0, 0, 0], hor: [0, 0, 0], moon: [0, 1, 0], moonC: [0, 0, 0], sunVis: [0, -1, 0], stars: 0, emK: 0, wind: 1, shTint: [0.7, 0.74, 0.95], rim: 0.5, sat: 1.1, grade: [1, 1, 1], bloom: 0.5, bright: 1 };
 const BIOME_FOG = [
-  [0.66, 0.8, 0.94], [0.56, 0.72, 0.78], [0.8, 0.86, 0.96], [0.6, 0.68, 0.64], [0.74, 0.7, 0.8], [0.94, 0.84, 0.66]
+  [0.56, 0.6, 0.62], [0.46, 0.52, 0.5], [0.7, 0.74, 0.8], [0.46, 0.5, 0.46], [0.58, 0.54, 0.58], [0.74, 0.66, 0.54]
 ];
 let envBiome = [0.66, 0.8, 0.94], envFogK = 1;
 function mix3(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
@@ -439,29 +440,29 @@ function updateEnv(dt) {
   const moonDir = [0.3, 0.75, 0.55]; const ml = Math.hypot(...moonDir); ENV.moon = moonDir.map(v => v / ml);
   const dusk = clamp(1 - Math.abs(d - 0.5) * 2.6, 0, 1);
   if (d < 0.5) ENV.sun = sun.map(v => v / l); else ENV.sun = ENV.moon.slice();
-  const dayC = [0.96, 0.92, 0.82], duskC = [1.0, 0.6, 0.4], nightC = blood ? [0.55, 0.14, 0.12] : [0.3, 0.4, 0.78];
+  const dayC = [0.9, 0.86, 0.76], duskC = [0.92, 0.56, 0.4], nightC = blood ? [0.55, 0.14, 0.12] : [0.3, 0.4, 0.78];
   let sc = mix3(dayC, nightC, d); sc = mix3(sc, duskC, dusk * 0.6);
   ENV.sunC = sc;
-  const skyDay = [0.5, 0.55, 0.66], skyN = blood ? [0.2, 0.06, 0.08] : [0.1, 0.13, 0.32];
+  const skyDay = [0.4, 0.42, 0.46], skyN = blood ? [0.2, 0.06, 0.08] : [0.1, 0.13, 0.32];
   ENV.sky = mix3(skyDay, skyN, d);
-  ENV.gnd = mix3([0.34, 0.32, 0.3], blood ? [0.08, 0.03, 0.03] : [0.05, 0.06, 0.12], d);
+  ENV.gnd = mix3([0.26, 0.24, 0.22], blood ? [0.08, 0.03, 0.03] : [0.05, 0.06, 0.12], d);
   ENV.shTint = mix3([0.74, 0.78, 1.0], [0.7, 0.75, 1.0], d);
-  ENV.rim = 0.55 - d * 0.25;
+  ENV.rim = 0.4 - d * 0.18;
   const fogDay = envBiome, fogN = blood ? [0.14, 0.04, 0.06] : mix3([0.05, 0.07, 0.17], envBiome, 0.08), fogDusk = [0.82, 0.58, 0.5];
   let fc = mix3(fogDay, fogN, d); fc = mix3(fc, fogDusk, dusk * 0.5);
   ENV.fog = fc;
-  ENV.hor = mix3(fc, [1, 1, 1], 0.1 * (1 - d));
-  ENV.zen = mix3([0.32, 0.56, 0.9], blood ? [0.05, 0.0, 0.01] : [0.01, 0.02, 0.06], d);
+  ENV.hor = mix3(fc, [1, 1, 1], 0.04 * (1 - d));
+  ENV.zen = mix3([0.34, 0.4, 0.5], blood ? [0.05, 0.0, 0.01] : [0.01, 0.02, 0.06], d);
   ENV.moonC = (blood ? [1.0, 0.25, 0.18] : [0.9, 0.95, 1.0]).map(v => v * clamp(d * 1.3 - 0.2, 0, 1));
   ENV.stars = clamp(d * 1.4 - 0.4, 0, 1);
   ENV.fogD = 0.008 * envFogK;
   ENV.fogH = (0.08 + d * 0.06) * envFogK * (b === B_SWAMP ? 1.6 : 1);
   ENV.emK = clamp(d * 1.6 - 0.25, 0, 1);
   ENV.wind = b === B_SNOW || b === B_HEATH ? 1.6 : 1;
-  ENV.sat = lerp(1.16, 0.92, d);
-  ENV.grade = blood ? mix3([1, 1, 1], [1.08, 0.86, 0.86], d) : mix3([1.02, 1.0, 0.97], [0.9, 0.96, 1.14], d);
+  ENV.sat = lerp(0.7, 0.62, d);
+  ENV.grade = blood ? mix3([1, 1, 1], [1.08, 0.86, 0.86], d) : mix3([0.98, 0.96, 0.9], [0.86, 0.92, 1.08], d);
   ENV.bloom = 0.35 + d * 0.6;
-  ENV.bright = 1.03;
+  ENV.bright = 0.9;
 }
 
 // ---------- point lights (torch, campfires, windows, fireballs, burning foes) ----------

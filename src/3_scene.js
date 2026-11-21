@@ -33,13 +33,13 @@ function tileNoGen(x, y) {
   return c.tiles[(Math.floor(y) - c.cy * CS) * CS + (Math.floor(x) - c.cx * CS)];
 }
 const tileAtWorld = tileNoGen;
-// bright, clean ground colours per tile (soft zones; vertices average 4 tiles)
+// muted, earthy ground colours per tile (soft zones; vertices average 4 tiles)
 const TCOL = [];
 (() => {
   const T = (t, h) => { TCOL[t] = hexC(h); };
-  T(T_GRASS, '#78c450'); T(T_TALL, '#62b444'); T(T_WATER, '#5aa8a0'); T(T_DIRT, '#d4aa6c'); T(T_WHEAT, '#f0cc5a');
-  T(T_SNOW, '#f4f8ff'); T(T_DRIFT, '#e6eefa'); T(T_ICE, '#b4e2f8'); T(T_SAND, '#f6dc9a'); T(T_DUNE, '#eed08c');
-  T(T_MUD, '#a88456'); T(T_MARSH, '#86ac54'); T(T_BOG, '#5a7e54'); T(T_HEATHER, '#bc94c8'); T(T_ROCKY, '#b0aca0'); T(T_FLOOR, '#56a640');
+  T(T_GRASS, '#6f8f4a'); T(T_TALL, '#5f8242'); T(T_WATER, '#4a7a78'); T(T_DIRT, '#9c8260'); T(T_WHEAT, '#bfa35a');
+  T(T_SNOW, '#dfe4ea'); T(T_DRIFT, '#d2d9e2'); T(T_ICE, '#9cbccc'); T(T_SAND, '#cdb487'); T(T_DUNE, '#c4aa7c');
+  T(T_MUD, '#7e6a4e'); T(T_MARSH, '#6c7e4c'); T(T_BOG, '#4a5e48'); T(T_HEATHER, '#8e7690'); T(T_ROCKY, '#8e8a82'); T(T_FLOOR, '#4e7238');
 })();
 const GRASSY = new Set([T_GRASS, T_TALL, T_FLOOR, T_MARSH, T_HEATHER, T_WHEAT]);
 
