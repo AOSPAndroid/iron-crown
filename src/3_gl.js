@@ -65,25 +65,25 @@ uniform vec3 uCamPos, uSunDir, uSunCol, uSkyAmb, uGndAmb, uFogCol, uShadowTint;
 uniform float uFogD, uFogH, uFogMul, uTime, uRim;
 uniform vec4 uLP[8], uLC[8];
 uniform int uNL;
-// cel-shaded lighting: hard terminator, a small highlight band, cool-tinted shadows, banded point lights, soft rim
+// soft, naturalistic lighting: wrapped diffuse with a gradual terminator, hemisphere ambient,
+// faint specular, smooth point-light falloff and a subtle rim (name kept from the old cel shader)
 vec3 toon(vec3 p, vec3 n, vec3 base, vec3 V) {
   float ndl = dot(n, uSunDir);
-  float lit = smoothstep(-0.02, 0.06, ndl);
-  float mid = smoothstep(0.42, 0.5, ndl);
+  float lit = clamp(ndl * 0.8 + 0.2, 0.0, 1.0);
+  lit = lit * lit * (3.0 - 2.0 * lit) * 0.4 + lit * 0.6;
   vec3 amb = mix(uGndAmb, uSkyAmb, n.y * 0.5 + 0.5);
-  vec3 sh = base * (amb * 0.95 + 0.1) * uShadowTint;
-  vec3 lt = base * (amb * 0.32 + uSunCol * (0.74 + 0.16 * mid));
-  vec3 c = mix(sh, lt, lit);
+  vec3 c = base * (amb * 0.85 + 0.05) * mix(mix(uShadowTint, vec3(1.0), 0.45), vec3(1.0), lit) + base * uSunCol * 0.82 * lit;
+  vec3 H = normalize(uSunDir + V);
+  c += uSunCol * pow(max(dot(n, H), 0.0), 28.0) * 0.07 * lit;
   for (int i = 0; i < 8; i++) {
     if (i >= uNL) break;
     vec3 L = uLP[i].xyz - p; float dl = length(L) + 1e-4;
-    float a = clamp(1.0 - dl / uLP[i].w, 0.0, 1.0);
-    float band = smoothstep(0.0, 0.05, a) * 0.22 + smoothstep(0.32, 0.38, a) * 0.33 + smoothstep(0.62, 0.68, a) * 0.45;
-    float dd = smoothstep(-0.1, 0.1, dot(n, L / dl));
-    c += base * uLC[i].rgb * band * (0.45 + 0.55 * dd);
+    float a = clamp(1.0 - dl / uLP[i].w, 0.0, 1.0); a = a * a * (1.4 - 0.4 * a);
+    float dd = clamp(dot(n, L / dl) * 0.6 + 0.4, 0.0, 1.0);
+    c += base * uLC[i].rgb * a * dd;
   }
-  float rim = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.0);
-  c += (uSkyAmb + uSunCol * 0.4) * rim * uRim * (0.35 + 0.65 * lit);
+  float rim = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 4.0);
+  c += (uSkyAmb + uSunCol * 0.3) * rim * uRim * 0.5 * (0.35 + 0.65 * lit);
   return c;
 }
 float fogF(vec3 p) {
@@ -180,8 +180,9 @@ void main() {
   vec3 base = vCol.rgb;
   if (uGhost > 0.0) { o = vec4(uTint, uGhost * (0.4 + 0.6 * pow(1.0 - max(dot(n, V), 0.0), 1.5))); o1 = vec4(0.0); return; }
   if (uMat == 1) { // terrain: soft painted variation
-    float k = vn(vPos.xz * 0.35) * 0.55 + vn(vPos.xz * 1.3) * 0.3 + vn(vPos.xz * 4.0) * 0.15;
-    base *= 0.9 + 0.2 * k;
+    float k = vn(vPos.xz * 0.35) * 0.45 + vn(vPos.xz * 1.3) * 0.3 + vn(vPos.xz * 4.0) * 0.15 + vn(vPos.xz * 11.0) * 0.1;
+    base *= 0.8 + 0.38 * k;
+    base = mix(base, base * vec3(0.92, 0.88, 0.8), smoothstep(0.55, 0.8, vn(vPos.xz * 0.12 + 7.0)) * 0.5);
   } else if (uMat == 2) { // toon water
     float w = vn(vPos.xz * 0.9 + vec2(uTime * 0.25, uTime * 0.15)) * 0.6 + vn(vPos.xz * 2.3 - vec2(uTime * 0.4, -uTime * 0.2)) * 0.4;
     vec3 c = toon(vPos, vec3(0.0, 1.0, 0.0), base, V);
@@ -277,7 +278,7 @@ void main() {
     if (dn - d0 > max(0.28, d0 * 0.045)) edge = max(edge, w0 * k);
   }
   vec3 col = c.rgb;
-  vec3 line = col * 0.22 + vec3(0.015, 0.012, 0.03);
+  vec3 line = col * 0.55;
   col = mix(col, line, clamp(edge, 0.0, 1.0) * uLineK);
   col += texture(tB, vUV).rgb * uBloomK;
   float lum = dot(col, vec3(0.299, 0.587, 0.114));
@@ -447,7 +448,7 @@ function updateEnv(dt) {
   ENV.sky = mix3(skyDay, skyN, d);
   ENV.gnd = mix3([0.26, 0.24, 0.22], blood ? [0.08, 0.03, 0.03] : [0.05, 0.06, 0.12], d);
   ENV.shTint = mix3([0.74, 0.78, 1.0], [0.7, 0.75, 1.0], d);
-  ENV.rim = 0.4 - d * 0.18;
+  ENV.rim = 0.25 - d * 0.1;
   const fogDay = envBiome, fogN = blood ? [0.14, 0.04, 0.06] : mix3([0.05, 0.07, 0.17], envBiome, 0.08), fogDusk = [0.82, 0.58, 0.5];
   let fc = mix3(fogDay, fogN, d); fc = mix3(fc, fogDusk, dusk * 0.5);
   ENV.fog = fc;

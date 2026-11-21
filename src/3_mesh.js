@@ -487,14 +487,14 @@ const STATIC_BUILD = {
   pine: () => mkPineM(false), snowpine: () => mkPineM(true),
   oak: () => { const mb = new MB(5); mb.tube([0, 0, 0], [0, 2.2, 0], 0.3, 0.2, 8, '#8a5a32', false); for (const a of [0.4, 2.3, 4.2]) mb.tube([0, 1.6, 0], [Math.cos(a) * 0.7, 2.4, Math.sin(a) * 0.7], 0.1, 0.07, 6, '#8a5a32');
     mb.wind = 0.4; const g = ['#4e7a3a', '#5a8644', '#466f36'];
-    [[0, 3.1, 0, 1.35], [0.95, 2.6, 0.3, 0.95], [-0.85, 2.7, -0.4, 1.0], [0.25, 2.5, -1.0, 0.9], [-0.3, 2.55, 0.95, 0.9], [0.2, 3.75, 0.1, 0.85]].forEach((c, i) => mb.sph(c[0], c[1], c[2], c[3], c[3] * 0.86, c[3], g[i % 3]));
+    [[0, 3.1, 0, 1.3], [0.95, 2.6, 0.3, 0.95], [-0.85, 2.7, -0.4, 1.0], [0.25, 2.5, -1.0, 0.9], [-0.3, 2.55, 0.95, 0.9], [0.2, 3.75, 0.1, 0.85], [0.8, 3.35, -0.6, 0.7], [-0.75, 3.4, 0.55, 0.7], [1.1, 2.2, 0.9, 0.6], [-1.1, 2.3, -0.9, 0.6]].forEach((c, i) => mb.ico(c[0], c[1], c[2], c[3], c[3] * 0.82, c[3], g[i % 3], 0.16, 1, 60 + i));
     return mb; },
   deadtree: () => { const mb = new MB(6); const c = '#7a6a5a'; mb.tube([0, 0, 0], [0, 3.3, 0], 0.22, 0.07, 6, c); const R = mulberry(9);
     const br = (p, a, el, L, w, d) => { const q = [p[0] + Math.cos(a) * Math.cos(el) * L, p[1] + Math.sin(el) * L, p[2] + Math.sin(a) * Math.cos(el) * L]; mb.tube(p, q, w, w * 0.6, 5, c); if (d) { br(q, a + 0.6, el + 0.1, L * 0.6, w * 0.7, d - 1); br(q, a - 0.6, el - 0.1, L * 0.6, w * 0.7, d - 1); } };
     for (let k = 0; k < 4; k++) br([0, 1.6 + k * 0.45, 0], k * 1.9 + R(), 0.5, 1.0 - k * 0.15, 0.09, 1); return mb; },
   palm: () => { const mb = new MB(8); let x = 0; for (let i = 0; i < 9; i++) { const nx = Math.sin(i * 0.35) * 0.35; mb.tube([x, i * 0.5, 0], [nx, (i + 1) * 0.5, 0], 0.15, 0.14, 7, i % 2 ? '#b8905a' : '#a07a48'); x = nx; }
     mb.wind = 0.8; for (let k = 0; k < 7; k++) { const a = k / 7 * TAU; let p = [x, 4.5, 0]; for (let s = 1; s <= 4; s++) { const q = [x + Math.cos(a) * s * 0.55, 4.6 + Math.sin(s * 0.7) * 0.5 - s * s * 0.1, Math.sin(a) * s * 0.55]; mb.tube(p, q, 0.16 - s * 0.025, 0.13 - s * 0.025, 4, k % 2 ? '#4e7e3e' : '#44703a'); p = q; } } mb.sph(x, 4.45, 0, 0.18, 0.15, 0.18, '#7a5a2a', 0); return mb; },
-  bush: () => { const mb = new MB(11); mb.wind = 0.3; const R = mulberry(4); for (let k = 0; k < 6; k++) mb.sph((R() - 0.5) * 0.8, 0.35 + R() * 0.3, (R() - 0.5) * 0.8, 0.36 + R() * 0.1, 0.32, 0.36 + R() * 0.1, k % 2 ? '#45703a' : '#52803e');
+  bush: () => { const mb = new MB(11); mb.wind = 0.3; const R = mulberry(4); for (let k = 0; k < 8; k++) mb.ico((R() - 0.5) * 0.85, 0.32 + R() * 0.3, (R() - 0.5) * 0.85, 0.3 + R() * 0.12, 0.28, 0.3 + R() * 0.12, k % 2 ? '#45703a' : '#52803e', 0.16, 1, 80 + k);
     for (let k = 0; k < 6; k++) { const a = k * 1.1; mb.sph(Math.cos(a) * 0.5, 0.58 + (k % 3) * 0.12, Math.sin(a) * 0.5, 0.07, 0.07, 0.07, '#a8404a', 0); } return mb; },
   rock: () => mkRockM(0), rocksnow: () => mkRockM(1), rocksand: () => mkRockM(2), pebble: () => mkRockM(0, true), pebblesnow: () => mkRockM(1, true), pebblesand: () => mkRockM(2, true),
   tuft: () => { const mb = new MB(71); mb.wind = 1; for (let k = 0; k < 5; k++) { const a = k / 5 * TAU + 0.3, x = Math.cos(a) * 0.08, z = Math.sin(a) * 0.08; mb.tri([x - 0.04, 0, z], [x + 0.04, 0, z], [x * 3, 0.42 + (k % 2) * 0.12, z * 3], '#5a8644'); mb.tri([x, 0, z - 0.04], [x, 0, z + 0.04], [x * 3, 0.42 + (k % 2) * 0.12, z * 3], '#4e7a3a'); } return mb; },

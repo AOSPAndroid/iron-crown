@@ -514,7 +514,7 @@ const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); retu
 function fxSlash(B, f) {
   const p = f.t / f.dur, head = easeOut(clamp(p * 1.55, 0, 1)), tail = clamp(p * 1.55 - 0.42, 0, 1) * 0.98;
   if (head - tail < 0.02) return;
-  const alpha = (f.col[3] || 1) * (1 - smoothstep(0.62, 1.0, p)), col = [f.col[0], f.col[1], f.col[2], alpha];
+  const alpha = (f.col[3] || 1) * 0.42 * (1 - smoothstep(0.5, 1.0, p)), col = [f.col[0] * 0.92, f.col[1] * 0.94, f.col[2], alpha];
   const gh = groundH(f.x, f.y), N = 18, th = f.heavy ? 0.62 : 0.42;
   const start = f.dir - f.side * f.arc * 1.05, end = f.dir + f.side * f.arc * 1.05;
   let prev = null;
@@ -1091,7 +1091,7 @@ function post() {
   gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, RT.d); gl.uniform1i(U.tD, 2);
   gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, RT.b); gl.uniform1i(U.tB, 3);
   gl.uniform2f(U.uPx, 1 / SW, 1 / SH); gl.uniform1f(U.uNear, 0.5); gl.uniform1f(U.uFar, 300);
-  gl.uniform1f(U.uLineW, Math.max(2, Math.round(SH / 420))); gl.uniform1f(U.uLineK, 0.92);
+  gl.uniform1f(U.uLineW, Math.max(1, Math.round(SH / 900))); gl.uniform1f(U.uLineK, 0.4);
   const slow = S.slowT > 0 ? clamp(S.slowT / 0.15, 0, 1) : 0;
   gl.uniform1f(U.uBloomK, ENV.bloom); gl.uniform1f(U.uVig, 0.32 + slow * 0.5);
   gl.uniform1f(U.uSat, ENV.sat * (1 - slow * 0.45)); gl.uniform1f(U.uBright, ENV.bright);
