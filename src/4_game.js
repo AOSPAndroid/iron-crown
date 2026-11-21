@@ -844,6 +844,11 @@ function updatePlayer(dt, inp) {
   P.r = m ? 0.85 : 0.5;
   if (collide(P, P.r) && m && Math.abs(P.v) > 6) P.v *= 0.6;
   P.step += Math.hypot(P.vx, P.vy) * dt;
+  // weapons go back in their sheaths / holsters / on the back after a few calm seconds, and come out on any combat action
+  const engaged = (P.act && P.act.k !== 'dash') || P.blocking || P.lock || P.drawing || NEAR_FOE || P.hurtT > 0;
+  const wasSheathed = (P.sheathT || 0) > 2.2;
+  P.sheathT = engaged ? 0 : (P.sheathT || 0) + dt;
+  if (wasSheathed && !P.sheathT && P.hands.some(h => h && ITEMS[h].type !== 'torch')) sfx('equip');
   if (m && P.v > 6 && Math.random() < dt * 14) part(P.x - Math.cos(P.a) * 1.2, P.y - Math.sin(P.a) * 1.2, 0.1, rr(-1, 1), rr(-1, 1), 1, 0.45, t === T_SNOW || t === T_DRIFT ? '*' : '.', TDEF[t][0], 6);
   // trample
   if (m && P.v > 6) for (const e of S.ents) {

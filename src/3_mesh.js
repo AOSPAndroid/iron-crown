@@ -148,18 +148,43 @@ function meshAttribs(vbo) {
 }
 
 // ---------- chibi character rig ----------
-// heights: feet 0, hips 0.5, chest 0.9, head centre ~1.16 (head about 0.36 of the figure)
-const BN = { root: 0, hips: 1, torso: 2, head: 3, armL: 4, armR: 5, legL: 6, legR: 7, cape: 8, hbody: 10, hFL: 11, hFR: 12, hBL: 13, hBR: 14, hneck: 15, htail: 16 };
+// rig units: feet 0, hips 0.5, chest 0.9, neck 0.97 (remapped to adult proportions by remapHuman)
+const BN = { root: 0, hips: 1, torso: 2, head: 3, armL: 4, armR: 5, legL: 6, legR: 7, cape: 8, shinL: 9, shinR: 17, hbody: 10, hFL: 11, hFR: 12, hBL: 13, hBR: 14, hneck: 15, htail: 16 };
 const PIV = [[0, 0, 0], [0, 0.5, 0], [0, 0.55, 0], [0, 0.97, 0], [0.25, 0.9, 0], [-0.25, 0.9, 0], [0.1, 0.48, 0], [-0.1, 0.48, 0], [0, 0.93, -0.16], [0, 0, 0],
   [0, 1.15, 0], [0.2, 0.98, 0.55], [-0.2, 0.98, 0.55], [0.2, 1.0, -0.55], [-0.2, 1.0, -0.55], [0, 1.4, 0.62], [0, 1.38, -0.82], [0, 0, 0]];
 const HAND = { y: 0.5, x: 0.27, z: 0.02 };
+// Adult proportions. Humans are modelled in compact "rig units" and then remapped bone by bone:
+// legs x1.3 (with a knee bone), torso/arms x1.12, hips raised to match. HANDM is the hand after remapping.
+const LEGK = 1.3, TORK = 1.12, LIFT = 0.48 * (LEGK - 1);
+const PIV0 = PIV.map(q => q.slice());
+const BMAP = {}; // bone -> [old pivot y, new pivot y, vertical scale]
+(() => {
+  const ty = 0.55, tyN = ty + LIFT, up = y => tyN + (y - ty) * TORK;
+  BMAP[BN.root] = [0, LIFT, 1];
+  BMAP[BN.hips] = [0.5, 0.5 + LIFT, 1.05];
+  BMAP[BN.torso] = [ty, tyN, TORK];
+  BMAP[BN.head] = [0.97, up(0.97), 1];
+  BMAP[BN.armL] = BMAP[BN.armR] = [0.9, up(0.9), TORK];
+  BMAP[BN.cape] = [0.93, up(0.93), 1.18];
+  BMAP[BN.legL] = BMAP[BN.legR] = BMAP[BN.shinL] = BMAP[BN.shinR] = [0, 0, LEGK];
+  for (const b of [1, 2, 3, 4, 5, 6, 7, 8]) { const m = BMAP[b]; PIV[b][1] = m[1] + (PIV0[b][1] - m[0]) * m[2]; }
+  PIV[BN.shinL] = [0.1, 0.3 * LEGK, 0]; PIV[BN.shinR] = [-0.1, 0.3 * LEGK, 0];
+})();
+const HANDM = { x: HAND.x, y: BMAP[BN.armL][1] + (HAND.y - 0.9) * TORK, z: HAND.z };
+function remapHuman(d) {
+  for (let i = 0; i < d.length; i += 14) {
+    const m = BMAP[d[i + 10]]; if (!m) continue;
+    d[i + 1] = m[1] + (d[i + 1] - m[0]) * m[2];
+    if (m[2] !== 1) { const nx = d[i + 3], ny = d[i + 4] / m[2], nz = d[i + 5], l = Math.hypot(nx, ny, nz) || 1; d[i + 3] = nx / l; d[i + 4] = ny / l; d[i + 5] = nz / l; }
+  }
+}
 const HUMANS = {
   bandit: { coat: '#8a6a44', pants: '#5a4a34', boots: '#3e2c1c', hat: 'hood', hatC: '#6a4e34', belt: '#3a2614', mask: '#4a3a2c', hair: '#3a2a1a' },
-  soldier: { coat: '#a83a32', pants: '#f0ece0', facing: '#2a4aa8', cuff: '#2a4aa8', hat: 'tricorn', lace: '#f4e8b0', cross: true, buttons: true, boots: '#2a2228', R: { t: 'sword', col: '#d8e0e8' } },
-  ally: { coat: '#36589e', pants: '#f0ece0', facing: '#a83a32', cuff: '#a83a32', hat: 'tricorn', lace: '#ffd84a', buttons: true, boots: '#2a2228', R: { t: 'sword', col: '#d8e0e8' } },
-  guard: { coat: '#3a7a54', pants: '#e8e0cc', facing: '#ffd84a', hat: 'morion', buttons: true, boots: '#3a2a1a', R: { t: 'sword', col: '#d8e0e8' }, L: { t: 'shield', id: 'buckler' } },
-  pikeman: { coat: '#9e342c', pants: '#f0ece0', facing: '#2a4aa8', cuff: '#2a4aa8', hat: 'morion', cross: true, boots: '#2a2228', R: { t: 'pike' } },
-  musketeer: { coat: '#a83a32', pants: '#f0ece0', facing: '#2a4aa8', cuff: '#2a4aa8', hat: 'tricorn', lace: '#f4e8b0', cross: true, buttons: true, boots: '#2a2228', R: { t: 'musket' } },
+  soldier: { coat: '#a83a32', pants: '#f0ece0', facing: '#2a4aa8', cuff: '#2a4aa8', hat: 'tricorn', lace: '#f4e8b0', cross: true, buttons: true, boots: '#2a2228', scab: 'empty', R: { t: 'sword', col: '#d8e0e8' } },
+  ally: { coat: '#36589e', pants: '#f0ece0', facing: '#a83a32', cuff: '#a83a32', hat: 'tricorn', lace: '#ffd84a', buttons: true, boots: '#2a2228', scab: 'empty', R: { t: 'sword', col: '#d8e0e8' } },
+  guard: { coat: '#3a7a54', pants: '#e8e0cc', facing: '#ffd84a', hat: 'morion', buttons: true, boots: '#3a2a1a', scab: 'empty', R: { t: 'sword', col: '#d8e0e8' }, L: { t: 'shield', id: 'buckler' } },
+  pikeman: { coat: '#9e342c', pants: '#f0ece0', facing: '#2a4aa8', cuff: '#2a4aa8', hat: 'morion', cross: true, boots: '#2a2228', scab: 'full', R: { t: 'pike' } },
+  musketeer: { coat: '#a83a32', pants: '#f0ece0', facing: '#2a4aa8', cuff: '#2a4aa8', hat: 'tricorn', lace: '#f4e8b0', cross: true, buttons: true, boots: '#2a2228', scab: 'full', R: { t: 'musket' } },
   archer: { coat: '#b84a32', pants: '#7a6a48', hat: 'hood', hatC: '#5a7a34', straps: true, boots: '#4a3420', L: { t: 'bow' } },
   vampire: { coat: '#3a2450', pants: '#2a1a38', boots: '#18101e', skin: '#ece8f8', hair: '#1a1424', eye: '#ff2a3a', eyeEm: true, cape: '#2a1440', capeIn: '#c81e3a', collar: true, buttons: true },
   witch: { robe: '#7a3aa8', coat: '#6a3098', skin: '#9ad070', hair: '#e8e0f0', eye: '#ffe040', eyeEm: true, hat: 'witch', hatC: '#4a2270', broom: true },
@@ -252,10 +277,12 @@ function buildHuman(spec) {
   const skin = s.skin || '#f4c8a0', coat = s.coat || '#9a8a6a', pants = s.pants || '#6a5a42', boots = s.boots || '#3a2a1c';
   // legs + boots
   for (const side of [1, -1]) {
-    mb.bone = side > 0 ? BN.legL : BN.legR;
     const x = side * 0.1;
-    if (!s.robe) mb.cap([x, 0.45, 0], [x, 0.16, 0.0], 0.085, s.greaves ? '#e8eef4' : pants, 8);
-    mb.sph(x, 0.09, 0.035, 0.1, 0.09, 0.14, boots);
+    mb.bone = side > 0 ? BN.legL : BN.legR;
+    if (!s.robe) mb.cap([x, 0.45, 0], [x, 0.3, 0.0], 0.088, s.greaves ? '#e8eef4' : pants, 8);
+    mb.bone = side > 0 ? BN.shinL : BN.shinR;
+    if (!s.robe) { mb.cap([x, 0.3, 0], [x, 0.15, 0.0], 0.078, s.greaves ? '#e8eef4' : pants, 8); if (!giant) mb.tube([x, 0.24, 0], [x, 0.1, 0.01], 0.085, 0.09, 8, boots, true); }
+    mb.sph(x, 0.08, 0.035, 0.09, 0.08, 0.14, boots);
   }
   // hips / skirt
   mb.bone = BN.hips;
@@ -287,10 +314,11 @@ function buildHuman(spec) {
   const hr = giant ? 0.3 : 0.33, hy = giant ? 1.18 : 1.23, headStart = mb.d.length;
   mb.sph(0, hy, 0, hr, hr * 0.96, hr * 0.94, skin);
   // face: big dark eyes with a white catch-light, small mouth, blush
-  const eye = s.eye || '#1e1624', ez = hr * 0.9, ey = hy - 0.01;
-  { const e = mb.em; if (s.eyeEm) mb.em = 1; mb.sph(0.11, ey, ez, 0.045, 0.068, 0.025, eye, 0); mb.sph(-0.11, ey, ez, 0.045, 0.068, 0.025, eye, 0); mb.em = e; }
-  if (!s.eyeEm) { mb.sph(0.125, ey + 0.03, ez + 0.02, 0.015, 0.018, 0.01, '#ffffff', 0); mb.sph(-0.095, ey + 0.03, ez + 0.02, 0.015, 0.018, 0.01, '#ffffff', 0); }
-  mb.box(-0.035, hy - 0.13, hr * 0.92 - 0.01, 0.035, hy - 0.115, hr * 0.92 + 0.01, giant ? '#3a1a10' : '#8a3a30');
+  const eye = s.eye || '#1e1624', ez = hr * 0.9, ey = hy + 0.01;
+  { const e = mb.em; if (s.eyeEm) mb.em = 1; mb.sph(0.1, ey, ez, 0.034, 0.042, 0.022, eye, 0); mb.sph(-0.1, ey, ez, 0.034, 0.042, 0.022, eye, 0); mb.em = e; }
+  if (!s.eyeEm && !giant) { const bc = s.hair || '#3a2414'; mb.box(0.045, ey + 0.065, ez - 0.02, 0.165, ey + 0.092, ez + 0.022, bc); mb.box(-0.165, ey + 0.065, ez - 0.02, -0.045, ey + 0.092, ez + 0.022, bc); }
+  mb.sph(0, hy - 0.05, hr * 0.96, 0.042, 0.06, 0.05, skin);
+  mb.box(-0.05, hy - 0.145, hr * 0.9 - 0.01, 0.05, hy - 0.13, hr * 0.9 + 0.012, giant ? '#3a1a10' : '#6a3028');
   if (s.beard) { mb.sph(0, hy - 0.2, 0.16, 0.24, 0.2, 0.16, s.beard); mb.sph(0, hy - 0.36, 0.14, 0.15, 0.14, 0.11, s.beard); }
   const hair = s.hair || '#5a3a1e';
   const helm = s.hat === 'great' || s.hat === 'sallet' || s.hat === 'coif';
@@ -311,7 +339,7 @@ function buildHuman(spec) {
   }
   if (s.hair && s.hat === 'witch') mb.sph(0, hy - 0.08, -0.2, 0.3, 0.36, 0.12, s.hair);
   { // shrink the whole head group (head, face, hair, hat) about its centre; keep the bottom on the neck
-    const k = giant ? 0.82 : 0.76, bottom = hy - hr * 0.96, ny = bottom + hr * 0.96 * k;
+    const k = giant ? 0.8 : 0.6, bottom = hy - hr * 0.96, ny = bottom + hr * 0.96 * k;
     for (let i = headStart; i < mb.d.length; i += 14) { mb.d[i] *= k; mb.d[i + 1] = ny + (mb.d[i + 1] - hy) * k; mb.d[i + 2] *= k; }
   }
   // arms
@@ -332,6 +360,8 @@ function buildHuman(spec) {
     const it = side > 0 ? s.L : s.R;
     if (it) buildItem(mb, it, side);
   }
+  if (s.scab) buildSheath(mb, [{ slot: 'hip', side: 1, full: s.scab === 'full' }]);
+  if (s.sheath) buildSheath(mb, s.sheath);
   if (s.cape) {
     mb.bone = BN.cape;
     mb.box(-0.21, 0.28, -0.2, 0.21, 0.94, -0.17, s.cape); mb.box(-0.2, 0.3, -0.17, 0.2, 0.92, -0.155, s.capeIn || s.cape); mb.sph(0, 0.93, -0.1, 0.24, 0.06, 0.12, s.cape);
@@ -342,11 +372,83 @@ function buildHuman(spec) {
     for (let k = 0; k < 9; k++) { const a = k / 9 * TAU; mb.beam([0, 0.42, -0.6], [Math.cos(a) * 0.16, 0.42 + Math.sin(a) * 0.16, -1.05], 0.04, '#e8c060'); }
     mb.sph(0, 0.42, -0.62, 0.08, 0.08, 0.06, '#8a4a20', 0);
   }
+  remapHuman(mb.d);
   if (giant) {
     const k = s.scale || 3.0;
     for (let i = 0; i < mb.d.length; i += 14) { mb.d[i] *= k; mb.d[i + 1] *= k; mb.d[i + 2] *= k; }
   }
   return mb;
+}
+// weapons worn on the body (rig units): sword scabbards on the hip, claymore / bow / shield on the back, quiver, pistol holster
+function buildSheath(mb, list) {
+  const leather = '#3a2616', metal = '#c8b070';
+  const nrm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  const hilt = (top, dir, len, guard, gripC, bladeTier) => {
+    const g1 = [top[0] + dir[0] * len, top[1] + dir[1] * len, top[2] + dir[2] * len];
+    mb.beam([top[0] - guard, top[1], top[2]], [top[0] + guard, top[1], top[2]], 0.034, bladeTier >= 4 ? '#ffe080' : '#c8a048');
+    mb.tube(top, g1, 0.024, 0.022, 5, gripC || '#5a3418', true);
+    mb.sph(g1[0], g1[1], g1[2], 0.035, 0.035, 0.035, '#c8a048', 0);
+  };
+  for (const w of list) {
+    const it = w.it || {}, sd = w.side || 1;
+    switch (w.slot) {
+      case 'hip': {
+        mb.bone = BN.hips;
+        const top = [sd * 0.22, 0.6, 0.1], bot = [sd * 0.31, 0.1, -0.34];
+        mb.tube(top, bot, 0.042, 0.03, 6, leather, true);
+        mb.tube(top, [lerp(top[0], bot[0], 0.07), lerp(top[1], bot[1], 0.07), lerp(top[2], bot[2], 0.07)], 0.05, 0.05, 6, metal, true);
+        mb.sph(bot[0], bot[1], bot[2], 0.036, 0.04, 0.036, metal, 0);
+        mb.beam([sd * 0.2, 0.6, 0.12], [sd * 0.16, 0.66, 0.0], 0.03, leather);
+        if (w.full) hilt(top, nrm([top[0] - bot[0], top[1] - bot[1], top[2] - bot[2]]), 0.16, 0.09, null, it.tier || 0);
+        break;
+      }
+      case 'back2': {
+        mb.bone = BN.torso;
+        const top = [0.27, 0.98, -0.25], bot = [-0.3, 0.12, -0.28];
+        mb.tube(top, bot, 0.05, 0.038, 6, leather, true);
+        mb.sph(bot[0], bot[1], bot[2], 0.044, 0.05, 0.044, metal, 0);
+        mb.beam([0.22, 0.95, 0.16], [-0.22, 0.6, 0.17], 0.04, leather);
+        if (w.full) hilt(top, nrm([top[0] - bot[0], top[1] - bot[1], top[2] - bot[2]]), 0.28, 0.16, null, 0);
+        break;
+      }
+      case 'bowback': {
+        mb.bone = BN.torso;
+        const a = [-0.3, 1.06, -0.25], b = [0.3, 0.26, -0.25], N = 8; let prev = null;
+        for (let i = 0; i <= N; i++) { const t = i / N, bow = Math.sin(t * Math.PI) * 0.14, p = [lerp(a[0], b[0], t) + bow * 0.6, lerp(a[1], b[1], t) + bow * 0.45, -0.25 - bow * 0.5]; if (prev) mb.tube(prev, p, 0.03, 0.03, 5, '#9a6232'); prev = p; }
+        mb.beam(a, b, 0.012, '#fff8e0');
+        break;
+      }
+      case 'quiver': {
+        mb.bone = BN.torso;
+        const top = [-0.13, 1.02, -0.25], bot = [-0.22, 0.5, -0.28];
+        mb.tube(bot, top, 0.07, 0.075, 8, '#6a4224', true);
+        mb.tube(top, [-0.12, 1.06, -0.25], 0.08, 0.08, 8, '#3a2414', true);
+        for (let k = 0; k < 4; k++) { const ox = (k % 2 ? 0.03 : -0.03), oz = (k < 2 ? 0.025 : -0.025); const q = [top[0] + ox, top[1] + 0.12, top[2] + oz]; mb.beam([top[0] + ox, top[1], top[2] + oz], q, 0.016, '#c8945a'); mb.tri([q[0] - 0.035, q[1] - 0.06, q[2]], [q[0] + 0.035, q[1] - 0.06, q[2]], [q[0], q[1] + 0.03, q[2]], k % 2 ? '#e8e0d0' : '#a8403a'); }
+        mb.beam([0.2, 0.95, 0.15], [-0.18, 0.56, 0.16], 0.035, leather);
+        break;
+      }
+      case 'shback': {
+        mb.bone = BN.torso;
+        const id = it.id;
+        if (id === 'buckler') { mb.push().tr(0, 0.72, -0.24).rx(-Math.PI / 2).cyl(0, 0, 0, 0.26, 0.26, 0.06, 12, '#a86a32', '#c88a48').cyl(0, 0.06, 0, 0.1, 0.06, 0.04, 10, '#d8dde2').pop(); }
+        else {
+          const tower = id === 'tower_shield', W = tower ? 0.34 : 0.28, top = 0.72 + (tower ? 0.46 : 0.36), bot = 0.72 + (tower ? -0.56 : -0.48), z = -0.27;
+          const fc = tower ? '#2a4ab0' : '#3e5ea8';
+          const pts = tower ? [[-W, top], [W, top], [W, bot], [-W, bot]] : [[-W, top], [W, top], [W, 0.67], [0, bot], [-W, 0.67]];
+          for (let i = 1; i < pts.length - 1; i++) mb.tri([pts[0][0], pts[0][1], z], [pts[i + 1][0], pts[i + 1][1], z], [pts[i][0], pts[i][1], z], fc);
+          for (let i = 0; i < pts.length; i++) { const p0 = pts[i], p1 = pts[(i + 1) % pts.length]; mb.beam([p0[0], p0[1], z - 0.01], [p1[0], p1[1], z - 0.01], 0.05, '#c8a048'); }
+          mb.bc(0, (top + bot) / 2 + 0.06, z - 0.012, 0.06, (top - bot) * 0.62, 0.012, '#e8c050'); mb.bc(0, (top + bot) / 2 + 0.14, z - 0.012, W * 1.3, 0.06, 0.012, '#e8c050');
+        }
+        break;
+      }
+      case 'holster': {
+        mb.bone = BN.hips;
+        mb.box(sd * 0.2, 0.36, 0.0, sd * 0.29, 0.6, 0.12, leather);
+        if (w.full) { mb.push().tr(sd * 0.245, 0.6, 0.06).rx(-0.5).box(-0.03, 0, -0.03, 0.03, 0.14, 0.04, '#8a5a2e').pop(); }
+        break;
+      }
+    }
+  }
 }
 function buildHorse(o) {
   const mb = new MB(33);
@@ -355,11 +457,14 @@ function buildHorse(o) {
   mb.sph(0, 1.15, 0, 0.38, 0.36, 0.82, coat);
   mb.sph(0, 1.2, 0.45, 0.36, 0.36, 0.38, coat); mb.sph(0, 1.2, -0.5, 0.38, 0.36, 0.38, coat);
   if (o.saddle) { mb.sph(0, 1.48, -0.02, 0.4, 0.06, 0.42, cloth); mb.sph(0, 1.54, -0.05, 0.27, 0.1, 0.3, '#6a3a1c'); mb.sph(0, 1.62, -0.25, 0.18, 0.08, 0.05, '#6a3a1c'); mb.bc(0.34, 1.18, 0, 0.02, 0.36, 0.04, '#3a2414'); mb.bc(-0.34, 1.18, 0, 0.02, 0.36, 0.04, '#3a2414'); }
-  for (const [b, x, z] of [[BN.hFL, 0.2, 0.55], [BN.hFR, -0.2, 0.55], [BN.hBL, 0.2, -0.55], [BN.hBR, -0.2, -0.55]]) {
-    mb.bone = b;
-    mb.cap([x, 0.95, z], [x, 0.15, z], 0.09, coat, 8);
-    if (o.stockings) mb.tube([x, 0.45, z], [x, 0.14, z], 0.1, 0.1, 8, '#f4f0e6', false);
-    mb.sph(x, 0.07, z + 0.02, 0.11, 0.08, 0.13, dark, 0);
+  for (const [b, lb, x, z] of [[BN.hFL, 1, 0.2, 0.55], [BN.hFR, 2, -0.2, 0.55], [BN.hBL, 3, 0.2, -0.55], [BN.hBR, 4, -0.2, -0.55]]) {
+    mb.bone = b; const kneeY = HPIVL[lb][1];
+    mb.cap([x, 0.98, z], [x, kneeY, z], z > 0 ? 0.105 : 0.12, coat, 8);
+    mb.bone = lb;
+    mb.cap([x, kneeY, z], [x, 0.17, z], 0.07, coat, 8);
+    mb.sph(x, 0.19, z + 0.01, 0.085, 0.07, 0.09, coat, 0);
+    if (o.stockings) mb.tube([x, 0.42, z], [x, 0.14, z], 0.085, 0.09, 8, '#f4f0e6', false);
+    mb.sph(x, 0.07, z + 0.02, 0.1, 0.08, 0.12, dark, 0);
   }
   mb.bone = BN.hneck;
   mb.cap([0, 1.3, 0.6], [0, 1.78, 0.9], 0.25, coat, 8);
@@ -377,6 +482,7 @@ function buildHorse(o) {
 }
 
 // ---------- scenery (one mesh per static type, drawn instanced) ----------
+const HPIVL = { 1: [0.2, 0.52, 0.55], 2: [-0.2, 0.52, 0.55], 3: [0.2, 0.56, -0.55], 4: [-0.2, 0.56, -0.55] };
 const STATIC_BUILD = {
   pine: () => mkPineM(false), snowpine: () => mkPineM(true),
   oak: () => { const mb = new MB(5); mb.tube([0, 0, 0], [0, 2.2, 0], 0.3, 0.2, 8, '#8a5a32', false); for (const a of [0.4, 2.3, 4.2]) mb.tube([0, 1.6, 0], [Math.cos(a) * 0.7, 2.4, Math.sin(a) * 0.7], 0.1, 0.07, 6, '#8a5a32');

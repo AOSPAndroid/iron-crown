@@ -621,7 +621,9 @@ function boneLocal(o, piv, k, yaw, pitch, roll, ox, oy, oz) {
 const ease = t => t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
 const lerpA = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
 // arm angles are [pitch, yaw, roll]: pitch < 0 lifts the arm forward, yaw > 0 swings it to the model's left (+X), roll is outward
-const walkA = (side, ph, spd) => [Math.sin(ph) * 0.55 * spd * -side * 0.9 - 0.05, 0, 0.08 + (1 - spd) * 0.04];
+const runK = spd => clamp((spd - 0.55) / 0.45, 0, 1);
+// arms swing against the legs; running pumps them harder and carries them bent forward
+const walkA = (side, ph, spd) => { const r = runK(spd); return [Math.sin(ph) * (0.42 + 0.36 * r) * spd * -side - 0.05 - 0.22 * r * spd, 0, 0.08 + (1 - spd) * 0.04 + 0.06 * r]; };
 const guardA = side => [-1.05, -side * 0.45, -0.15];
 function swingA(side, sw, u) {
   const sd = sw * -side;
@@ -653,37 +655,68 @@ function swingU(a) {
 }
 // o: { k, ph, spd, aL, aR, tw, lean, flinch, legs, cape, breath, nod, hipY }
 function computeHumanBones(o) {
-  const k = o.k || 1, ph = o.ph || 0, spd = o.spd || 0;
+  const k = o.k || 1, ph = o.ph || 0, spd = o.spd || 0, run = runK(spd), sn = Math.sin(ph), cs = Math.cos(ph), walking = !o.legs;
   for (const m of BW) m.set(UNITM);
-  const bob = Math.abs(Math.sin(ph)) * 0.05 * spd * k + (o.breath || 0) + (o.hipY || 0) * k;
-  boneLocal(BW[BN.hips], PIV[BN.hips], k, Math.sin(ph) * 0.08 * spd + (o.tw || 0) * 0.3, 0, 0, 0, bob, 0);
-  const tw = (o.tw || 0) * 0.7;
-  boneLocal(TMPM, PIV[BN.torso], k, tw, (o.lean || 0) + spd * 0.1 - (o.flinch || 0) * 0.35, 0); m4mul(BW[BN.torso], BW[BN.hips], TMPM);
-  boneLocal(TMPM, PIV[BN.head], k, -tw * 0.5, -(o.flinch || 0) * 0.25 + (o.nod || 0) - (o.lean || 0) * 0.4, 0); m4mul(BW[BN.head], BW[BN.torso], TMPM);
+  const bob = walking ? ((0.5 + 0.5 * Math.cos(2 * ph)) * (0.03 + 0.05 * run) - 0.025 * run) * spd * k : 0;
+  const hipRoll = walking ? cs * 0.05 * spd : 0;
+  boneLocal(BW[BN.hips], PIV[BN.hips], k, (walking ? sn * 0.14 * spd : 0) + (o.tw || 0) * 0.3, 0, hipRoll, 0, bob + (o.breath || 0) + (o.hipY || 0) * k, 0);
+  const tw = (o.tw || 0) * 0.7 - (walking ? sn * 0.24 * spd : 0);
+  boneLocal(TMPM, PIV[BN.torso], k, tw, (o.lean || 0) + spd * (0.05 + 0.17 * run) - (o.flinch || 0) * 0.35, -hipRoll * 0.7); m4mul(BW[BN.torso], BW[BN.hips], TMPM);
+  boneLocal(TMPM, PIV[BN.head], k, -tw * 0.6, -(o.flinch || 0) * 0.25 + (o.nod || 0) - (o.lean || 0) * 0.4 - spd * 0.1 * run, hipRoll * 0.5); m4mul(BW[BN.head], BW[BN.torso], TMPM);
   for (const side of [1, -1]) {
     const a = (side > 0 ? o.aL : o.aR) || walkA(side, ph, spd);
     boneLocal(TMPM, PIV[side > 0 ? BN.armL : BN.armR], k, a[1], a[0], side * a[2]); m4mul(BW[side > 0 ? BN.armL : BN.armR], BW[BN.torso], TMPM);
-    let lp = Math.sin(ph) * 0.62 * spd * side, lr = 0;
+    // thigh: negative pitch = forward. Knee flexes while the leg swings forward, a little in stance.
+    let lp = sn * (0.46 + 0.3 * run) * spd * side, lr = side * 0.02, kn = Math.max(0.04, (Math.max(0, -cs * side) * (0.6 + 0.95 * run) + 0.06 + 0.14 * run) * spd);
     switch (o.legs) {
-      case 'ride': lp = -0.95; lr = side * 0.42; break;
-      case 'sit': lp = -1.35; lr = side * 0.12; break;
-      case 'dash': lp = side > 0 ? -0.8 : 0.65; lr = side * 0.05; break;
-      case 'lunge': lp = side > 0 ? -0.55 : 0.45; lr = side * 0.08; break;
-      case 'brace': lp = side > 0 ? -0.25 : 0.2; lr = side * 0.22; break;
+      case 'ride': lp = -0.95; lr = side * 0.42; kn = 1.05; break;
+      case 'sit': lp = -1.35; lr = side * 0.12; kn = 1.4; break;
+      case 'dash': lp = side > 0 ? -0.8 : 0.65; lr = side * 0.05; kn = side > 0 ? 0.75 : 0.45; break;
+      case 'lunge': lp = side > 0 ? -0.55 : 0.45; lr = side * 0.08; kn = side > 0 ? 0.45 : 0.15; break;
+      case 'brace': lp = side > 0 ? -0.25 : 0.2; lr = side * 0.22; kn = 0.3; break;
     }
-    boneLocal(TMPM, PIV[side > 0 ? BN.legL : BN.legR], k, 0, lp, lr); m4mul(BW[side > 0 ? BN.legL : BN.legR], BW[BN.hips], TMPM);
+    const lb = side > 0 ? BN.legL : BN.legR, sb = side > 0 ? BN.shinL : BN.shinR;
+    boneLocal(TMPM, PIV[lb], k, 0, lp, lr); m4mul(BW[lb], BW[BN.hips], TMPM);
+    boneLocal(TMPM, PIV[sb], k, 0, kn, 0); m4mul(BW[sb], BW[lb], TMPM);
   }
   boneLocal(TMPM, PIV[BN.cape], k, 0, 0.12 + (o.cape || 0) + Math.sin(S.t * 3.1 + ph) * 0.05 * (0.4 + spd), 0); m4mul(BW[BN.cape], BW[BN.torso], TMPM);
   for (let i = 0; i < 18; i++) BONES.set(BW[i], i * 16);
 }
+// horse gaits, blended by speed: 4-beat walk, diagonal trot, transverse gallop.
+// off = phase of FL, FR, BL, BR in the stride; duty = share of the stride the hoof is on the ground
+const GAITS = [
+  { off: [0.25, 0.75, 0.0, 0.5], duty: 0.66, A: 0.3, F: 0.8, bob: 0.025, pitch: 0.012, nod: 0.05, beat: 2 },
+  { off: [0.0, 0.5, 0.5, 0.0], duty: 0.5, A: 0.42, F: 1.05, bob: 0.07, pitch: 0.02, nod: 0.04, beat: 2 },
+  { off: [0.58, 0.7, 0.0, 0.12], duty: 0.38, A: 0.66, F: 1.3, bob: 0.13, pitch: 0.1, nod: 0.16, beat: 1 }
+];
+const HLEGS = [[BN.hFL, 1, 0], [BN.hFR, 2, 1], [BN.hBL, 3, 2], [BN.hBR, 4, 3]];
+function gaitAt(g) {
+  let a, b, w;
+  if (g < 0.4) { a = GAITS[0]; b = GAITS[1]; w = smooth(clamp((g - 0.22) / 0.14, 0, 1)); }
+  else { a = GAITS[1]; b = GAITS[2]; w = smooth(clamp((g - 0.55) / 0.15, 0, 1)); }
+  const L = (x, y) => x + (y - x) * w;
+  return { off: a.off.map((v, i) => L(v, b.off[i])), duty: L(a.duty, b.duty), A: L(a.A, b.A), F: L(a.F, b.F), bob: L(a.bob, b.bob), pitch: L(a.pitch, b.pitch), nod: L(a.nod, b.nod), beat: w > 0.5 ? b.beat : a.beat };
+}
+// stride length (world units per full cycle) so hooves don't skate: short walk steps, long gallop bounds
+const strideOf = g => lerp(1.7, 6.0, smooth(clamp((g - 0.15) / 0.6, 0, 1)));
 function computeHorseBones(ps, spd, rear) {
   for (const m of BW) m.set(UNITM);
-  const g = spd;
-  boneLocal(BW[BN.hbody], PIV[BN.hbody], 1, 0, Math.sin(ps * 2) * 0.05 * g - (rear || 0), 0, 0, Math.abs(Math.sin(ps)) * 0.12 * g, 0);
-  const legs = [[BN.hFL, 0], [BN.hFR, 0.7], [BN.hBL, Math.PI], [BN.hBR, Math.PI + 0.7]];
-  for (const [b, o] of legs) { boneLocal(TMPM, PIV[b], 1, 0, Math.sin(ps + o) * 0.75 * g, 0); m4mul(BW[b], BW[BN.hbody], TMPM); }
-  boneLocal(TMPM, PIV[BN.hneck], 1, 0, -Math.sin(ps * 2) * 0.12 * g + Math.sin(S.t * 0.8) * 0.04 * (1 - g), 0); m4mul(BW[BN.hneck], BW[BN.hbody], TMPM);
-  boneLocal(TMPM, PIV[BN.htail], 1, Math.sin(S.t * 1.3) * 0.2, 0.25 + g * 0.6, 0); m4mul(BW[BN.htail], BW[BN.hbody], TMPM);
+  const mv = clamp(spd / 0.12, 0, 1), G = gaitAt(spd), ph = ps / TAU;
+  const bob = G.bob * (0.5 + 0.5 * Math.cos(TAU * ph * G.beat)) * mv + (1 - mv) * Math.sin(S.t * 1.6) * 0.008;
+  const pitch = G.pitch * Math.sin(TAU * ph) * mv - (rear || 0);
+  boneLocal(BW[BN.hbody], PIV[BN.hbody], 1, 0, pitch, 0, 0, bob, 0);
+  for (const [ub, lb, i] of HLEGS) {
+    const u = ((ph + G.off[i]) % 1 + 1) % 1, front = i < 2;
+    let ang, fold;
+    if (u < G.duty) { ang = lerp(-G.A, G.A, u / G.duty); fold = 0.04; }
+    else { const t = (u - G.duty) / (1 - G.duty); ang = lerp(G.A, -G.A, smooth(t)); fold = Math.sin(Math.PI * t) * G.F; }
+    ang *= mv; fold *= mv;
+    boneLocal(TMPM, PIV[ub], 1, 0, ang - (front ? 0 : pitch * 0.5), 0); m4mul(BW[ub], BW[BN.hbody], TMPM);
+    boneLocal(TMPM, HPIVL[lb], 1, 0, front ? fold : -fold * 0.65, 0); m4mul(BW[lb], BW[ub], TMPM);
+  }
+  const nod = -pitch * 1.2 + G.nod * Math.sin(TAU * ph + 0.8) * mv + (1 - mv) * Math.sin(S.t * 0.8) * 0.04;
+  boneLocal(TMPM, PIV[BN.hneck], 1, 0, nod, 0); m4mul(BW[BN.hneck], BW[BN.hbody], TMPM);
+  boneLocal(TMPM, PIV[BN.htail], 1, Math.sin(S.t * 1.3) * 0.2 * (1 - mv * 0.5), 0.25 + spd * 0.55 + bob * 2, 0); m4mul(BW[BN.htail], BW[BN.hbody], TMPM);
   for (let i = 0; i < 18; i++) BONES.set(BW[i], i * 16);
 }
 let MESHU = null, idSeq = 1;
@@ -708,17 +741,31 @@ function horseMesh(key, o) { return namedMesh('Hs|' + key, () => buildHorse(o));
 const PLAYER_HORSE = { coat: '#b0703c', dark: '#3a2414', saddle: true, cloth: '#3a7ae8', blaze: true };
 const DRAGOON_HORSE = { coat: '#4a3424', dark: '#1a100a', saddle: true, cloth: '#d83a30', stockings: true };
 const PLAYER_CAPE = { cape: '#c8282a', capeIn: '#8a1418' };
+const playerSheathed = () => S.mode === 'title' || (P.sheathT || 0) > 2.2;
+function playerKey() { return 'P|' + P.armor + '|' + (P.hands[0] || '-') + '|' + (P.hands[1] || '-') + '|' + (playerSheathed() ? 's' : 'd'); }
 function playerSpec() {
-  const look = ARMOR_LOOK[P.armor] || ARMOR_LOOK.tunic;
+  const look = ARMOR_LOOK[P.armor] || ARMOR_LOOK.tunic, sheathed = playerSheathed();
   const two = twoHanded() ? ITEMS[P.hands[1]] : null;
-  let L = null, R = null;
-  if (two) { if (two.type === 'bow') L = itemSpec(two.id); else R = itemSpec(two.id); }
-  else { L = itemSpec(P.hands[0]); R = itemSpec(P.hands[1]); }
-  return Object.assign({ skin: '#f8cca4', hair: '#6a3e1e' }, look, PLAYER_CAPE, { L, R });
+  let L = null, R = null; const sheath = [];
+  if (two) {
+    const sp = itemSpec(two.id);
+    if (two.type === 'bow') { if (sheathed) sheath.push({ slot: 'bowback', it: sp }); else L = sp; sheath.push({ slot: 'quiver' }); }
+    else { if (sheathed) sheath.push({ slot: 'back2', it: sp, full: true }); else { R = sp; sheath.push({ slot: 'back2', it: sp }); } }
+  } else {
+    for (const h of [0, 1]) {
+      const id = P.hands[h], it = id && ITEMS[id], sp = itemSpec(id), side = h === 0 ? 1 : -1;
+      let inHand = !!sp;
+      if (it && it.type === 'sword') { sheath.push({ slot: 'hip', side: -side, it: sp, full: sheathed }); inHand = !sheathed; }
+      else if (it && it.type === 'shield' && sheathed) { sheath.push({ slot: 'shback', it: sp }); inHand = false; }
+      else if (it && it.type === 'gun') { sheath.push({ slot: 'holster', side, it: sp, full: sheathed }); inHand = !sheathed; }
+      if (inHand) { if (h === 0) L = sp; else R = sp; }
+    }
+  }
+  return Object.assign({ skin: '#f8cca4', hair: '#6a3e1e' }, look, PLAYER_CAPE, { L, R, sheath });
 }
 let TORCH_TIP = null, WEAPON_TIP = null, NEAR_FOE = false;
 function handPoint(boneM, model, side, lx, ly, lz) {
-  const b = boneM, x = side * HAND.x + lx, y = HAND.y + ly, z = HAND.z + lz;
+  const b = boneM, x = side * HANDM.x + lx, y = HANDM.y + ly, z = HANDM.z + lz;
   const bx = b[0] * x + b[4] * y + b[8] * z + b[12], by = b[1] * x + b[5] * y + b[9] * z + b[13], bz = b[2] * x + b[6] * y + b[10] * z + b[14];
   return [model[0] * bx + model[4] * by + model[8] * bz + model[12], model[1] * bx + model[5] * by + model[9] * bz + model[13], model[2] * bx + model[6] * by + model[10] * bz + model[14]];
 }
@@ -726,7 +773,7 @@ function playerPose() {
   const a = P.act, m = P.mounted, two = twoHanded() ? ITEMS[P.hands[1]] : null;
   const spd = m ? 0 : clamp(Math.hypot(P.vx, P.vy) / 4.9, 0, 1), ph = P.step * 2.3;
   const mh = mainHand(), it = mainItem(), combat = NEAR_FOE || !!P.lock;
-  const o = { ph, spd, cape: m ? 0.25 + clamp(Math.abs(P.v) / 10, 0, 1) * 0.9 : spd * 0.7, breath: Math.sin(S.t * 2) * 0.006, legs: m ? 'ride' : undefined, aL: null, aR: null, tw: 0, lean: m ? clamp(Math.abs(P.v) / 10, 0, 1) * 0.15 : 0 };
+  const o = { ph, spd, cape: m ? 0.2 + clamp(Math.abs(P.v) / 10, 0, 1) * 0.45 : spd * 0.35, breath: Math.sin(S.t * 2) * 0.006, legs: m ? 'ride' : undefined, aL: null, aR: null, tw: 0, lean: m ? clamp(Math.abs(P.v) / 10, 0, 1) * 0.15 : 0 };
   const set = (side, v) => { if (side > 0) o.aL = v; else o.aR = v; };
   for (const side of [1, -1]) {
     const id = P.hands[side > 0 ? 0 : 1], item = id && ITEMS[id];
@@ -769,7 +816,7 @@ function playerPose() {
       if (!m) o.legs = 'brace';
       break;
     }
-    case 'dash': set(1, [0.75, 0, 0.35]); set(-1, [0.75, 0, 0.35]); o.lean = 0.5; o.legs = 'dash'; o.cape = 0.9; break;
+    case 'dash': set(1, [0.75, 0, 0.35]); set(-1, [0.75, 0, 0.35]); o.lean = 0.5; o.legs = 'dash'; o.cape = 0.55; break;
     case 'bow': set(1, [-1.52, -0.12, 0]); set(-1, [-1.4, -0.62, 0]); o.tw = -0.25; break;
     case 'shoot': { const s = a.hand === 0 ? 1 : -1; set(s, [-1.55, -s * 0.05, 0]); break; }
     case 'parry': { const kind = offKind(); if (kind === 'parryW') set(wS, [-1.85, -wS * 0.95, 0.3]); else { set(1, [-1.45, 0.35, 0.3]); set(-1, [-1.45, -0.35, 0.3]); } o.lean = 0.05; break; }
@@ -786,7 +833,7 @@ function playerPose() {
 }
 function drawPlayer() {
   const spec = playerSpec(), m = P.mounted, dying = S.mode === 'dying' || S.mode === 'over';
-  const key = 'P|' + P.armor + '|' + (P.hands[0] || '-') + '|' + (P.hands[1] || '-');
+  const key = playerKey();
   const mesh = humanMesh(key, spec), gh = groundH(P.x, P.y), yaw = yawOf(P.a);
   const o = playerPose();
   const charge = P.act && P.act.k === 'charge', full = charge ? (CHARGE_FULL[weaponKey(mainItem())] || 0.7) : 0;
@@ -799,11 +846,12 @@ function drawPlayer() {
   setId(1);
   const wS = mainHand() === 0 ? 1 : -1, armB = wS > 0 ? BN.armL : BN.armR, it = mainItem();
   if (m) {
-    const hs = clamp(Math.abs(P.v) / 10.5, 0, 1), ps = P.step * 1.05;
-    computeHorseBones(ps, hs, P.burstT > 0 ? 0.08 : 0);
+    const hs = clamp(Math.abs(P.v) / 10.5, 0, 1);
+    P._hph = (P._hph || 0) + (P.step - (P._hst === undefined ? P.step : P._hst)) / strideOf(hs); P._hst = P.step;
+    computeHorseBones(P._hph * TAU, hs, P.burstT > 0 ? 0.08 : 0);
     m4trs(MODELM, P.x, gh, P.y, yaw, 0, 0, 1);
     drawRig(horseMesh('player', PLAYER_HORSE), MODELM, tint, ta * 0.5);
-    m4mul(TMPM2, MODELM, BW[BN.hbody]); m4trs(TMPM, 0, 1.06, -0.06, 0, 0, 0, 1); m4mul(RIDERM, TMPM2, TMPM);
+    m4mul(TMPM2, MODELM, BW[BN.hbody]); m4trs(TMPM, 0, 1.06 - LIFT, -0.06, 0, 0, 0, 1); m4mul(RIDERM, TMPM2, TMPM);
     computeHumanBones(o);
     drawRig(mesh, RIDERM, tint, ta);
     PBONES.set(BONES);
@@ -824,7 +872,7 @@ function drawPlayer() {
 function drawGhosts() {
   if (!S.ghosts.length || S.mode === 'title' || P.mounted) return;
   const U = MESHU; gl.useProgram(PR.mesh.p);
-  const mesh = humanMesh('P|' + P.armor + '|' + (P.hands[0] || '-') + '|' + (P.hands[1] || '-'), playerSpec());
+  const mesh = humanMesh(playerKey(), playerSpec());
   gl.enable(gl.BLEND); gl.depthMask(false); gl.blendColor(0, 0, 0, 0.25); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.CONSTANT_ALPHA, gl.ONE);
   gl.uniform1i(U.uMode, 2); gl.uniform3fv(U.uTint, [0.45, 0.85, 1.0]); gl.uniformMatrix4fv(U.uBones, false, PBONES);
   for (const g of S.ghosts) {
@@ -908,7 +956,7 @@ function drawEnt(e) {
     m4trs(MODELM, e.x, gh, e.y, yaw, 0, 0, 1);
     computeHorseBones(e._ph, e.state === 'gallop' ? 1.3 : spd, e.state === 'wind' ? 0.12 * clamp(e.wt / 0.6, 0, 1) : 0);
     drawRig(horseMesh('dragoon', DRAGOON_HORSE), MODELM, tint, ta * 0.6);
-    m4mul(TMPM2, MODELM, BW[BN.hbody]); m4trs(TMPM, 0, 1.06, -0.06, 0, 0, 0, 1); m4mul(RIDERM, TMPM2, TMPM);
+    m4mul(TMPM2, MODELM, BW[BN.hbody]); m4trs(TMPM, 0, 1.06 - LIFT, -0.06, 0, 0, 0, 1); m4mul(RIDERM, TMPM2, TMPM);
     const o = entPose(e, 0); o.legs = 'ride'; if (!o.aL) o.aL = [-0.5, 0.1, 0.12]; if (!o.aR) o.aR = [-0.5, -0.1, 0.12];
     computeHumanBones(o);
     drawRig(humanMesh('dragoonR', Object.assign({}, HUMANS.soldier, { hat: 'tricorn' })), RIDERM, tint, ta);
