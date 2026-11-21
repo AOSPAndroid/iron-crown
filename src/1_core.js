@@ -112,12 +112,27 @@ const KINDS = {
   witch: { name: 'witch', team: 1, hp: 45, spd: 3.6, dmg: 13, range: 19, cd: 2.8, wind: 0.6, r: 0.45, h: 2.0, gold: 14, xp: 30, spr: 'witch', ai: 'caster', unholy: true, hover: 1.3, prefP: 0.5, blood: '#7ac050', ash: true, loot: [['potion', 0.45], ['$any', 0.08]] },
   giant: { name: 'giant', team: 1, hp: 650, spd: 2.1, dmg: 32, range: 4.3, cd: 2.6, wind: 1.0, r: 1.6, h: 5.6, gold: 80, xp: 150, spr: 'giant', ai: 'giant', boss: true, prefP: 0.6, corpse: 'G', loot: [['$armor', 0.8], ['$any', 0.7], ['potion', 0.7], ['claymore', 0.12]] },
   frostgiant: { name: 'frost giant', team: 1, hp: 740, spd: 2.0, dmg: 34, range: 4.4, cd: 2.6, wind: 1.0, r: 1.6, h: 5.8, gold: 95, xp: 170, spr: 'frostgiant', ai: 'giant', boss: true, frost: true, prefP: 0.6, blood: '#9cc0dc', corpse: 'F', loot: [['$armor', 0.85], ['$any', 0.7], ['potion', 0.7], ['claymore', 0.15]] },
+  // gremlins: small, fast and spiteful; they come in packs, mostly at night and around haunted places
+  gremlin: { name: 'gremlin', team: 1, hp: 17, spd: 5.4, dmg: 5, range: 1.25, cd: 0.9, wind: 0.32, r: 0.34, h: 1.15, gold: 3, xp: 7, spr: 'gremlin', ai: 'gremlin', scale: 0.62, prefP: 0.7, blood: '#7a9a3a', corpse: 'g', gremlin: true, loot: [['potion', 0.05], ['arrows', 0.15, 2, 6]] },
+  gremlin_bomber: { name: 'firebomb gremlin', team: 1, hp: 15, spd: 4.4, dmg: 10, range: 14, cd: 3.4, wind: 0.75, r: 0.34, h: 1.15, gold: 4, xp: 9, spr: 'gremlin_bomber', ai: 'gbomber', scale: 0.62, rangedTok: true, prefP: 0.8, blood: '#7a9a3a', corpse: 'b', gremlin: true, loot: [['potion', 0.08]] },
+  gremlin_shaman: { name: 'gremlin shaman', team: 1, hp: 28, spd: 3.9, dmg: 7, range: 15, cd: 2.6, wind: 0.6, r: 0.36, h: 1.25, gold: 7, xp: 16, spr: 'gremlin_shaman', ai: 'gshaman', scale: 0.66, rangedTok: true, prefP: 0.9, blood: '#7a9a3a', corpse: 's', gremlin: true, loot: [['potion', 0.3], ['$any', 0.05]] },
+  gremlin_brute: { name: 'gremlin brute', team: 1, hp: 260, spd: 3.3, dmg: 21, range: 2.8, cd: 1.7, wind: 0.8, r: 0.85, h: 2.5, gold: 40, xp: 90, spr: 'gremlin_brute', ai: 'giant', boss: true, scale: 1.35, prefP: 0.6, blood: '#7a9a3a', corpse: 'u', gremlin: true, loot: [['$armor', 0.4], ['$any', 0.45], ['potion', 0.6], ['claymore', 0.08]] },
+  // a translucent spirit that drifts through walls; fire and torches hurt it badly
+  ghost: { name: 'ghost', team: 1, hp: 42, spd: 2.7, dmg: 9, range: 1.7, cd: 1.5, wind: 0.5, r: 0.45, h: 1.9, gold: 6, xp: 20, spr: 'ghost', ai: 'melee', unholy: true, phase: true, hover: 0.35, prefP: 0.6, blood: '#b8e0ff', ash: true, loot: [['potion', 0.2]] },
+  vlord: { name: 'vampire lord', team: 1, hp: 520, spd: 4.8, dmg: 17, range: 1.8, cd: 1.1, wind: 0.3, r: 0.55, h: 2.2, gold: 90, xp: 220, spr: 'vlord', ai: 'melee', boss: true, unholy: true, drain: 0.7, blink: true, scale: 1.18, prefP: 0.5, blood: '#7a1a2a', ash: true, loot: [['$armor', 0.7], ['$any', 0.8], ['potion', 0.8]] },
+  lord: { name: 'Lord Protector Ravensworth', team: 1, hp: 760, spd: 3.9, dmg: 22, range: 2.0, cd: 1.1, wind: 0.4, r: 0.55, h: 2.1, gold: 300, xp: 500, spr: 'lord', ai: 'melee', boss: true, scale: 1.14, prefP: 0.5, corpse: 'L', loot: [['potion', 1]] },
   ally: { name: 'royal soldier', team: 0, hp: 70, spd: 3.4, dmg: 10, range: 1.7, cd: 1.1, wind: 0.3, r: 0.45, h: 1.8, spr: 'ally', ai: 'melee', corpse: 'B' },
   guard: { name: 'village guard', team: 0, hp: 110, spd: 3.4, dmg: 12, range: 1.8, cd: 1.0, wind: 0.3, r: 0.45, h: 1.8, spr: 'guard', ai: 'melee', guard: true, corpse: 'B' },
   merchant: { name: 'merchant', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.5, h: 1.8, spr: 'merchant', ai: 'none', role: 'trade' },
   smith: { name: 'blacksmith', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'smith', ai: 'none', role: 'smith' },
   innkeeper: { name: 'innkeeper', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'innkeeper', ai: 'none', role: 'inn' },
   quartermaster: { name: 'quartermaster', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'quartermaster', ai: 'none', role: 'qm' },
-  priest: { name: 'priest', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'priest', ai: 'none' },
-  villager: { name: 'villager', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'villager', ai: 'none' }
+  priest: { name: 'priest', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'priest', ai: 'none', role: 'quest' },
+  villager: { name: 'villager', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'villager', ai: 'none' },
+  // story people
+  stranger: { name: 'the Stranger', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'stranger', ai: 'none', role: 'quest' },
+  captain: { name: 'captain', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'captain', ai: 'none', role: 'quest' },
+  heir: { name: 'Lady Elinor', team: 2, hp: 9999, spd: 0, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.45, h: 1.8, spr: 'heir', ai: 'none', role: 'quest' },
+  captive: { name: 'captive', team: 2, hp: 9999, spd: 5.2, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.42, h: 1.8, spr: 'villager', ai: 'follow', role: 'quest' }
 };
+for (const k in KINDS) KINDS[k].id = k;

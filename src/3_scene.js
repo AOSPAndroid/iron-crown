@@ -24,6 +24,11 @@ function heightRaw(x, y) {
     const l = w2l(cs, x, y), d = Math.max(Math.abs(l[0]), Math.abs(l[1]) - (l[1] > 0 && Math.abs(l[0]) < 6 ? 8 : 0));
     h = lerp(h, cs.gh, smooth(clamp((74 - d) / 28, 0, 1)));
   }
+  const mn = manorGround(x, y);
+  if (mn) {
+    const l = w2l(mn, x, y), d = Math.max(Math.abs(l[0]), Math.abs(l[1]));
+    h = lerp(h, mn.gh, smooth(clamp((MAN_G + 17 - d) / 14, 0, 1)));
+  }
   return h;
 }
 function chunkOf(x, y) { return CHUNKS.get(Math.floor(x / CS) + ',' + Math.floor(y / CS)); }
@@ -75,15 +80,32 @@ function freeChunkGPU(g) {
 function staticKey(o) {
   switch (o.type) {
     case 'rock': return o.snow ? 'rocksnow' : o.sand ? 'rocksand' : 'rock';
+    case 'bigrock': return o.snow ? 'bigrocksnow' : 'bigrock';
     case 'chest': case 'col': return null;
     case 'bld': return o.mesh;
     default: return STATIC_BUILD[o.type] ? o.type : null;
   }
 }
-const OCCR = { pine: 1.7, snowpine: 1.7, oak: 2.3, palm: 1.4, deadtree: 1.2, ruin: 4.8, menhir: 1.0 };
-const SSCALE = { pine: [0.85, 1.2], snowpine: [0.85, 1.2], oak: [0.85, 1.15], deadtree: [0.8, 1.2], palm: [0.85, 1.15], bush: [0.85, 1.2], rock: [1.0, 1.6], rocksnow: [1.0, 1.6], rocksand: [1.0, 1.6], pebble: [0.22, 0.48], menhir: [0.9, 1.15] };
+const OCCR = { pine: 1.7, snowpine: 1.7, oak: 2.3, palm: 1.4, deadtree: 1.2, ruin: 4.8, menhir: 1.0, birch: 1.3, willow: 2.2, gstatue: 0.8 };
+const SSCALE = { pine: [0.85, 1.2], snowpine: [0.85, 1.2], oak: [0.85, 1.15], deadtree: [0.8, 1.2], palm: [0.85, 1.15], bush: [0.85, 1.2], rock: [1.0, 1.6], rocksnow: [1.0, 1.6], rocksand: [1.0, 1.6], pebble: [0.22, 0.48], menhir: [0.9, 1.15],
+  birch: [0.85, 1.2], willow: [0.9, 1.2], log: [0.8, 1.15], logsnow: [0.8, 1.15], stump: [0.8, 1.25], bigrock: [0.85, 1.35], bigrocksnow: [0.85, 1.35], grave: [0.9, 1.1], grave2: [0.9, 1.1], tomb: [0.95, 1.05], gstatue: [1, 1], fountain: [1, 1] };
 // outline weight per scenery mesh (decor and pebbles get none: keeps the ground clean)
-const OWK = { pine: 0.9, snowpine: 0.9, oak: 0.9, palm: 0.9, deadtree: 0.9, bush: 0.7, rock: 0.85, rocksnow: 0.85, rocksand: 0.85, ruin: 1, menhir: 1, well: 1, fire: 0.8 };
+const OWK = { pine: 0.9, snowpine: 0.9, oak: 0.9, palm: 0.9, deadtree: 0.9, bush: 0.7, rock: 0.85, rocksnow: 0.85, rocksand: 0.85, ruin: 1, menhir: 1, well: 1, fire: 0.8,
+  birch: 0.9, willow: 0.9, log: 0.8, logsnow: 0.8, stump: 0.8, bigrock: 0.85, bigrocksnow: 0.85, grave: 0.8, grave2: 0.8, tomb: 0.9, gstatue: 1, fountain: 1 };
+const SHADOW_R = { pine: 1.8, snowpine: 1.8, oak: 2.6, birch: 1.4, willow: 2.4, palm: 1.3, deadtree: 0.9, bush: 0.95, rock: 0.95, bigrock: 1.7, log: 1.2, stump: 0.7, tomb: 1.2, gstatue: 0.9, menhir: 0.9, grave: 0.5, grave2: 0.45, fountain: 2.0 };
+// decor per ground tile: [key, chance, scale min, scale max]
+const DECOR = {
+  [T_GRASS]: [['tuft', 0.15, 1.0, 1.5], ['grassclump', 0.06, 0.8, 1.3], ['flower', 0.05, 1.3, 1.8], ['flower2', 0.03, 1.3, 1.8], ['stones', 0.012, 0.7, 1.2], ['mushroom', 0.008, 0.9, 1.4]],
+  [T_TALL]: [['tuft', 0.26, 1.1, 1.6], ['grassclump', 0.14, 0.9, 1.4], ['flower', 0.04, 1.3, 1.8], ['fern', 0.03, 0.8, 1.2]],
+  [T_FLOOR]: [['fern', 0.14, 0.8, 1.4], ['leaves', 0.1, 0.9, 1.6], ['mushroom', 0.05, 0.9, 1.5], ['tuft', 0.08, 1.0, 1.4], ['twigs', 0.05, 0.8, 1.3], ['grassclump', 0.04, 0.8, 1.2], ['stones', 0.02, 0.7, 1.2]],
+  [T_MARSH]: [['reed', 0.28, 1.2, 1.8], ['cattail', 0.1, 0.8, 1.3], ['tuft', 0.1, 1.0, 1.4], ['puddle', 0.025, 0.7, 1.3]],
+  [T_MUD]: [['puddle', 0.06, 0.6, 1.4], ['twigs', 0.04, 0.8, 1.3], ['deadbush', 0.03, 0.8, 1.3], ['reed', 0.05, 1.0, 1.5]],
+  [T_HEATHER]: [['heathbush', 0.18, 0.8, 1.5], ['flower2', 0.1, 1.2, 1.7], ['tuft', 0.1, 1.0, 1.4], ['stones', 0.04, 0.7, 1.3], ['deadbush', 0.03, 0.8, 1.3]],
+  [T_ROCKY]: [['stones', 0.12, 0.8, 1.5], ['deadbush', 0.05, 0.8, 1.3], ['tuft', 0.05, 0.9, 1.3], ['heathbush', 0.03, 0.7, 1.1]],
+  [T_SNOW]: [['snowtuft', 0.05, 0.8, 1.4], ['stones', 0.02, 0.7, 1.2]], [T_DRIFT]: [['snowtuft', 0.03, 0.8, 1.3]],
+  [T_SAND]: [['tuft', 0.02, 0.8, 1.2], ['deadbush', 0.02, 0.8, 1.2], ['stones', 0.03, 0.7, 1.2]], [T_DUNE]: [['deadbush', 0.015, 0.8, 1.2]],
+  [T_DIRT]: [['stones', 0.03, 0.6, 1.1], ['puddle', 0.012, 0.5, 0.9], ['tuft', 0.025, 0.8, 1.2]]
+};
 function buildChunkGPU(c) {
   const ox = c.cx * CS, oy = c.cy * CS;
   const H = new Float32Array(35 * 35);
@@ -134,23 +156,21 @@ function buildChunkGPU(c) {
   }
   // pebbles + sparse decor (tufts, flowers, reeds): soft detail, no noisy grass blades
   { const R = mulberry(((c.cx * 7919) ^ (c.cy * 104729)) + 17), pk = [], dec = { tuft: [], flower: [], flower2: [], reed: [] };
-    for (let n = 0; n < 190; n++) {
-      const x = ox + R() * CS, y = oy + R() * CS, t = c.tiles[(Math.floor(y - oy)) * CS + Math.floor(x - ox)], r = R();
+    const ND = MOBILE ? 330 : 520;
+    for (let n = 0; n < ND; n++) {
+      const x = ox + R() * CS, y = oy + R() * CS, t = c.tiles[(Math.floor(y - oy)) * CS + Math.floor(x - ox)], r = R(), r2 = R(), r3 = R();
       if (n < 60) {
         const p = t === T_ROCKY ? 0.8 : t === T_DIRT || t === T_SNOW || t === T_SAND || t === T_MUD ? 0.18 : 0.03;
-        if (r < p && !c.structs.some(s => s.roof && structContains(s, x, y)) && !blockedAt(x, y, 0.2)) pk.push(x, groundH(x, y) - 0.06, y, R() * TAU, 0.22 + R() * 0.3, 0.9 + R() * 0.2, 0, 0);
+        if (r < p && !c.structs.some(s => s.roof && structContains(s, x, y)) && !blockedAt(x, y, 0.2)) pk.push(x, groundH(x, y) - 0.06, y, r2 * TAU, 0.22 + r3 * 0.3, 0.9 + R() * 0.2, 0, 0);
         continue;
       }
-      if (nearVillage(x, y, 9) || c.structs.some(s => structContains(s, x, y))) continue;
-      let k = null;
-      if (t === T_GRASS) k = r < 0.2 ? 'tuft' : r < 0.25 ? 'flower' : r < 0.28 ? 'flower2' : null;
-      else if (t === T_TALL) k = r < 0.4 ? 'tuft' : r < 0.44 ? 'flower' : null;
-      else if (t === T_FLOOR) k = r < 0.2 ? 'tuft' : null;
-      else if (t === T_MARSH) k = r < 0.34 ? 'reed' : r < 0.44 ? 'tuft' : null;
-      else if (t === T_HEATHER) k = r < 0.22 ? 'flower2' : r < 0.34 ? 'tuft' : null;
-      else if (t === T_SAND || t === T_DUNE) k = r < 0.02 ? 'tuft' : null;
+      const tab = DECOR[t]; if (!tab) continue;
+      let k = null, sc = 1, acc = 0;
+      for (const d of tab) { acc += d[1]; if (r < acc) { k = d[0]; sc = lerp(d[2], d[3], r2); break; } }
       if (!k) continue;
-      dec[k].push(x, groundH(x, y) - 0.03, y, R() * TAU, (k === 'tuft' ? 1.0 : 1.3) + R() * 0.5, 0.9 + R() * 0.2, R() * 40, 0);
+      if (nearVillage(x, y, 9) || c.structs.some(s => structContains(s, x, y))) continue;
+      if ((k === 'puddle' || k === 'leaves' || k === 'stones') && blockedAt(x, y, 0.3)) continue;
+      (dec[k] = dec[k] || []).push(x, groundH(x, y) - (k === 'puddle' ? 0.0 : 0.03), y, r3 * TAU, sc, 0.88 + R() * 0.24, R() * 40, 0);
     }
     if (pk.length) groups[c.biome === B_SNOW ? 'pebblesnow' : c.biome === B_DESERT ? 'pebblesand' : 'pebble'] = pk;
     for (const k in dec) if (dec[k].length) groups[k] = dec[k];
@@ -166,7 +186,7 @@ function buildChunkGPU(c) {
   for (const k in groups) {
     const mesh = staticMesh(k), data = new Float32Array(groups[k]);
     const ibo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ibo); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    const fm = farMesh(k), deco = k.startsWith('pebble') || k === 'tuft' || k.startsWith('flower') || k === 'reed';
+    const fm = farMesh(k), deco = k.startsWith('pebble') || k === 'tuft' || k.startsWith('flower') || k === 'reed' || !!DECOR_BUILD[k];
     inst.push({ vao: instVAO(mesh, ibo), far: fm ? instVAO(fm, ibo) : null, fmesh: fm, ibo, n: data.length / 8, mesh, small: deco ? 34 : k === 'bush' || k.startsWith('rock') ? 80 : 999, ow: OWK[k] || 0 });
   }
   const g = { vao, vbo, water, inst, chests, fires, houses, cx: c.cx, cy: c.cy, hmid: (hmin + hmax) / 2, hr: (hmax - hmin) / 2, c };
@@ -213,7 +233,8 @@ void main() {
 }`;
 const PMAX = 6000;
 const PS = { add: new Float32Array(PMAX * 9), nAdd: 0, alp: new Float32Array(PMAX * 9), nAlp: 0, vboA: null, vboB: null, vaoA: null, vaoB: null };
-const AMB = { snow: [], fly: [], spark: [], ember: [], smoke: [], mist: [] };
+const AMB = { snow: [], fly: [], spark: [], ember: [], smoke: [], mist: [], dust: [], leaf: [] };
+let NEAR_MANOR = null;
 function initParts() {
   const mk = () => { const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.bufferData(gl.ARRAY_BUFFER, PMAX * 36, gl.DYNAMIC_DRAW);
     const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -277,16 +298,42 @@ function stepAmbient(dt) {
   for (let i = AMB.smoke.length - 1; i >= 0; i--) { const s = AMB.smoke[i]; s.t += dd; if (s.t >= s.l) { AMB.smoke.splice(i, 1); continue; } s.x += s.vx * dd; s.y += s.vy * dd; s.z += s.vz * dd;
     const k = s.t / s.l, c = 0.75 + (1 - d) * 0.2; pAlp(s.x, s.y, s.z, s.s * (1 + k * 2.5), c, c, c * 1.04, 0.45 * (1 - k) * Math.min(1, s.t * 3), 2); }
   if (AMB.smoke.length > 300) AMB.smoke.splice(0, AMB.smoke.length - 300);
-  // low mist over swamp water at night / dusk
-  const nm = (b === B_SWAMP ? 36 : d > 0.4 ? 14 : 0) * (MOBILE ? 0.6 : 1) | 0;
-  MOTE(AMB.mist, nm, () => ({ x: fx + rr(-26, 26), z: fz + rr(-24, 28), t: rr(0, 12), l: rr(9, 16), s: rr(3, 7), v: rr(-0.3, 0.3) }));
+  // layered ground fog: thick over swamp water, rolling banks in the woods at dawn / dusk / night, heavy around haunted manors
+  if (frameNo % 30 === 0) NEAR_MANOR = (() => { const m = nearestManor(CAM.x, CAM.y, 110); return m && Math.hypot(m.x - CAM.x, m.y - CAM.y) < 75 ? m : null; })();
+  const dusk = clamp(1 - Math.abs(d - 0.5) * 2.2, 0, 1), woods = b === B_FOREST || b === B_SWAMP || b === B_HEATH;
+  const nm = Math.min(120, (b === B_SWAMP ? 40 : 0) + (d > 0.4 ? 16 : 0) + (woods ? 10 + dusk * 16 : 4 + dusk * 10) + (NEAR_MANOR ? 46 : 0)) * (MOBILE ? 0.6 : 1) | 0;
+  MOTE(AMB.mist, nm, () => ({ x: fx + rr(-26, 26), z: fz + rr(-24, 28), t: rr(0, 12), l: rr(9, 16), s: rr(3, 7), v: rr(-0.3, 0.3), h: rr(0, 1) }));
+  const mc = mix3(ENV.fog, d > 0.5 ? [0.55, 0.65, 0.85] : [0.8, 0.84, 0.88], 0.55);
   for (const m of AMB.mist) {
     m.t += dd; m.x += (0.35 + m.v) * dd;
-    if (m.t > m.l || Math.abs(m.x - fx) > 30 || Math.abs(m.z - fz) > 32) { m.t = 0; m.x = fx + rr(-26, 26); m.z = fz + rr(-24, 28); m.l = rr(9, 16); }
+    if (m.t > m.l || Math.abs(m.x - fx) > 30 || Math.abs(m.z - fz) > 32) { m.t = 0; m.x = fx + rr(-26, 26); m.z = fz + rr(-24, 28); m.l = rr(9, 16); m.h = rr(0, 1); }
     const t = tileNoGen(m.x, m.z), wet = t === T_WATER || t === T_BOG || t === T_MARSH || t === T_MUD;
-    if (!wet) continue;
-    const k = Math.sin(m.t / m.l * Math.PI), a = 0.32 * k, mc = mix3(ENV.fog, [0.8, 0.86, 0.95], 0.6);
-    mistAt(m.x, Math.max(groundH(m.x, m.z), WATER_Y) + 0.3, m.z, m.s, mc, a);
+    const man = NEAR_MANOR && manorGround(m.x, m.z, 10) === NEAR_MANOR;
+    if (inRoof && structContains(inRoof, m.x, m.z)) continue;
+    let a = 0;
+    if (wet) a = 0.32; else if (man) a = 0.26 + d * 0.14; else if (m.h < (woods ? 0.55 : 0.35)) a = (0.1 + dusk * 0.16 + d * 0.06) * (woods ? 1 : 0.7); else continue;
+    const k = Math.sin(m.t / m.l * Math.PI);
+    mistAt(m.x, Math.max(groundH(m.x, m.z), WATER_Y) + 0.25 + m.h * 0.6, m.z, m.s * (man ? 1.3 : 1), mc, a * k);
+  }
+  // dust motes drifting in the light (by day, and indoors)
+  const nd = (d < 0.6 ? (MOBILE ? 40 : 70) : inRoof ? 30 : 0) | 0;
+  MOTE(AMB.dust, nd, () => ({ x: P.x + rr(-9, 9), z: P.y + rr(-9, 9), h: rr(0.3, 3.2), p: rr(0, TAU), q: rr(0.4, 1.2) }));
+  for (const m of AMB.dust) {
+    m.x += Math.sin(S.t * 0.3 * m.q + m.p) * 0.15 * dd; m.z += Math.cos(S.t * 0.25 * m.q + m.p) * 0.15 * dd; m.h += Math.sin(S.t * 0.5 + m.p) * 0.05 * dd;
+    if (Math.abs(m.x - P.x) > 10 || Math.abs(m.z - P.y) > 10) { m.x = P.x + rr(-9, 9); m.z = P.y + rr(-9, 9); }
+    const tw = 0.5 + 0.5 * Math.sin(S.t * 1.3 * m.q + m.p * 5), lit = inRoof ? 0.55 : 1 - d;
+    pAdd(m.x, groundH(m.x, m.z) + m.h, m.z, 0.05, 1, 0.95, 0.82, 0.35 * tw * lit, 0);
+  }
+  // falling leaves under the trees of the vales, woods and fens
+  const nl = !inRoof && (b === B_FOREST || b === B_PLAINS || b === B_SWAMP || NEAR_MANOR) ? (MOBILE ? 24 : 46) : 0;
+  MOTE(AMB.leaf, nl, () => ({ x: fx + rr(-18, 18), z: fz + rr(-18, 18), y: rr(0, 9), v: rr(0.5, 1.0), p: rr(0, TAU), c: (Math.random() * 4) | 0 }));
+  const LC = [[0.62, 0.38, 0.16], [0.72, 0.5, 0.2], [0.42, 0.5, 0.22], [0.5, 0.3, 0.14]];
+  for (const f of AMB.leaf) {
+    f.y -= f.v * dd; f.x += (Math.sin(S.t * 1.6 + f.p) * 0.9 + 0.4) * dd; f.z += Math.cos(S.t * 1.2 + f.p) * 0.5 * dd;
+    const gy = groundH(f.x, f.z);
+    if (f.y < 0.05 || Math.abs(f.x - fx) > 20 || Math.abs(f.z - fz) > 20) { f.x = fx + rr(-18, 18); f.z = fz + rr(-18, 18); f.y = rr(5, 9); }
+    const c = LC[f.c], lk = 1 - d * 0.7;
+    pAlp(f.x, gy + f.y, f.z, 0.1, c[0] * lk, c[1] * lk, c[2] * lk, 0.9, 3);
   }
 }
 function pushGameParticles() {
@@ -302,7 +349,9 @@ function pushGameParticles() {
   }
   for (const p of S.projs) {
     const y = groundH(p.x, p.y) + p.elev;
-    if (p.kind === 'fire') { if (Math.random() < 0.7) AMB.ember.push({ x: p.x, y, z: p.y, vx: rr(-0.4, 0.4), vy: rr(0, 0.6), vz: rr(-0.4, 0.4), t: rr(0.2, 0.5) }); pAdd(p.x, y, p.y, 1.5, 1, 0.5, 0.12, 0.5, 0); if (p.team === 1) pAdd(p.x, y, p.y, 1.1, 1, 0.9, 0.25, 0.35 + 0.2 * Math.sin(S.t * 20), 0); }
+    if (p.kind === 'fire' && p.hex) { pAdd(p.x, y, p.y, 1.1, 0.45, 1, 0.35, 0.5, 0); if (Math.random() < 0.5) pAdd(p.x + rr(-0.2, 0.2), y + rr(-0.2, 0.2), p.y + rr(-0.2, 0.2), 0.12, 0.6, 1, 0.4, 0.8, 0); }
+    else if (p.kind === 'fire') { if (Math.random() < 0.7) AMB.ember.push({ x: p.x, y, z: p.y, vx: rr(-0.4, 0.4), vy: rr(0, 0.6), vz: rr(-0.4, 0.4), t: rr(0.2, 0.5) }); pAdd(p.x, y, p.y, 1.5, 1, 0.5, 0.12, 0.5, 0); if (p.team === 1) pAdd(p.x, y, p.y, 1.1, 1, 0.9, 0.25, 0.35 + 0.2 * Math.sin(S.t * 20), 0); }
+    else if (p.kind === 'bomb') { AMB.ember.push({ x: p.x, y: y + 0.25, z: p.y, vx: rr(-0.5, 0.5), vy: rr(0.5, 1.5), vz: rr(-0.5, 0.5), t: rr(0.2, 0.4) }); pAdd(p.x, y + 0.25, p.y, 0.5, 1, 0.7, 0.2, 0.7 + 0.3 * Math.sin(S.t * 40), 1); }
     else if (p.kind === 'pball') pAdd(p.x, y, p.y, 0.4, 1, 0.9, 0.5, 0.9, 0);
     else if (p.kind === 'ball') { pAdd(p.x, y, p.y, 0.5, 1, 0.35, 0.25, 0.7, 0); for (let i = 1; i < 4; i++) pAlp(p.x - p.vx * 0.012 * i, y, p.y - p.vy * 0.012 * i, 0.16, 0.95, 0.95, 0.95, 0.5 - i * 0.12, 0); }
     else if (p.kind === 'arrow' && (p.team === 0 ? p.crit : true)) pAdd(p.x, y, p.y, 0.35, p.team === 0 ? 0.6 : 1, p.team === 0 ? 0.95 : 0.9, p.team === 0 ? 1 : 0.3, 0.6, 0);
@@ -338,21 +387,27 @@ function drawParticles() {
 let PTMAX = 256;
 
 // ---------- blob shadows (crisp toon discs) + swamp mist ----------
+// soft contact shadows: a dark core under the object fading into a wide penumbra, pushed away from the sun
 const VS_SHAD = `
 layout(location=0) in vec2 aQ;
 layout(location=1) in vec4 aS;
 layout(location=2) in vec3 aN;
-uniform mat4 uVP;
+uniform mat4 uVP; uniform vec2 uSunXZ;
 out vec2 vQ;
 void main() {
   vec3 n = normalize(aN);
   vec3 t = normalize(cross(n, vec3(0.0, 0.0, 1.0))), b = cross(t, n);
-  vec3 p = aS.xyz + (t * aQ.x + b * aQ.y) * aS.w + n * 0.06;
-  vQ = aQ; gl_Position = uVP * vec4(p, 1.0);
+  vec2 q = aQ * 1.25;
+  vec2 sd = uSunXZ; float sl = length(sd);
+  vec2 off = sl > 0.001 ? sd * aS.w * 0.42 : vec2(0.0);
+  vec2 dir = sl > 0.001 ? sd / sl : vec2(1.0, 0.0);
+  vec2 qq = q + dir * dot(q, dir) * sl * 0.45;
+  vec3 p = aS.xyz + (t * qq.x + b * qq.y) * aS.w + vec3(off.x, 0.0, off.y) * 0.6 + n * 0.06;
+  vQ = q; gl_Position = uVP * vec4(p, 1.0);
 }`;
 const FS_SHAD = `
 in vec2 vQ; uniform float uK; out vec4 o;
-void main() { float r = length(vQ); float a = (1.0 - smoothstep(0.82, 0.95, r)) * uK; if (a < 0.01) discard; o = vec4(0.0, 0.0, 0.0, a); }`;
+void main() { float r = length(vQ) / 1.25; float a = pow(1.0 - smoothstep(0.0, 1.0, r), 1.6) * uK * 1.35 + (1.0 - smoothstep(0.25, 0.6, r)) * uK * 0.35; if (a < 0.008) discard; o = vec4(0.0, 0.0, 0.0, min(a, 0.85)); }`;
 const SHD = { buf: new Float32Array(1024 * 7), n: 0, vbo: null, vao: null };
 const VS_MIST = `
 layout(location=0) in vec2 aQ;
@@ -412,7 +467,8 @@ function shadowAt(x, z, r) {
 }
 function drawShadows() {
   if (!SHD.n) return;
-  const U = PR.shad.U; gl.useProgram(PR.shad.p); gl.uniformMatrix4fv(U.uVP, false, CAM.vp); gl.uniform1f(U.uK, 0.3 - S.darkness * 0.12);
+  const U = PR.shad.U; gl.useProgram(PR.shad.p); gl.uniformMatrix4fv(U.uVP, false, CAM.vp); gl.uniform1f(U.uK, 0.34 - S.darkness * 0.14);
+  { const sx = -ENV.sun[0], sz = -ENV.sun[2], l = Math.hypot(sx, sz) || 1, k = clamp(1 - ENV.sun[1], 0.15, 0.7) * (1 - S.darkness * 0.6); gl.uniform2f(U.uSunXZ, sx / l * k, sz / l * k); }
   gl.enable(gl.BLEND); gl.depthMask(false); gl.blendFuncSeparate(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
   gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-2, -4);
   gl.bindBuffer(gl.ARRAY_BUFFER, SHD.vbo); gl.bufferSubData(gl.ARRAY_BUFFER, 0, SHD.buf, 0, SHD.n * 7);
@@ -450,10 +506,14 @@ void main() {
     a = smoothstep(0.0, 0.3, x) * smoothstep(0.0, 0.18, y);
     a = a > 0.45 ? 1.0 : a * 2.0;
     c = mix(c, vec3(1.0), smoothstep(0.5, 0.92, y) * smoothstep(0.3, 1.0, x));
-  } else { // aim line: x side, y along, z = locked
+  } else if (st < 3.5) { // aim line: x side, y along, z = locked
     float x = vU.x, y = vU.y;
     a = (1.0 - smoothstep(0.35, 1.0, x)) * (0.3 + 0.7 * vU.z) * (1.0 - y * 0.7);
     a *= 0.55 + 0.45 * step(0.5, fract(y * 22.0 - uTime * 5.0));
+  } else { // light shaft: x across, y from the window (0) to the floor (1); slow drifting dust
+    float x = vU.x, y = vU.y;
+    a = smoothstep(0.0, 0.22, x) * (1.0 - smoothstep(0.78, 1.0, x)) * (1.0 - y * 0.6);
+    a *= 0.8 + 0.2 * sin(uTime * 0.9 + gl_FragCoord.x * 0.03 + gl_FragCoord.y * 0.02);
   }
   a *= vC.a;
   if (a < 0.01) discard;
@@ -572,8 +632,10 @@ function buildTelegraphs() {
         case 'line': decalLine(B, e.x, e.y, e.wdir, a.len + (a.lunge || 0), a.w, col, p, 0); break;
         case 'lunge': decalLine(B, e.x, e.y, e.wdir, a.len + 1.2, a.w, col, p, 0); break;
         case 'charge': decalLine(B, e.x, e.y, e.wdir, a.len, a.w, col, p, 0); break;
-        case 'slam': decalPolar(B, e.x, e.y, 0, Math.PI, a.rad, col, p, 0, true); break;
-        case 'aoe': case 'throw': if (e.aoe) decalPolar(B, e.aoe.x, e.aoe.y, 0, Math.PI, a.rad, col, p, 0, true); break;
+        case 'slam': case 'nova': case 'screech': decalPolar(B, e.x, e.y, 0, Math.PI, a.rad, col, p, 0, true); break;
+        case 'aoe': case 'throw': case 'bomb': if (e.aoe) decalPolar(B, e.aoe.x, e.aoe.y, 0, Math.PI, a.rad, col, p, 0, true); break;
+        case 'snatch': decalPolar(B, e.x, e.y, e.wdir, a.arc, a.rng + 0.25, col, p, 0, false); break;
+        case 'chant': decalPolar(B, e.x, e.y, 0, Math.PI, 1.3, col, p, 0, true); fxRing(B, e.x, e.y, 0.05, lerp(0.6, a.rad || 9, p), [0.5, 1, 0.4, 0.35 * (1 - p)]); break;
       }
     } else if (e.state === 'aim' && a) {
       decalLine(B, e.x + Math.cos(e.wdir) * 0.6, e.y + Math.sin(e.wdir) * 0.6, e.wdir, 24, e.locked ? 0.3 : 0.18, a.col === 'r' ? TEL_R : TEL_Y, e.locked ? 1 : 0.15 + 0.3 * e.wt / a.aim, 3);
@@ -730,9 +792,11 @@ function computeHorseBones(ps, spd, rear) {
 }
 let MESHU = null, idSeq = 1;
 function setId(ow) { gl.uniform1f(MESHU.uId, idSeq); idSeq = idSeq % 95 + 1; gl.uniform1f(MESHU.uOW, ow); }
+let AOG_OVR = null;
 function drawRig(mesh, model, tint, tintA) {
   const U = MESHU;
   gl.uniformMatrix4fv(U.uModel, false, model); gl.uniformMatrix4fv(U.uBones, false, BONES);
+  if (U.uAoG) gl.uniform1f(U.uAoG, AOG_OVR !== null ? AOG_OVR : model[13]);
   if (tintA) { gl.uniform3fv(U.uTint, tint); gl.uniform1f(U.uTintA, tintA); }
   gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
   if (tintA) gl.uniform1f(U.uTintA, 0);
@@ -862,7 +926,7 @@ function drawPlayer() {
     drawRig(horseMesh('player', PLAYER_HORSE), MODELM, tint, ta * 0.5);
     m4mul(TMPM2, MODELM, BW[BN.hbody]); m4trs(TMPM, 0, 1.06 - LIFT, -0.06, 0, 0, 0, 1); m4mul(RIDERM, TMPM2, TMPM);
     computeHumanBones(o);
-    drawRig(mesh, RIDERM, tint, ta);
+    AOG_OVR = gh; drawRig(mesh, RIDERM, tint, ta); AOG_OVR = null;
     PBONES.set(BONES);
     TORCH_TIP = hasTorch() ? handPoint(BW[P.hands[0] === 'torch' ? BN.armL : BN.armR], RIDERM, P.hands[0] === 'torch' ? 1 : -1, 0, 0, 0.78) : null;
     WEAPON_TIP = handPoint(BW[armB], RIDERM, wS, 0, it ? -0.38 : 0, it ? 0.4 : 0.05);
@@ -896,12 +960,37 @@ function drawGhosts() {
   gl.uniform1f(U.uGhost, 0);
   gl.disable(gl.BLEND); gl.depthMask(true);
 }
+// spirits: translucent, cold, flickering; drawn after the opaque pass so walls don't hide them completely
+function drawSpirits() {
+  let any = false; for (const e of S.ents) if (!e.dead && e.k.phase) { any = true; break; }
+  if (!any) return;
+  const U = MESHU; gl.useProgram(PR.mesh.p);
+  gl.enable(gl.BLEND); gl.depthMask(false); gl.blendColor(0, 0, 0, 0.45); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.CONSTANT_ALPHA, gl.ONE);
+  gl.uniform1i(U.uMode, 2);
+  for (const e of S.ents) {
+    if (e.dead || !e.k.phase) continue;
+    const gh = groundH(e.x, e.y); if (!inView(e.x, gh + 1, e.y, 2)) continue;
+    e._ph = (e._ph || e.seed || 0) + (e.moving ? 5 : 0) * (RDT || 0.016);
+    const o = entPose(e, 0); o.lean = (o.lean || 0) + (e.moving ? 0.25 : 0.05); o.cape = 0.4; computeHumanBones(o);
+    const [tint, ta] = entTint(e), fl = 0.5 + 0.18 * Math.sin(S.t * 3.1 + e.seed) + 0.08 * Math.sin(S.t * 11 + e.seed * 2);
+    const col = tint && ta > 0.1 ? mix3([0.62, 0.85, 1.0], tint, Math.min(1, ta * 1.6)) : e.hurtT > 0 ? [1, 1, 1] : [0.62, 0.85, 1.0];
+    gl.uniform3fv(U.uTint, col); gl.uniform1f(U.uGhost, clamp(fl * (e.hurtT > 0 ? 1.4 : 1), 0, 1));
+    m4trs(MODELM, e.x, gh + e.elev + Math.sin(S.t * 1.7 + e.seed) * 0.15, e.y, yawOf(e.a), 0, 0, 1);
+    drawRig(humanMesh('ghost', entSpec('ghost')), MODELM);
+  }
+  gl.uniform1f(U.uGhost, 0);
+  gl.disable(gl.BLEND); gl.depthMask(true);
+}
+function mkBombM() { const mb = new MB(57); mb.sph(0, 0, 0, 0.14, 0.14, 0.14, '#2a2a30'); mb.tube([0, 0.12, 0], [0.03, 0.22, 0.02], 0.02, 0.015, 4, '#c8a060'); return mb; }
+function mkHexM() { const mb = new MB(58); mb.em = 1; mb.ico(0, 0, 0, 0.3, 0.3, 0.3, '#6aff4a', 0.2, 0, 3); mb.sph(0, 0, 0, 0.17, 0.17, 0.17, '#e8ffd0', 0); return mb; }
 function entSpec(kind) {
   if (GIANTS[kind]) return Object.assign({ giant: true, scale: 3.0, hat: null }, GIANTS[kind]);
-  return HUMANS[kind] || HUMANS.soldier;
+  const h = HUMANS[kind] || HUMANS.soldier;
+  return KINDS[kind] && KINDS[kind].scale && !h.scale ? Object.assign({ scale: KINDS[kind].scale }, h) : h;
 }
+const entScale = kind => KINDS[kind].scale || (GIANTS[kind] ? 3.0 : 1);
 function entPose(e, spd) {
-  const kind = e.kind, st = e.state, a = e.atk, k = GIANTS[kind] ? 3.0 : 1;
+  const kind = e.kind, st = e.state, a = e.atk, k = entScale(kind);
   const o = { k, ph: e._ph, spd, aL: null, aR: null, tw: 0, lean: 0, cape: spd * 0.6, breath: Math.sin(S.t * 2 + e.seed) * 0.006 * k, legs: kind === 'witch' ? 'sit' : undefined };
   const set = (side, v) => { if (side > 0) o.aL = v; else o.aR = v; };
   const sinceSw = S.t - (e.swingAt === undefined ? -9 : e.swingAt), swK = sinceSw < 0.3 ? sinceSw / 0.3 : -1;
@@ -918,7 +1007,11 @@ function entPose(e, spd) {
         o.legs = 'brace'; break;
       case 'line': set(-1, [-1.15, 0.2, 0.05]); o.lean = -0.25 * eu; o.legs = 'brace'; break;
       case 'lunge': set(1, [0.5, 0, 0.5]); set(-1, [0.5, 0, 0.5]); o.lean = 0.35 * eu; o.legs = 'brace'; o.hipY = -0.06 * eu; break;
-      case 'grab': set(1, [-1.5, 1.1 * eu, 0.4]); set(-1, [-1.5, -1.1 * eu, 0.4]); o.lean = 0.1; break;
+      case 'grab': case 'snatch': set(1, [-1.5, 1.1 * eu, 0.4]); set(-1, [-1.5, -1.1 * eu, 0.4]); o.lean = 0.1; break;
+      case 'screech': set(1, [-2.4, 0.6, 0.5]); set(-1, [-2.4, -0.6, 0.5]); o.nod = -0.5 * eu; o.lean = -0.2; o.legs = 'brace'; break;
+      case 'bomb': set(1, [lerp(-0.6, -2.7, eu), 0.3, 0.2]); o.lean = -0.15 * eu; o.tw = 0.4 * eu; break;
+      case 'chant': { const sh = Math.sin(S.t * 18) * 0.08; set(1, [-2.6 + sh, 0.2, 0.3]); set(-1, [-2.6 - sh, -0.2, 0.3]); o.nod = -0.3; break; }
+      case 'nova': set(1, [lerp(-0.4, -1.6, eu), 1.2 * eu, 0.6]); set(-1, [lerp(-0.4, -1.6, eu), -1.2 * eu, 0.6]); o.lean = -0.2 * eu; o.legs = 'brace'; break;
       case 'cast': set(1, [-2.75, 0, 0.35]); set(-1, [-2.75, 0, 0.35]); break;
       case 'aoe': { const sh = Math.sin(S.t * 30) * 0.06; set(1, [-2.9 + sh, 0.3, 0.4]); set(-1, [-2.9 - sh, -0.3, 0.4]); break; }
       case 'slam': set(1, [lerp(-0.6, -3.0, eu), 0.15, 0.2]); set(-1, [lerp(-0.6, -3.0, eu), -0.15, 0.2]); o.lean = -0.15 * eu; o.legs = 'brace'; break;
@@ -945,6 +1038,8 @@ function entPose(e, spd) {
     else if (lk === 'throw' || lk === 'cast') { set(-1, [-1.6, 0, 0.1]); }
   }
   if (e.hurtT > 0) o.flinch = Math.max(o.flinch || 0, 1);
+  if (e.k.gremlin) { o.lean = (o.lean || 0) + 0.32; o.nod = (o.nod || 0) - 0.28; if (!o.legs && !spd) o.legs = 'brace'; }
+  if (e.thief) { o.aL = [-2.2 + Math.sin(S.t * 14) * 0.2, 0.3, 0.3]; }
   return o;
 }
 function entTint(e) {
@@ -962,7 +1057,7 @@ function entTint(e) {
 function drawEnt(e) {
   const kind = e.kind, gh = groundH(e.x, e.y), yaw = yawOf(e.a);
   const [tint, ta] = entTint(e);
-  e._ph = (e._ph || e.seed || 0) + (e.moving ? 1 : 0) * (kind === 'vampire' ? 13 : kind === 'dragoon' ? 9 : GIANTS[kind] ? 3.2 : 8.5) * (RDT || 0.016);
+  e._ph = (e._ph || e.seed || 0) + (e.moving ? 1 : 0) * (kind === 'vampire' ? 13 : kind === 'dragoon' ? 9 : GIANTS[kind] ? 3.2 : e.k.gremlin ? (e.k.boss ? 7 : 15) : 8.5) * (RDT || 0.016);
   const spd = e.moving && kind !== 'witch' ? 1 : 0;
   setId(1);
   if (kind === 'dragoon') {
@@ -972,7 +1067,7 @@ function drawEnt(e) {
     m4mul(TMPM2, MODELM, BW[BN.hbody]); m4trs(TMPM, 0, 1.06 - LIFT, -0.06, 0, 0, 0, 1); m4mul(RIDERM, TMPM2, TMPM);
     const o = entPose(e, 0); o.legs = 'ride'; if (!o.aL) o.aL = [-0.5, 0.1, 0.12]; if (!o.aR) o.aR = [-0.5, -0.1, 0.12];
     computeHumanBones(o);
-    drawRig(humanMesh('dragoonR', Object.assign({}, HUMANS.soldier, { hat: 'tricorn' })), RIDERM, tint, ta);
+    AOG_OVR = gh; drawRig(humanMesh('dragoonR', Object.assign({}, HUMANS.soldier, { hat: 'tricorn' })), RIDERM, tint, ta); AOG_OVR = null;
     shadowAt(e.x, e.y, 1.3);
     return;
   }
@@ -981,20 +1076,22 @@ function drawEnt(e) {
   computeHumanBones(o);
   const lift = kind === 'witch' ? e.elev + Math.sin(S.t * 2 + e.seed) * 0.12 - 0.2 : e.elev;
   m4trs(MODELM, e.x, gh + lift + (down ? 0.15 * o.k : 0), e.y, yaw, down ? -Math.PI / 2 : 0, 0, 1);
-  drawRig(mesh, MODELM, tint, ta);
+  if (e.buffT > 0 && !tint) { drawRig(mesh, MODELM, [0.5, 1, 0.35], 0.18 + 0.1 * Math.sin(S.t * 9)); }
+  else if (e.elite && !tint) drawRig(mesh, MODELM, [1, 0.75, 0.3], 0.06 + 0.04 * Math.sin(S.t * 4));
+  else drawRig(mesh, MODELM, tint, ta);
   if (GIANTS[kind] && e.state === 'wind' && e.atk && e.atk.k === 'throw') {
     const hp = handPoint(BW[BN.armR], MODELM, -1, 0, -0.1 * 3, 0.0);
     m4trs(TMPM, hp[0], hp[1], hp[2], S.t, 0.3, 0, 1); drawPlain(namedMesh(e.k.frost ? 'boulderF' : 'boulder', () => mkBoulderM(e.k.frost)), TMPM);
   }
   shadowAt(e.x, e.y, (e.r + 0.2) * (kind === 'witch' ? 0.7 : 1));
 }
-const CORPSE_KIND = { R: 'soldier', B: 'ally', N: 'bandit', H: 'dragoon', G: 'giant', F: 'frostgiant' };
+const CORPSE_KIND = { R: 'soldier', B: 'ally', N: 'bandit', H: 'dragoon', G: 'giant', F: 'frostgiant', g: 'gremlin', b: 'gremlin_bomber', s: 'gremlin_shaman', u: 'gremlin_brute', L: 'lord' };
 function drawCorpse(c) {
   const kind = CORPSE_KIND[c.c] || 'soldier', gh = groundH(c.x, c.y), yaw = hash2(Math.round(c.x * 9), Math.round(c.y * 9)) * TAU;
   const fade = clamp(c.t / 3, 0, 1);
   setId(0.6);
   if (kind === 'dragoon') { computeHorseBones(0, 0); m4trs(MODELM, c.x, gh + 0.25, c.y, yaw, 0, Math.PI / 2, 1); drawRig(horseMesh('dragoon', DRAGOON_HORSE), MODELM, [0.2, 0.18, 0.2], 0.35); return; }
-  const k = GIANTS[kind] ? 3 : 1;
+  const k = entScale(kind);
   computeHumanBones({ k });
   m4trs(MODELM, c.x, gh + 0.14 * k - (1 - fade) * 0.6 * k, c.y, yaw, -Math.PI / 2, 0, 1);
   drawRig(humanMesh(kind, entSpec(kind)), MODELM, [0.2, 0.18, 0.2], 0.35);
@@ -1020,7 +1117,7 @@ function setCutUniforms(U) {
   gl.uniform4f(U.uCutA, s.x, s.y, s.s, s.c);
   gl.uniform4f(U.uCutB, s.hx, s.hz, s.gy, smooth(C.k));
   gl.uniform4f(U.uCutC, lx / ll, lz / ll, s.stub, s.wallH);
-  gl.uniform4f(U.uCutD, s.band, s.margin, s.skipOcc ? 1 : 0, s.roof ? lerp(0.22, 0.5, S.darkness) : 0);
+  gl.uniform4f(U.uCutD, s.band, s.margin, s.skipOcc ? 1 : 0, s.roof ? (s.kind === 'manor' ? lerp(0.5, 0.66, S.darkness) : lerp(0.22, 0.5, S.darkness)) : 0);
 }
 function drawStaticsAndTerrain(U) {
   gl.uniform1i(U.uMode, 0); gl.uniform1i(U.uMat, 1); gl.uniformMatrix4fv(U.uModel, false, UNITM);
@@ -1049,6 +1146,7 @@ function drawStaticsAndTerrain(U) {
   }
   gl.uniform1i(U.uMode, 0);
   drawCastles(U);
+  drawManors(U);
   gl.uniform1f(U.uCutOn, 0);
   for (const g of vis) for (const o of g.chests) {
     setId(0.9);
@@ -1057,7 +1155,7 @@ function drawStaticsAndTerrain(U) {
   }
   for (const g of vis) {
     if (Math.abs(g.cx * CS + 16 - CAM.x) > 40 || Math.abs(g.cy * CS + 16 - CAM.y) > 40) continue;
-    for (const o of g.c.statics) { if ((o.x - CAM.x) ** 2 + (o.y - CAM.y) ** 2 > 900) continue; if (o.type === 'pine' || o.type === 'snowpine' || o.type === 'oak') shadowAt(o.x, o.y, o.type === 'oak' ? 2.0 : 1.4); else if (o.type === 'bush' || o.type === 'rock') shadowAt(o.x, o.y, 0.8); }
+    for (const o of g.c.statics) { if ((o.x - CAM.x) ** 2 + (o.y - CAM.y) ** 2 > 1000) continue; const r = SHADOW_R[o.type]; if (r) shadowAt(o.x, o.y, r * (o.type === 'rock' || o.type === 'bigrock' ? 1 : 1)); }
   }
   return vis;
 }
@@ -1065,7 +1163,7 @@ function drawActors(U) {
   gl.uniform1i(U.uMode, 2);
   NEAR_FOE = false;
   for (const e of S.ents) if (e.team === 1 && !e.dead && Math.abs(e.x - P.x) < 8 && Math.abs(e.y - P.y) < 8) { NEAR_FOE = true; break; }
-  for (const e of S.ents) { if (e.dead) continue; const gh = groundH(e.x, e.y); if (!inView(e.x, gh + 1, e.y, GIANTS[e.kind] ? 4 : 1.8)) continue; drawEnt(e); }
+  for (const e of S.ents) { if (e.dead) continue; const gh = groundH(e.x, e.y); if (!inView(e.x, gh + 1, e.y, GIANTS[e.kind] || e.k.boss ? 4 : 1.8)) continue; if (e.k.phase) { shadowAt(e.x, e.y, 0.5); continue; } drawEnt(e); }
   for (const c of S.corpses) if (inView(c.x, groundH(c.x, c.y), c.y, 3)) drawCorpse(c);
   if (!P.mounted && S.mode !== 'title' && inView(S.horse.x, groundH(S.horse.x, S.horse.y) + 1, S.horse.y, 2)) drawHorseFree();
   if (S.mode !== 'title') drawPlayer(); else { TORCH_TIP = null; WEAPON_TIP = null; }
@@ -1086,7 +1184,8 @@ function drawActors(U) {
     setId(0.8);
     if (p.kind === 'arrow') { mesh = namedMesh('arrow', mkArrowM); m4trs(TMPM, p.x, y, p.y, yawOf(a), -(p.vz || 0) * 0.04, 0, 1.3); }
     else if (p.kind === 'boulder') { mesh = namedMesh(p.frost ? 'boulderF' : 'boulder', () => mkBoulderM(p.frost)); m4trs(TMPM, p.x, y, p.y, S.t * 3, S.t * 5, 0, 1.2); shadowAt(p.x, p.y, 0.9); }
-    else if (p.kind === 'fire') { mesh = namedMesh('fireball', mkFireballM); m4trs(TMPM, p.x, y, p.y, S.t * 6, S.t * 4, 0, 1 + Math.sin(S.t * 30) * 0.1); }
+    else if (p.kind === 'fire') { mesh = p.hex ? namedMesh('hexball', mkHexM) : namedMesh('fireball', mkFireballM); m4trs(TMPM, p.x, y, p.y, S.t * 6, S.t * 4, 0, (p.hex ? 0.7 : 1) + Math.sin(S.t * 30) * 0.1); }
+    else if (p.kind === 'bomb') { mesh = namedMesh('bomb', mkBombM); m4trs(TMPM, p.x, y, p.y, S.t * 7, S.t * 9, 0, 1.6); shadowAt(p.x, p.y, 0.4); }
     else { mesh = namedMesh('ball' + p.kind, () => mkBallM(p.kind)); m4trs(TMPM, p.x, y, p.y, 0, 0, 0, 1.4); }
     gl.uniformMatrix4fv(U.uModel, false, TMPM); gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
   }
@@ -1154,10 +1253,11 @@ function render(dt) {
   drawShadows();
   buildTelegraphs(); drawFX(FXG, true);
   drawGhosts();
+  drawSpirits();
   stepAmbient(dt); pushGameParticles();
   drawMist();
   drawParticles();
-  buildAirFX(); drawFX(FXA, false);
+  buildAirFX(); buildShafts(); drawFX(FXA, false);
   mrtBoth();
   post();
   if (ctx && hud) { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); drawWorldOverlays(); drawHUD(); }
@@ -1168,11 +1268,13 @@ function prewarmScene(n) {
   if (!GLOK) return 0;
   setupCamera(0);
   const left = syncChunks(40);
-  for (const k of ['soldier', 'bandit', 'ally', 'guard', 'merchant', 'archer', 'musketeer', 'pikeman', 'innkeeper', 'smith', 'villager', 'priest', 'quartermaster']) humanMesh(k, entSpec(k));
+  for (const k of ['soldier', 'bandit', 'ally', 'guard', 'merchant', 'archer', 'musketeer', 'pikeman', 'innkeeper', 'smith', 'villager', 'priest', 'quartermaster', 'stranger', 'gremlin', 'gremlin_bomber', 'ghost']) humanMesh(k, entSpec(k));
   humanMesh('P|' + P.armor + '|' + (P.hands[0] || '-') + '|' + (P.hands[1] || '-'), playerSpec());
   // castles close by: build every part now rather than one per frame
   castleBuildBudget = 99;
   for (const cs of castlesNear(P.x, P.y, 130)) { const G = castleGPU(cs, true); while (!G.ready && castleBuildBudget > 0) castleGPU(cs, true); }
+  manorBuildBudget = 99;
+  for (const m of manorsNear(P.x, P.y, 130)) { const G = manorGPU(m, true); while (!G.ready && manorBuildBudget > 0) manorGPU(m, true); }
   return left;
 }
 const prewarmStacks = prewarmScene;
@@ -1188,14 +1290,16 @@ function star4(x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); for (let i 
 function drawWorldOverlays() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const here = structAt(P.x, P.y);
+  const doorMk = new Map();
   for (const e of S.ents) {
     if (e.dead) continue;
-    if (e.team === 2 && e.struct && e.struct !== here) { // the trader is indoors: mark the door
+    const qm = e.team === 2 && Math.abs(e.x - P.x) < 45 && Math.abs(e.y - P.y) < 45 ? questMark(e) : null;
+    if (e.team === 2 && e.struct && e.struct !== here) { // the trader or quest giver is indoors: mark the door
       if (!e.role || !e.struct.doors.length) continue;
-      const d = e.struct.doors[0], q = project(d.ox, groundH(d.ox, d.oy) + 3.4, d.oy, OV); if (!q) continue;
-      olText(e.role === 'inn' ? 'INN' : '$', q[0], q[1], e.role === 'inn' ? '#9ae0a0' : '#ffd84a', e.role === 'inn' ? 12 : 15); continue;
+      const prev = doorMk.get(e.struct) || {}; doorMk.set(e.struct, { qm: prev.qm === '?' ? '?' : qm || prev.qm, tag: e.role === 'inn' ? 'INN' : e.role === 'trade' || e.role === 'smith' || e.role === 'qm' ? '$' : prev.tag });
+      continue;
     }
-    const top = (GIANTS[e.kind] ? 5.6 : e.kind === 'dragoon' ? 3.0 : 2.0) + (e.elev || 0);
+    const top = (GIANTS[e.kind] ? 5.6 : e.kind === 'dragoon' ? 3.0 : Math.max(1.4, e.k.h + 0.2)) + (e.elev || 0);
     const q = project(e.x, groundH(e.x, e.y) + top, e.y, OV); if (!q) continue;
     const sc = clamp(22 / q[2], 0.7, 1.3);
     let y = q[1];
@@ -1206,14 +1310,42 @@ function drawWorldOverlays() {
       olText(red ? '!!' : '!', q[0], y - 10 * sc, red ? '#ff4a3a' : '#ffd84a', Math.round(20 * sc * pulse));
       y -= 22 * sc;
     }
-    if (e.team === 1 && !e.k.boss && e.hp < e.maxHp) {
+    if (e.thief) { olText('$', q[0], y - 4, '#ffe040', Math.round(17 * sc)); y -= 16; }
+    if (e.team === 1 && !e.k.boss && !e.elite && e.hp < e.maxHp) {
       const w = Math.round(32 * sc), f = clamp(e.hp / e.maxHp, 0, 1), x0 = Math.round(q[0] - w / 2);
       ctx.fillStyle = 'rgba(16,10,24,0.85)'; ctx.fillRect(x0 - 2, y - 2, w + 4, 7); ctx.fillStyle = '#5a1e22'; ctx.fillRect(x0, y, w, 3); ctx.fillStyle = '#ff5a48'; ctx.fillRect(x0, y, Math.round(w * f), 3);
       const pf = clamp(e.poise / e.poiseMax, 0, 1); ctx.fillStyle = '#ffd84a'; ctx.fillRect(x0, y + 3, Math.round(w * pf), 1);
       y -= 9;
     }
-    if (e.team === 2 && e.role) { olText(e.role === 'inn' ? 'INN' : '$', q[0], y - 6, e.role === 'inn' ? '#9ae0a0' : '#ffd84a', e.role === 'inn' ? 12 : 15); y -= 14; }
+    if (qm) { const pul = 1 + 0.08 * Math.sin(S.t * 5); olText(qm, q[0], y - 10, qm === '?' ? '#ffe070' : '#ffc030', Math.round(24 * pul)); y -= 26; }
+    else if (e.team === 2 && e.role && e.role !== 'quest') { olText(e.role === 'inn' ? 'INN' : '$', q[0], y - 6, e.role === 'inn' ? '#9ae0a0' : '#ffd84a', e.role === 'inn' ? 12 : 15); y -= 14; }
     if (e === S.aim && e !== P.lock) { ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(q[0] - 7, y - 11); ctx.lineTo(q[0] + 7, y - 11); ctx.lineTo(q[0], y - 3); ctx.closePath(); ctx.fill(); }
+  }
+  for (const [st, m] of doorMk) {
+    const d = st.doors[0], q = project(d.ox, groundH(d.ox, d.oy) + 3.4, d.oy, OV); if (!q) continue;
+    if (m.qm) { olText(m.qm, q[0], q[1] - (m.tag ? 16 : 0), m.qm === '?' ? '#ffe070' : '#ffc030', 22); }
+    if (m.tag) olText(m.tag, q[0], q[1], m.tag === 'INN' ? '#9ae0a0' : '#ffd84a', m.tag === 'INN' ? 12 : 15);
+  }
+  // tracked objective: a marker over the spot, or an arrow at the screen edge pointing to it
+  const tg = S.mode === 'play' && S.Q ? questTarget() : null;
+  if (tg) {
+    const dd = Math.hypot(tg.x - P.x, tg.y - P.y);
+    if (dd > 4) {
+      const gy = groundH(tg.x, tg.y), q = project(tg.x, gy + 3.2, tg.y, OV), pul = 0.85 + 0.15 * Math.sin(S.t * 4);
+      const dia = (x, y, r, col) => { ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.75, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.75, y); ctx.closePath(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(16,10,24,0.9)'; ctx.stroke(); ctx.fillStyle = col; ctx.fill(); };
+      if (q && q[0] > 30 && q[0] < VW - 30 && q[1] > 60 && q[1] < VH - 30) { dia(q[0], q[1], 9 * pul, '#ffd04a'); olText(Math.round(dd) + 'm', q[0], q[1] + 18, '#ffe6a0', 12); }
+      else {
+        const pq = project(P.x, groundH(P.x, P.y) + 1, P.y, [0, 0, 0]) || [VW / 2, VH / 2], tq = project(tg.x, gy, tg.y, [0, 0, 0]);
+        let ax, ay;
+        if (tq) { ax = tq[0] - pq[0]; ay = tq[1] - pq[1]; } else { const dx = tg.x - P.x, dy = tg.y - P.y, f = [Math.cos(CAMK.yaw), Math.sin(CAMK.yaw)], r = [-Math.sin(CAMK.yaw), Math.cos(CAMK.yaw)]; ax = dx * r[0] + dy * r[1]; ay = -(dx * f[0] + dy * f[1]); }
+        // keep the arrow inside a safe frame: below the HUD panels, above the touch buttons
+        const top = 158, bot = VH - (IS_TOUCH ? 300 : 44), cxm = VW / 2, cym = (top + bot) / 2;
+        const L = Math.hypot(ax, ay) || 1, ux = ax / L, uy = ay / L, mx = VW / 2 - 34, my = Math.max(20, (bot - top) / 2), k = Math.min(Math.abs(ux) > 1e-4 ? mx / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-4 ? my / Math.abs(uy) : 1e9);
+        const X = cxm + ux * k, Y = cym + uy * k, an = Math.atan2(uy, ux);
+        ctx.save(); ctx.translate(X, Y); ctx.rotate(an); ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-6, -10); ctx.lineTo(-2, 0); ctx.lineTo(-6, 10); ctx.closePath(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(16,10,24,0.9)'; ctx.stroke(); ctx.fillStyle = '#ffd04a'; ctx.fill(); ctx.restore();
+        olText(Math.round(dd) + 'm', X - ux * 24, Y - uy * 24, '#ffe6a0', 12);
+      }
+    }
   }
   // lock-on reticle
   if (P.lock && !P.lock.dead && S.mode === 'play') {

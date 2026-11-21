@@ -103,7 +103,8 @@ const SDEF = {
   pine: { r: 0.7, h: 5 }, snowpine: { r: 0.7, h: 5 }, oak: { r: 1.0, h: 4.2 }, deadtree: { r: 0.5, h: 4 }, rock: { r: 0.6, h: 0.9 },
   menhir: { r: 0.7, h: 3 }, palm: { r: 0.5, h: 5 }, bush: { r: 0.5, h: 1, block: false }, fire: { r: 0.6, h: 1.0 },
   well: { r: 0.9, h: 1.6 }, ruin: { r: 4.2, h: 7 }, chest: { r: 0.6, h: 0.8 },
-  col: { r: 1, h: 3 }, bld: { r: 4, h: 5, block: false }, fence: { r: 1.6, h: 1.0 }, lamp: { r: 0.2, h: 2.7 }, barrel: { r: 0.38, h: 0.9 }, crate: { r: 0.38, h: 0.8 }
+  col: { r: 1, h: 3 }, bld: { r: 4, h: 5, block: false }, fence: { r: 1.6, h: 1.0 }, lamp: { r: 0.2, h: 2.7 }, barrel: { r: 0.38, h: 0.9 }, crate: { r: 0.38, h: 0.8 },
+  birch: { r: 0.45, h: 5 }, willow: { r: 0.8, h: 4.5 }, log: { r: 0.55, h: 0.6 }, stump: { r: 0.42, h: 0.6 }, bigrock: { r: 1.3, h: 1.6 }
 };
 const GC = 8, MAXR = 4.6;
 let STAMP = 1;
@@ -135,11 +136,15 @@ function genChunk(cx, cy) {
   const own = villageFor(cx, cy); c.village = own;
   const lays = vils.map(v => villageLayout(v));
   const cass = castlesNear(ox + 16, oy + 16, 16 + CAS_S + 50);
+  const mans = manorsNear(ox + 16, oy + 16, 16 + MAN_G + 45);
+  const roads = roadsNear(ox - 3, oy - 3, ox + CS + 3, oy + CS + 3);
   for (let ty = 0; ty < CS; ty++) for (let tx = 0; tx < CS; tx++) {
     const wx = ox + tx + 0.5, wy = oy + ty + 0.5;
     let t = tileBase(wx, wy);
+    if (roads.length && !isWet(t)) for (const r of roads) if (onRoad(r, wx, wy)) { t = T_DIRT; break; }
     for (let k = 0; k < vils.length; k++) t = villageTile(vils[k], lays[k], wx, wy, t);
     for (const cs of cass) t = castleTile(cs, wx, wy, t);
+    for (const m of mans) t = manorTile(m, wx, wy, t);
     c.tiles[ty * CS + tx] = t;
   }
   const tileL = (x, y) => c.tiles[(clamp(Math.floor(y - oy), 0, 31)) * CS + clamp(Math.floor(x - ox), 0, 31)];
@@ -151,8 +156,10 @@ function genChunk(cx, cy) {
   if (own) c.spawnVillage = own;
   // castles
   for (const cs of cass) { injectLayout(c, castleWorld(cs)); if (cs.ckey === c.key) c.castle = cs; }
+  for (const m of mans) { injectLayout(c, manorWorld(m)); if (m.ckey === c.key) c.manor = m; }
+  const nearMan = (x, y, pad) => mans.some(m => { const l = w2l(m, x, y); return Math.abs(l[0]) < MAN_G + pad && Math.abs(l[1]) < MAN_G + pad + (l[1] > 0 && Math.abs(l[0]) < 3 ? 34 : 0); });
   // ruins + chest
-  if (!own && !nearVil(ox + 16, oy + 16, 40) && !nearCas(ox + 16, oy + 16, 30) && R() < 0.06 && (c.biome === B_HEATH || c.biome === B_FOREST || c.biome === B_SNOW || c.biome === B_DESERT || c.biome === B_PLAINS)) {
+  if (!own && !nearVil(ox + 16, oy + 16, 40) && !nearCas(ox + 16, oy + 16, 30) && !nearMan(ox + 16, oy + 16, 24) && R() < 0.06 && (c.biome === B_HEATH || c.biome === B_FOREST || c.biome === B_SNOW || c.biome === B_DESERT || c.biome === B_PLAINS)) {
     const rx = ox + 8 + R() * 16, ry = oy + 8 + R() * 14;
     if (!isWet(tileL(rx, ry))) {
       addStaticTo(c, 'ruin', rx, ry);
@@ -163,11 +170,11 @@ function genChunk(cx, cy) {
   // vegetation & rocks
   const B = c.biome;
   const plan = {
-    [B_PLAINS]: { n: 26, th: 0.6, list: [['oak', 0.55], ['pine', 0.15], ['bush', 0.3]], rocks: 3 },
-    [B_FOREST]: { n: 110, th: 0.36, list: [['pine', 0.55], ['oak', 0.4], ['bush', 0.05]], rocks: 2 },
-    [B_SNOW]: { n: 55, th: 0.48, list: [['snowpine', 0.9], ['deadtree', 0.1]], rocks: 5 },
-    [B_SWAMP]: { n: 40, th: 0.4, list: [['deadtree', 0.6], ['bush', 0.3], ['oak', 0.1]], rocks: 1 },
-    [B_HEATH]: { n: 10, th: 0.45, list: [['deadtree', 0.4], ['bush', 0.35], ['menhir', 0.25]], rocks: 8 },
+    [B_PLAINS]: { n: 30, th: 0.58, list: [['oak', 0.42], ['birch', 0.16], ['pine', 0.1], ['bush', 0.24], ['stump', 0.04], ['log', 0.04]], rocks: 4 },
+    [B_FOREST]: { n: 120, th: 0.36, list: [['pine', 0.48], ['oak', 0.3], ['birch', 0.1], ['bush', 0.06], ['log', 0.03], ['stump', 0.03]], rocks: 3 },
+    [B_SNOW]: { n: 58, th: 0.48, list: [['snowpine', 0.84], ['deadtree', 0.08], ['log', 0.04], ['stump', 0.04]], rocks: 6 },
+    [B_SWAMP]: { n: 46, th: 0.4, list: [['deadtree', 0.4], ['willow', 0.22], ['bush', 0.24], ['stump', 0.08], ['log', 0.06]], rocks: 1 },
+    [B_HEATH]: { n: 13, th: 0.45, list: [['deadtree', 0.34], ['bush', 0.36], ['menhir', 0.16], ['stump', 0.06], ['birch', 0.08]], rocks: 10 },
     [B_DESERT]: { n: 5, th: 0.4, list: [['palm', 0.4], ['deadtree', 0.3], ['bush', 0.3]], rocks: 5 }
   }[B];
   for (let i = 0; i < plan.n * 2; i++) {
@@ -175,7 +182,7 @@ function genChunk(cx, cy) {
     if (fbm(x * 0.04 + 50, y * 0.04 + 50) < plan.th) continue;
     const t = tileL(x, y);
     if (isWet(t) || t === T_DIRT || t === T_WHEAT) continue;
-    if (nearVil(x, y, 31) || nearCas(x, y, 7)) continue;
+    if (nearVil(x, y, 31) || nearCas(x, y, 7) || nearMan(x, y, 3)) continue;
     if (Math.hypot(x - 16, y + 2) < 8 || (Math.abs(x - 16) < 3 && y < 4 && y > -30)) continue; // keep the starting road clear
     if (localNear(c, x, y, 1.6)) continue;
     let roll = R(), type = plan.list[0][0];
@@ -183,14 +190,15 @@ function genChunk(cx, cy) {
     // trees follow the ground they stand on at biome borders
     if (t === T_SNOW || t === T_DRIFT) { if (type === 'pine' || type === 'oak') type = 'snowpine'; else if (type === 'bush' || type === 'palm') type = 'deadtree'; }
     else if (type === 'snowpine') type = 'pine';
-    if ((t === T_SAND || t === T_DUNE) && (type === 'pine' || type === 'oak' || type === 'snowpine')) type = 'palm';
-    addStaticTo(c, type, x, y);
+    if ((t === T_SAND || t === T_DUNE) && (type === 'pine' || type === 'oak' || type === 'snowpine' || type === 'birch' || type === 'willow')) type = 'palm';
+    if ((t === T_SNOW || t === T_DRIFT) && (type === 'birch' || type === 'willow')) type = 'snowpine';
+    addStaticTo(c, type, x, y, type === 'log' ? { rot: R() * TAU, snow: t === T_SNOW || t === T_DRIFT ? 1 : 0 } : null);
   }
   for (let i = 0; i < plan.rocks; i++) {
     const x = ox + R() * CS, y = oy + R() * CS;
     const t = tileL(x, y);
-    if (isWet(t) || t === T_DIRT || nearVil(x, y, 31) || nearCas(x, y, 7) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
-    addStaticTo(c, 'rock', x, y, (t === T_SNOW || t === T_DRIFT) ? { snow: 1 } : (t === T_SAND || t === T_DUNE) ? { sand: 1 } : null);
+    if (isWet(t) || t === T_DIRT || nearVil(x, y, 31) || nearCas(x, y, 7) || nearMan(x, y, 3) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
+    addStaticTo(c, i % 4 === 3 && B !== B_DESERT ? 'bigrock' : 'rock', x, y, (t === T_SNOW || t === T_DRIFT) ? { snow: 1 } : (t === T_SAND || t === T_DUNE) ? { sand: 1 } : null);
   }
   return c;
 }
@@ -270,4 +278,61 @@ function castleTile(cs, wx, wy, t) {
   if (ax < 2.4 + Math.max(0, l[1] - CAS_S) * 0.02 && l[1] > 0 && l[1] < CAS_S + 48) return T_DIRT;
   if ((ax < CAS_S + 6 && az < CAS_S + 6) && isWet(t)) return cs.snow ? T_SNOW : T_GRASS;
   return t;
+}
+
+// ---------- roads: dirt tracks between neighbouring villages, and lanes to castle gates and manor gates ----------
+const ROADS = new Map();
+function villageLinks(v) {
+  if (v.links) return v.links;
+  const c = [];
+  for (let j = -10; j <= 10; j++) for (let i = -10; i <= 10; i++) {
+    const cx = v.cx + i, cy = v.cy + j; if ((cx & 1) || (cy & 1)) continue;
+    const u = villageFor(cx, cy); if (!u || u === v) continue;
+    const d = Math.hypot(u.x - v.x, u.y - v.y); if (d < 330) c.push([d, u]);
+  }
+  c.sort((a, b) => a[0] - b[0]);
+  v.links = c.slice(0, 2).map(q => q[1]);
+  return v.links;
+}
+function nearestVillageTo(x, y, maxR) {
+  const cx = Math.floor(x / CS), cy = Math.floor(y / CS), n = Math.ceil(maxR / CS);
+  let best = null, bd = maxR;
+  for (let j = -n; j <= n; j++) for (let i = -n; i <= n; i++) { const v = villageFor(cx + i, cy + j); if (!v) continue; const d = Math.hypot(v.x - x, v.y - y); if (d < bd) { bd = d; best = v; } }
+  return best;
+}
+const edgePt = (v, tx, ty) => { const a = Math.atan2(ty - v.y, tx - v.x); return [v.x + Math.cos(a) * 27, v.y + Math.sin(a) * 27]; };
+function mkRoad(key, a, b, seed, w) {
+  let r = ROADS.get(key); if (r) return r;
+  const R = mulberry(seed | 0), L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, n = Math.max(2, Math.round(L / 36));
+  const dx = (b[0] - a[0]) / L, dy = (b[1] - a[1]) / L, pts = [a];
+  for (let i = 1; i < n; i++) { const t = i / n, off = (R() - 0.5) * Math.min(40, L * 0.16) * Math.sin(t * Math.PI); pts.push([a[0] + (b[0] - a[0]) * t - dy * off, a[1] + (b[1] - a[1]) * t + dx * off]); }
+  pts.push(b);
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of pts) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
+  r = { key, pts, w: w || 1.35, bb: [x0 - 3, y0 - 3, x1 + 3, y1 + 3] };
+  ROADS.set(key, r); return r;
+}
+function roadsNear(x0, y0, x1, y1) {
+  const out = [], seen = new Set(), add = r => { if (seen.has(r.key)) return; seen.add(r.key); if (r.bb[2] > x0 && r.bb[0] < x1 && r.bb[3] > y0 && r.bb[1] < y1) out.push(r); };
+  const pad = 340, cx0 = Math.floor((x0 - pad) / CS), cx1 = Math.floor((x1 + pad) / CS), cy0 = Math.floor((y0 - pad) / CS), cy1 = Math.floor((y1 + pad) / CS);
+  for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
+    if ((cx & 1) || (cy & 1)) continue;
+    const v = villageFor(cx, cy); if (!v) continue;
+    for (const u of villageLinks(v)) { const [p, q] = v.id < u.id ? [v, u] : [u, v]; add(mkRoad(p.id + '|' + q.id, edgePt(p, q.x, q.y), edgePt(q, p.x, p.y), p.seed ^ q.seed)); }
+  }
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+  for (const cs of castlesNear(mx, my, 420)) {
+    if (cs.link === undefined) { const g = l2w(cs, 0, CAS_S + 46); cs.link = nearestVillageTo(g[0], g[1], 420) || null; }
+    if (cs.link) { const g = l2w(cs, 0, CAS_S + 46); add(mkRoad(cs.id, g, edgePt(cs.link, g[0], g[1]), cs.seed)); }
+  }
+  for (const m of manorsNear(mx, my, 420)) {
+    if (m.link === undefined) { const g = l2w(m, 0, MAN_G + 32); m.link = nearestVillageTo(g[0], g[1], 400) || null; }
+    if (m.link) { const g = l2w(m, 0, MAN_G + 32); add(mkRoad(m.id, g, edgePt(m.link, g[0], g[1]), m.seed, 1.0)); }
+  }
+  return out;
+}
+function onRoad(r, x, y) {
+  if (x < r.bb[0] || x > r.bb[2] || y < r.bb[1] || y > r.bb[3]) return false;
+  const p = r.pts, w = r.w + (hash2(Math.floor(x * 0.7), Math.floor(y * 0.7)) - 0.5) * 0.5;
+  for (let i = 0; i < p.length - 1; i++) { const q = segQ([p[i][0], p[i][1], p[i + 1][0], p[i + 1][1]], x, y); if ((x - q[0]) ** 2 + (y - q[1]) ** 2 < w * w) return true; }
+  return false;
 }

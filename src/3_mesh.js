@@ -202,7 +202,18 @@ const HUMANS = {
   innkeeper: { coat: '#8a6a44', pants: '#4e3e2c', apron: '#e0d6c0', belt: '#4a3018', hair: '#5a3a20', buttons: true },
   quartermaster: { coat: '#36589e', pants: '#e8e0cc', facing: '#a83a32', hat: 'tricorn', lace: '#ffd84a', buttons: true, boots: '#2a2228', pack: true },
   priest: { coat: '#2e2a34', robe: '#2e2a34', skin: '#f0c8a0', hair: '#8a8478', belt: '#c8b070' },
-  villager: { coat: '#7a7458', pants: '#5a4a34', hat: 'cap', hatC: '#6a5a3a', belt: '#4a3018', hair: '#4a3020' }
+  villager: { coat: '#7a7458', pants: '#5a4a34', hat: 'cap', hatC: '#6a5a3a', belt: '#4a3018', hair: '#4a3020' },
+  captive: { coat: '#8a7a62', pants: '#5a4a34', belt: '#4a3018', hair: '#7a4a24', apron: '#c8bca0' },
+  stranger: { coat: '#4e4c48', robe: '#46443f', skin: '#e0b898', hat: 'hood', hatC: '#3a3936', beard: '#8a8478', belt: '#2a2218', cape: '#3a3834', capeIn: '#2a2826', R: { t: 'staff', col: '#5a4630' } },
+  captain: { coat: '#36589e', pants: '#e8e0cc', facing: '#d8b050', cuff: '#d8b050', hat: 'tricorn', lace: '#e8c050', buttons: true, boots: '#2a2228', sash: '#a83a32', cape: '#2a3a6a', capeIn: '#a83a32', scab: 'full' },
+  heir: { coat: '#d8d0c0', pants: '#4a5a7a', boots: '#3a2a1e', hat: 'circlet', hair: '#a8743a', cape: '#2e4a8a', capeIn: '#d8c070', belt: '#8a6a30', buttons: true },
+  lord: { coat: '#2a2228', pants: '#d8d0c0', facing: '#a8343a', cuff: '#a8343a', hat: 'tricorn', lace: '#e8c050', buttons: true, boots: '#1a1418', cape: '#6a1418', capeIn: '#2a0a0e', sash: '#e8c050', collar: true, R: { t: 'sword', col: '#e8eef8', tier: 4 }, hair: '#d8d4cc' },
+  vlord: { coat: '#4a1420', pants: '#1a0e18', boots: '#120a10', skin: '#f0ecf8', hair: '#0e0a12', eye: '#ff2a3a', eyeEm: true, cape: '#1e0a18', capeIn: '#b81a30', collar: true, buttons: true, hat: 'circlet', crownC: '#8a8a92' },
+  ghost: { wisp: true, robe: '#c8d8e8', coat: '#c0d4e6', skin: '#dce8f2', hat: 'hood', hatC: '#b4c8dc', eye: '#8ae8ff', eyeEm: true },
+  gremlin: { gremlin: true, scale: 0.62, skin: '#6e7a4e', coat: '#5a4632', pants: '#6e7a4e', boots: '#5e6a42', eye: '#ffd23a', eyeEm: true, belt: '#3a2a1a', rag: '#4a3a2a', R: { t: 'shiv' } },
+  gremlin_bomber: { gremlin: true, scale: 0.62, skin: '#7a7450', coat: '#4a3e34', pants: '#7a7450', boots: '#6a6444', eye: '#ffb02a', eyeEm: true, belt: '#3a2a1a', rag: '#5a4030', pack: true, goggles: true, L: { t: 'bomb' } },
+  gremlin_shaman: { gremlin: true, scale: 0.66, skin: '#5e6e58', coat: '#3a4a3a', pants: '#5e6e58', boots: '#4e5e48', eye: '#8aff6a', eyeEm: true, hat: 'hood', hatC: '#2e3a2e', bonesN: true, rag: '#2e3a2e', R: { t: 'staff', col: '#4a3a24', skull: true } },
+  gremlin_brute: { gremlin: true, brute: true, scale: 1.35, skin: '#5a6440', coat: '#3a3028', pants: '#5a6440', boots: '#4a5236', eye: '#ff6a2a', eyeEm: true, belt: '#2a1e12', rag: '#3a2a1e', pauldron: true, plate: null, spikes: true, R: { t: 'club' } }
 };
 const ARMOR_LOOK = {
   tunic: { coat: '#e8dcbc', pants: '#9a8462', boots: '#6a4a2c', belt: '#a07a48', hair: '#6a3e1e' },
@@ -238,6 +249,16 @@ function buildItem(mb, it, side) {
       if (it.tier >= 4) { const e = mb.em; mb.em = 0.7; mb.box(-0.009, -0.06 - L * 0.9, -bt - 0.004, 0.009, -0.1, bt + 0.004, '#ffe080'); mb.em = e; }
       break;
     }
+    case 'staff': {
+      mb.tube([0, 0.35, 0], [0, -1.45, 0], 0.03, 0.025, 6, it.col || '#5a4630', true);
+      if (it.skull) { mb.ico(0, -1.52, 0.02, 0.09, 0.08, 0.1, '#e8e0cc', 0, 0, 7); const e = mb.em; mb.em = 0.8; mb.sph(0.03, -1.52, 0.09, 0.018, 0.018, 0.012, '#8aff6a', 0); mb.sph(-0.03, -1.52, 0.09, 0.018, 0.018, 0.012, '#8aff6a', 0); mb.em = e; for (let k = 0; k < 3; k++) mb.beam([0, -1.4, 0], [Math.cos(k * 2.1) * 0.12, -1.25, Math.sin(k * 2.1) * 0.12], 0.012, '#8a7a5a'); }
+      else mb.ico(0, -1.48, 0, 0.06, 0.08, 0.06, '#6a5236', 0, 0, 3);
+      break;
+    }
+    case 'shiv': mb.rx(-0.8); mb.tube([0, -0.02, 0], [0, 0.08, 0], 0.02, 0.02, 5, '#3a2a1a', true); mb.tri([-0.025, -0.02, 0], [0.025, -0.02, 0], [0, -0.3, 0], '#a8a49a'); mb.tri([0, -0.02, -0.02], [0, -0.02, 0.02], [0, -0.3, 0], '#8a867c'); break;
+    case 'bomb': { mb.sph(0, -0.06, 0.04, 0.11, 0.11, 0.11, '#2a2a30', 0); mb.tube([0, 0.04, 0.04], [0.03, 0.12, 0.06], 0.012, 0.01, 4, '#c8a060'); const e = mb.em; mb.em = 1; mb.sph(0.03, 0.14, 0.06, 0.03, 0.03, 0.03, '#ffb030', 0); mb.em = e; break; }
+    case 'club': mb.rx(0.25); mb.tube([0, 0.08, 0], [0, -0.35, 0], 0.035, 0.045, 6, '#5a3e24', true); mb.tube([0, -0.35, 0], [0, -0.95, 0], 0.05, 0.11, 7, '#6a4a2c', true);
+      for (let k = 0; k < 5; k++) { const a = k * 1.3, y = -0.55 - k * 0.08; mb.cyl(Math.cos(a) * 0.09, y, Math.sin(a) * 0.09, 0.025, 0, 0.09, 4, '#b8b4a8'); } break;
     case 'pike':
       mb.tube([0, 0.8, 0], [0, -2.7, 0], 0.04, 0.04, 6, '#a87a44');
       mb.tri([-0.07, -2.7, 0], [0.07, -2.7, 0], [0, -3.1, 0], '#e8eef4'); mb.tri([0, -2.7, -0.07], [0, -2.7, 0.07], [0, -3.1, 0], '#c8d0d8');
@@ -292,9 +313,19 @@ function buildHuman(spec) {
   mb.smooth = false; // faceted, angular look
   const skin = s.skin || '#f4c8a0', coat = s.coat || '#9a8a6a', pants = s.pants || '#6a5a42', boots = s.boots || '#3a2a1c';
   // legs + boots
+  const gr = !!s.gremlin, lw = gr ? 0.72 : 1;
   for (const side of [1, -1]) {
-    const x = side * 0.1;
+    if (s.wisp) break;
+    const x = side * (gr ? 0.12 : 0.1);
     mb.bone = side > 0 ? BN.legL : BN.legR;
+    if (gr) { // bony, bent legs and big clawed feet
+      mb.tube([x, 0.48, 0], [x, 0.3, 0.02], 0.07, 0.05, 5, pants, true);
+      mb.bone = side > 0 ? BN.shinL : BN.shinR;
+      mb.tube([x, 0.31, 0.02], [x, 0.08, -0.03], 0.05, 0.04, 5, pants, true);
+      mb.box(x - 0.075, 0, -0.08, x + 0.075, 0.08, 0.14, boots);
+      for (let k = -1; k <= 1; k++) mb.tube([x + k * 0.045, 0.03, 0.13], [x + k * 0.06, 0.0, 0.22], 0.022, 0.003, 4, '#d8d0b0');
+      continue;
+    }
     if (!s.robe) mb.tube([x, 0.48, 0], [x, 0.29, 0.0], 0.095, 0.078, 6, s.greaves ? '#e8eef4' : pants, true);
     mb.bone = side > 0 ? BN.shinL : BN.shinR;
     if (!s.robe) { mb.tube([x, 0.31, 0], [x, 0.12, 0.0], 0.076, 0.062, 6, s.greaves ? '#e8eef4' : pants, true); if (!giant) mb.tube([x, 0.25, 0], [x, 0.09, 0.005], 0.08, 0.082, 6, boots, true); }
@@ -302,7 +333,12 @@ function buildHuman(spec) {
   }
   // hips / skirt
   mb.bone = BN.hips;
-  if (s.robe) mb.tube([0, 0.02, 0], [0, 0.72, 0], 0.32, 0.2, 10, s.robe, true);
+  if (s.wisp) { // a robe that thins into a trailing wisp instead of legs
+    mb.tube([0, 0.12, -0.08], [0, 0.72, 0], 0.05, 0.25, 8, s.robe, false);
+    const RR = mulberry(17); for (let k = 0; k < 7; k++) { const a = k / 7 * TAU, r0 = 0.22; mb.tri([Math.cos(a) * r0, 0.55, Math.sin(a) * r0], [Math.cos(a + 0.5) * r0, 0.55, Math.sin(a + 0.5) * r0], [Math.cos(a + 0.25) * 0.12, 0.08 + RR() * 0.25, Math.sin(a + 0.25) * 0.12 - 0.05], s.robe); }
+  }
+  else if (s.robe) mb.tube([0, 0.02, 0], [0, 0.72, 0], 0.32, 0.2, 10, s.robe, true);
+  else if (gr) { mb.box(-0.15, 0.42, -0.11, 0.15, 0.6, 0.11, s.rag || coat); const RR = mulberry(23); for (let k = 0; k < 6; k++) { const x0 = -0.15 + k * 0.05; mb.tri([x0, 0.44, 0.115], [x0 + 0.05, 0.44, 0.115], [x0 + 0.025, 0.3 - RR() * 0.08, 0.12], s.rag || coat); mb.tri([x0 + 0.05, 0.44, -0.115], [x0, 0.44, -0.115], [x0 + 0.025, 0.3 - RR() * 0.08, -0.12], s.rag || coat); } }
   else if (giant) { mb.sph(0, 0.52, 0, 0.27, 0.16, 0.2, s.fur); for (let i = 0; i < 7; i++) { const a = i / 7 * TAU; mb.sph(Math.cos(a) * 0.22, 0.4, Math.sin(a) * 0.16, 0.08, 0.12, 0.08, s.fur, 0); } mb.tube([0, 0.6, 0], [0, 0.66, 0], 0.27, 0.27, 10, s.belt, true); }
   else {
     mb.box(-0.18, 0.42, -0.13, 0.18, 0.62, 0.13, pants);
@@ -311,8 +347,16 @@ function buildHuman(spec) {
   if (s.apron) mb.box(-0.15, 0.32, 0.17, 0.15, 0.7, 0.19, s.apron);
   // torso
   mb.bone = BN.torso;
-  const tw = giant ? 0.28 : 0.22;
+  const tw = giant ? 0.28 : gr ? (s.brute ? 0.27 : 0.18) : 0.22;
   mb.frus(0.5, 0.92, tw * 0.8, tw * 0.6, tw * 1.05, tw * 0.68, giant ? skin : coat); mb.frus(0.92, 1.0, tw * 1.05, tw * 0.68, tw * 0.62, tw * 0.5, giant ? skin : coat);
+  if (gr) { // hunched back, bare bony chest under a torn vest
+    mb.ico(0, 0.9, -0.1, tw * 0.95, 0.13, 0.13, coat, 0.15, 0, 9); mb.frus(0.62, 0.9, tw * 0.5, 0.03, tw * 0.7, 0.03, skin, tw * 0.62);
+    for (let k = 0; k < 3; k++) mb.box(-tw * 0.55, 0.66 + k * 0.07, tw * 0.62 + 0.01, tw * 0.55, 0.68 + k * 0.07, tw * 0.62 + 0.03, '#4a5236');
+    const RR = mulberry(31); for (let k = 0; k < 5; k++) { const x0 = -tw + k * tw * 0.4; mb.tri([x0, 0.52, tw * 0.62], [x0 + tw * 0.4, 0.52, tw * 0.62], [x0 + tw * 0.2, 0.4 - RR() * 0.06, tw * 0.64], coat); }
+    if (s.spikes) for (const sd of [1, -1]) for (let k = 0; k < 3; k++) mb.tube([sd * (0.2 + k * 0.05), 0.98 - k * 0.04, -0.04], [sd * (0.3 + k * 0.07), 1.12 - k * 0.03, -0.1], 0.03, 0.002, 4, '#c8c0a8');
+    if (s.bonesN) for (let k = 0; k < 7; k++) { const a = (k / 6 - 0.5) * 2.2; mb.sph(Math.sin(a) * 0.15, 0.93 - Math.cos(a) * 0.06, Math.cos(a) * 0.12 + 0.05, 0.025, 0.035, 0.025, '#e8e0c8', 0); }
+  }
+  if (s.sash) mb.beam([0.18, 0.93, 0.16], [-0.17, 0.55, 0.15], 0.07, s.sash);
   if (giant) { mb.sph(0, 0.78, 0.1, 0.22, 0.14, 0.12, skin); mb.beam([0.2, 0.92, 0.12], [-0.2, 0.58, 0.14], 0.07, s.fur); }
   if (s.quilt) for (let i = 0; i < 3; i++) mb.bc(0, 0.64 + i * 0.1, tw * 0.66, tw * 1.8, 0.018, 0.02, '#a8844e');
   if (s.mail) { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) mb.sph(-0.12 + j * 0.08, 0.6 + i * 0.075, 0.165, 0.03, 0.025, 0.012, '#8a96a2', 0); }
@@ -324,20 +368,31 @@ function buildHuman(spec) {
   if (s.buttons) for (let i = 0; i < 3; i++) mb.sph(0, 0.62 + i * 0.1, 0.175, 0.022, 0.022, 0.015, '#ffd84a', 0);
   if (s.belt || s.cross) mb.bc(0, 0.585, 0, tw * 1.72, 0.06, tw * 1.3, s.belt || '#3a2414');
   if (s.collar) { mb.box(0.08, 0.9, -0.12, 0.2, 1.1, 0.06, s.capeIn || s.cape); mb.box(-0.2, 0.9, -0.12, -0.08, 1.1, 0.06, s.capeIn || s.cape); }
-  if (s.pack) mb.sph(0, 0.76, -0.2, 0.18, 0.2, 0.1, '#8a6034');
+  if (s.pack && gr) { mb.box(-0.14, 0.62, -0.3, 0.14, 0.92, -0.12, '#6a4a2a'); for (let k = 0; k < 3; k++) mb.sph(-0.08 + k * 0.08, 0.96, -0.2, 0.06, 0.06, 0.06, '#2a2a30', 0); }
+  else if (s.pack) mb.sph(0, 0.76, -0.2, 0.18, 0.2, 0.1, '#8a6034');
   // head (big, round)
   mb.bone = BN.head;
-  const hr = giant ? 0.3 : 0.33, hy = giant ? 1.18 : 1.23, headStart = mb.d.length;
+  const hr = giant ? 0.3 : 0.33, hy = giant ? 1.18 : gr ? 1.16 : 1.23, headStart = mb.d.length;
+  if (gr) mb.ico(0, hy, 0.02, hr * 1.06, hr * 0.84, hr * 0.98, skin, 0.08, 1, 12); else
   mb.sph(0, hy, 0, hr, hr * 0.96, hr * 0.94, skin);
+  if (gr) {
+    for (const sd of [1, -1]) { mb.tube([sd * hr * 0.8, hy + 0.04, -0.02], [sd * hr * 2.15, hy + 0.3, -0.14], 0.11, 0.005, 4, skin); mb.tube([sd * hr * 0.84, hy + 0.05, 0.0], [sd * hr * 1.9, hy + 0.27, -0.1], 0.06, 0.004, 4, '#a86a5a'); }
+    mb.tube([0, hy - 0.02, hr * 0.85], [0, hy - 0.14, hr * 1.42], 0.075, 0.012, 5, skin);
+    mb.box(-0.15, hy + 0.08, hr * 0.8, 0.15, hy + 0.13, hr * 0.95, '#3a3a24');
+    mb.box(-0.15, hy - 0.2, hr * 0.78, 0.15, hy - 0.15, hr * 0.92, '#2a1a14');
+    for (let k = 0; k < 5; k++) { const x = -0.12 + k * 0.06; mb.tri([x - 0.022, hy - 0.15, hr * 0.93], [x + 0.022, hy - 0.15, hr * 0.93], [x, hy - 0.2 + (k % 2) * 0.02, hr * 0.95], '#ece4cc'); }
+    if (s.goggles) { mb.box(-0.26, hy + 0.12, -0.2, 0.26, hy + 0.17, hr * 0.84, '#3a2a1a'); for (const sd of [1, -1]) { mb.cyl(sd * 0.11, hy + 0.1, hr * 0.84, 0.07, 0.07, 0.05, 7, '#8a7a5a'); } }
+  }
   // face: big dark eyes with a white catch-light, small mouth, blush
   const eye = s.eye || '#1e1624', ez = hr * 0.9, ey = hy + 0.01;
-  { const e = mb.em; if (s.eyeEm) mb.em = 1; mb.sph(0.1, ey, ez, 0.034, 0.042, 0.022, eye, 0); mb.sph(-0.1, ey, ez, 0.034, 0.042, 0.022, eye, 0); mb.em = e; }
+  { const e = mb.em, er = gr ? 2.1 : 1; if (s.eyeEm) mb.em = 1; mb.sph(0.1 * (gr ? 1.12 : 1), ey, ez, 0.034 * er, 0.042 * er * 0.8, 0.022, eye, 0); mb.sph(-0.1 * (gr ? 1.12 : 1), ey, ez, 0.034 * er, 0.042 * er * 0.8, 0.022, eye, 0); mb.em = e; }
   if (!s.eyeEm && !giant) { const bc = s.hair || '#3a2414'; mb.box(0.045, ey + 0.065, ez - 0.02, 0.165, ey + 0.092, ez + 0.022, bc); mb.box(-0.165, ey + 0.065, ez - 0.02, -0.045, ey + 0.092, ez + 0.022, bc); }
-  mb.sph(0, hy - 0.05, hr * 0.96, 0.042, 0.06, 0.05, skin);
-  mb.box(-0.05, hy - 0.145, hr * 0.9 - 0.01, 0.05, hy - 0.13, hr * 0.9 + 0.012, giant ? '#3a1a10' : '#6a3028');
-  if (s.beard) { mb.sph(0, hy - 0.2, 0.16, 0.24, 0.2, 0.16, s.beard); mb.sph(0, hy - 0.36, 0.14, 0.15, 0.14, 0.11, s.beard); }
+  if (!gr) { mb.sph(0, hy - 0.05, hr * 0.96, 0.042, 0.06, 0.05, skin);
+    mb.box(-0.05, hy - 0.145, hr * 0.9 - 0.01, 0.05, hy - 0.13, hr * 0.9 + 0.012, giant ? '#3a1a10' : '#6a3028'); }
+  if (s.beard && giant) { mb.sph(0, hy - 0.2, 0.16, 0.24, 0.2, 0.16, s.beard); mb.sph(0, hy - 0.36, 0.14, 0.15, 0.14, 0.11, s.beard); }
+  else if (s.beard) { mb.ico(0, hy - 0.17, 0.2, 0.22, 0.17, 0.13, s.beard, 0.1, 0, 4); mb.ico(0, hy - 0.34, 0.17, 0.13, 0.14, 0.09, s.beard, 0.1, 0, 5); }
   const hair = s.hair || '#5a3a1e';
-  const helm = s.hat === 'great' || s.hat === 'sallet' || s.hat === 'coif';
+  const helm = s.hat === 'great' || s.hat === 'sallet' || s.hat === 'coif' || gr;
   if (!helm) { mb.sph(0, hy + 0.07, -0.05, hr * 1.04, hr * 0.92, hr * 0.96, hair); mb.sph(0.1, hy + 0.2, 0.2, 0.12, 0.08, 0.09, hair, 0); mb.sph(-0.12, hy + 0.21, 0.19, 0.11, 0.08, 0.09, hair, 0); }
   switch (s.hat) {
     case 'tricorn': {
@@ -351,21 +406,23 @@ function buildHuman(spec) {
     case 'sallet': mb.sph(0, hy + 0.04, -0.02, hr * 1.12, hr * 1.06, hr * 1.1, '#dce6f0'); mb.box(-0.22, ey - 0.02, hr * 1.04, 0.22, ey + 0.03, hr * 1.1, '#1a1a22'); if (s.crest) mb.sph(0, hy + 0.36, -0.04, 0.05, 0.1, 0.24, s.crest); break;
     case 'great': mb.tube([0, hy - 0.32, 0], [0, hy + 0.3, 0], hr * 1.05, hr * 1.0, 12, '#eef4fa', true); mb.box(-0.22, ey - 0.02, hr * 1.0, 0.22, ey + 0.03, hr * 1.08, '#1a1a22'); mb.box(-0.02, hy - 0.2, hr * 1.0, 0.02, ey - 0.02, hr * 1.08, '#1a1a22'); if (s.crest) { mb.sph(0, hy + 0.42, 0, 0.06, 0.14, 0.24, s.crest); } break;
     case 'cap': mb.sph(0, hy + 0.2, 0, hr * 1.02, hr * 0.55, hr * 1.02, s.hatC); mb.sph(0, hy + 0.14, 0.26, 0.2, 0.03, 0.12, s.hatC); break;
+    case 'circlet': mb.cyl(0, hy + 0.13, 0, hr * 1.06, hr * 1.06, 0.07, 12, s.crownC || '#d8b050', false); for (let k = 0; k < 5; k++) { const a = (k / 5) * TAU; mb.cyl(Math.cos(a) * hr * 1.06, hy + 0.2, Math.sin(a) * hr * 1.06, 0.035, 0, 0.1, 4, s.crownC || '#d8b050'); } { const e = mb.em; mb.em = 0.6; mb.sph(0, hy + 0.17, hr * 1.08, 0.035, 0.035, 0.02, s.crownC ? '#c81e3a' : '#4a7ae8', 0); mb.em = e; } break;
     case 'witch': mb.cyl(0, hy + 0.2, 0, 0.5, 0.5, 0.03, 14, s.hatC); mb.push().tr(0, hy + 0.2, 0).rx(-0.2).cyl(0, 0, 0, 0.28, 0.0, 0.72, 10, s.hatC).pop(); mb.cyl(0, hy + 0.21, 0, 0.29, 0.27, 0.07, 10, '#e8c050'); break;
   }
   if (s.hair && s.hat === 'witch') mb.sph(0, hy - 0.08, -0.2, 0.3, 0.36, 0.12, s.hair);
   { // shrink the whole head group (head, face, hair, hat) about its centre; keep the bottom on the neck
-    const k = giant ? 0.8 : 0.6, bottom = hy - hr * 0.96, ny = bottom + hr * 0.96 * k;
+    const k = giant ? 0.8 : gr ? (s.brute ? 0.66 : 0.82) : 0.6, bottom = hy - hr * 0.96, ny = bottom + hr * 0.96 * k;
     for (let i = headStart; i < mb.d.length; i += 14) { mb.d[i] *= k; mb.d[i + 1] = ny + (mb.d[i + 1] - hy) * k; mb.d[i + 2] *= k; }
   }
   // arms
   for (const side of [1, -1]) {
     mb.bone = side > 0 ? BN.armL : BN.armR;
-    const x = side * (giant ? 0.3 : 0.27), ar = giant ? 0.1 : 0.068;
-    const sleeve = giant ? skin : s.plateArms ? '#e8eef4' : s.robe ? s.coat : coat;
-    mb.tube([x, 0.92, 0], [x, 0.58, 0], ar * 1.08, ar * 0.86, 6, sleeve, true); mb.ico(x, 0.89, 0, ar * 1.25, ar * 1.1, ar * 1.25, sleeve, 0, 0, 3);
+    const x = side * (giant ? 0.3 : gr ? tw + 0.06 : 0.27), ar = giant ? 0.1 : gr ? (s.brute ? 0.085 : 0.05) : 0.068;
+    const sleeve = giant ? skin : gr ? skin : s.plateArms ? '#e8eef4' : s.robe ? s.coat : coat;
+    mb.tube([x, 0.92, 0], [x, 0.58, 0], ar * 1.08, ar * 0.86, 6, sleeve, true); mb.ico(x, 0.89, 0, ar * 1.25, ar * 1.1, ar * 1.25, gr ? s.rag || coat : sleeve, 0, 0, 3);
     if (s.cuff) mb.tube([x, 0.6, 0], [x, 0.56, 0], ar + 0.015, ar + 0.015, 6, s.cuff, true);
     mb.bc(x, HAND.y + 0.02, HAND.z, ar * 1.6, ar * 1.9, ar * 1.7, s.plateArms ? '#c8d2dc' : skin);
+    if (gr) for (let k = -1; k <= 1; k++) mb.tube([x + k * ar * 0.5, HAND.y - 0.04, HAND.z + 0.02], [x + k * ar * 0.7, HAND.y - 0.14, HAND.z + 0.07], 0.016, 0.002, 4, '#e0d8c0');
     if (giant && side < 0) { // spiked club
       mb.push().tr(x, HAND.y, 0.03).rx(0.3);
       mb.tube([0, 0.1, 0], [0, -0.3, 0], 0.06, 0.08, 8, s.club, true); mb.tube([0, -0.3, 0], [0, -1.0, 0], 0.08, 0.17, 8, s.club, true);
@@ -389,10 +446,8 @@ function buildHuman(spec) {
     mb.sph(0, 0.42, -0.62, 0.08, 0.08, 0.06, '#8a4a20', 0);
   }
   remapHuman(mb.d);
-  if (giant) {
-    const k = s.scale || 3.0;
-    for (let i = 0; i < mb.d.length; i += 14) { mb.d[i] *= k; mb.d[i + 1] *= k; mb.d[i + 2] *= k; }
-  }
+  const ks = s.scale || (giant ? 3.0 : 1);
+  if (ks !== 1) for (let i = 0; i < mb.d.length; i += 14) { mb.d[i] *= ks; mb.d[i + 1] *= ks; mb.d[i + 2] *= ks; }
   return mb;
 }
 // weapons worn on the body (rig units): sword scabbards on the hip, claymore / bow / shield on the back, quiver, pistol holster
@@ -581,3 +636,100 @@ function mkArrowM() { const mb = new MB(53); mb.beam([0, 0, -0.45], [0, 0, 0.45]
 function mkBallM(k) { const mb = new MB(54); if (k === 'pball') mb.em = 1; mb.sph(0, 0, 0, 0.1, 0.1, 0.1, k === 'pball' ? '#ffe080' : '#4a4a52', 0); return mb; }
 function mkFireballM() { const mb = new MB(55); mb.em = 1; mb.sph(0, 0, 0, 0.34, 0.34, 0.34, '#ff6a1a'); mb.sph(0, 0, 0, 0.22, 0.22, 0.22, '#ffe080', 0); return mb; }
 function mkBoulderM(frost) { const mb = new MB(56); mb.ico(0, 0, 0, 0.6, 0.55, 0.6, frost ? '#c8e4f8' : '#a8a098', 0.18, 1, frost ? 9 : 7); return mb; }
+
+// ---------- richer scenery: more tree species, deadfall, graves, and small ground detail (decor is visual only) ----------
+function mkBirchM(far) {
+  const mb = new MB(91); mb.smooth = false;
+  mb.tube([0, 0, 0], [0.12, 3.4, 0.05], 0.16, 0.08, 6, '#d8d4c8', false);
+  if (!far) for (let k = 0; k < 6; k++) { const y = 0.4 + k * 0.48; mb.box(-0.15 + k * 0.012, y, -0.02, -0.04 + k * 0.012, y + 0.07, 0.16, '#3a3632'); }
+  mb.tube([0.05, 2.2, 0.02], [0.6, 3.1, 0.3], 0.06, 0.03, 4, '#c8c4b8'); mb.tube([0.08, 2.6, 0.03], [-0.5, 3.4, -0.2], 0.05, 0.03, 4, '#c8c4b8');
+  mb.wind = 0.5; const g = ['#8a9a4a', '#7a8e44', '#94a254'];
+  const cr = far ? [[0.1, 3.7, 0, 1.1]] : [[0.1, 3.8, 0, 0.95], [0.6, 3.3, 0.35, 0.7], [-0.5, 3.5, -0.25, 0.72], [0.15, 4.5, 0.05, 0.62], [-0.2, 3.0, 0.5, 0.55]];
+  cr.forEach((c, i) => mb.ico(c[0], c[1], c[2], c[3] * 0.85, c[3] * 1.1, c[3] * 0.85, g[i % 3], 0.18, far ? 0 : 1, 140 + i));
+  return mb;
+}
+function mkWillowM() {
+  const mb = new MB(92); mb.smooth = false;
+  mb.tube([0, 0, 0], [0.2, 1.8, 0], 0.4, 0.26, 7, '#5a4a38', false);
+  for (const a of [0.3, 2.2, 4.1]) mb.tube([0.2, 1.6, 0], [Math.cos(a) * 1.0, 2.6, Math.sin(a) * 1.0], 0.13, 0.07, 5, '#5a4a38');
+  mb.wind = 0.7; const g = ['#5e6e3a', '#566634', '#667640'];
+  [[0, 3.0, 0, 1.5], [1.0, 2.7, 0.5, 1.0], [-0.9, 2.8, -0.4, 1.05], [0.3, 2.7, -1.0, 0.95]].forEach((c, i) => mb.ico(c[0], c[1], c[2], c[3], c[3] * 0.7, c[3], g[i % 3], 0.15, 1, 150 + i));
+  const R = mulberry(93);
+  for (let k = 0; k < 16; k++) { const a = k / 16 * TAU + R() * 0.3, r = 1.2 + R() * 0.7, x = Math.cos(a) * r, z = Math.sin(a) * r, y = 2.4 + R() * 0.5; mb.tri([x - 0.14, y, z], [x + 0.14, y, z], [x * 1.08, y - 1.4 - R() * 0.9, z * 1.08], g[k % 3]); mb.tri([x, y, z - 0.14], [x, y, z + 0.14], [x * 1.08, y - 1.3 - R() * 0.9, z * 1.08], g[(k + 1) % 3]); }
+  return mb;
+}
+function mkLogM() {
+  const mb = new MB(94); mb.smooth = false;
+  mb.tube([-1.3, 0.28, 0], [1.3, 0.24, 0.05], 0.3, 0.26, 7, '#6a5038', true);
+  mb.push().tr(-1.32, 0.28, 0).rz(Math.PI / 2).cyl(0, 0, 0, 0.27, 0.27, 0.02, 7, '#b0946a').pop();
+  mb.push().tr(1.32, 0.24, 0.05).rz(-Math.PI / 2).cyl(0, 0, 0, 0.23, 0.23, 0.02, 7, '#a88a60').pop();
+  mb.ico(0.2, 0.5, 0.05, 0.42, 0.1, 0.2, '#4e6a32', 0.2, 0, 3); mb.ico(-0.7, 0.48, -0.05, 0.25, 0.08, 0.16, '#566e36', 0.2, 0, 4);
+  mb.tube([0.5, 0.3, 0.1], [0.9, 0.7, 0.45], 0.06, 0.02, 4, '#6a5038');
+  for (const [x, c] of [[-0.3, '#c8a878'], [-0.15, '#b8946a'], [0.9, '#d0b080']]) { mb.cyl(x, 0.48, 0.22, 0.06, 0.07, 0.04, 6, c); mb.tube([x, 0.44, 0.2], [x, 0.49, 0.22], 0.02, 0.02, 4, '#e8dcc0'); }
+  return mb;
+}
+function mkStumpM() {
+  const mb = new MB(95); mb.smooth = false;
+  mb.cyl(0, 0, 0, 0.42, 0.36, 0.55, 8, '#6a5038', '#b8986c');
+  mb.cyl(0, 0.555, 0, 0.26, 0.26, 0.005, 8, '#a08058', false);
+  for (let k = 0; k < 4; k++) { const a = k * 1.6 + 0.3; mb.tube([Math.cos(a) * 0.3, 0.2, Math.sin(a) * 0.3], [Math.cos(a) * 0.75, 0.0, Math.sin(a) * 0.75], 0.12, 0.04, 5, '#5e4632'); }
+  mb.ico(0.2, 0.6, 0.1, 0.16, 0.05, 0.12, '#4e6a32', 0.2, 0, 2);
+  return mb;
+}
+function mkBigRockM(k) {
+  const mb = new MB(96 + k); mb.smooth = false; const base = k === 1 ? '#a8a6a4' : '#9a968e', dk = '#7e7a72';
+  const top = k === 1 ? (n => n[1] > 0.5 ? '#f0f4f8' : base) : (n => n[1] > 0.72 ? '#6a7a48' : base);
+  mb.ico(0, 0.55, 0, 1.25, 0.95, 1.05, top, 0.22, 1, 11 + k); mb.ico(0.95, 0.3, 0.6, 0.65, 0.5, 0.6, top, 0.2, 1, 13); mb.ico(-0.9, 0.25, -0.5, 0.5, 0.4, 0.55, dk, 0.2, 0, 14);
+  return mb;
+}
+function mkGraveM(kind) {
+  const mb = new MB(97); mb.smooth = false; const st = '#8e8a82', st2 = '#76726a', moss = '#5a6a3e';
+  mb.box(-0.42, -0.1, -0.2, 0.42, 0.06, 0.55, '#5a5038');
+  if (kind === 0) { mb.box(-0.3, 0, -0.1, 0.3, 0.85, 0.06, st); mb.push().tr(0, 0.85, -0.02).rx(Math.PI / 2).cyl(0, -0.08, 0, 0.3, 0.3, 0.16, 8, st).pop(); mb.box(-0.2, 0.5, 0.06, 0.2, 0.54, 0.075, st2); mb.box(-0.15, 0.4, 0.06, 0.15, 0.43, 0.075, st2); mb.ico(-0.2, 0.05, 0.05, 0.22, 0.08, 0.12, moss, 0.2, 0, 3); }
+  else { mb.box(-0.07, 0, -0.06, 0.07, 1.25, 0.06, st); mb.box(-0.38, 0.78, -0.06, 0.38, 0.93, 0.06, st); mb.ico(0.05, 0.05, 0.05, 0.2, 0.07, 0.12, moss, 0.2, 0, 4); }
+  for (let k = 0; k < 4; k++) mb.tri([-0.35 + k * 0.22, 0.04, 0.5], [-0.25 + k * 0.22, 0.04, 0.52], [-0.3 + k * 0.22, 0.28, 0.48], '#5e6e3a');
+  return mb;
+}
+function mkTombM() {
+  const mb = new MB(98); mb.smooth = false; const st = '#8a867e', st2 = '#6e6a62';
+  mb.box(-0.62, 0, -1.05, 0.62, 0.62, 1.05, st); mb.box(-0.7, 0.62, -1.12, 0.7, 0.78, 1.12, st2);
+  mb.push().tr(0, 0.78, 0).rz(0.06).box(-0.55, 0, -0.95, 0.55, 0.12, 0.95, st).pop();
+  for (const z of [-0.6, 0, 0.6]) mb.box(0.62, 0.15, z - 0.18, 0.66, 0.5, z + 0.18, st2);
+  mb.ico(-0.4, 0.9, 0.5, 0.3, 0.08, 0.35, '#5a6a3e', 0.2, 0, 5);
+  return mb;
+}
+function mkStatueM() {
+  const mb = new MB(99); mb.smooth = false; const st = '#9a968c', st2 = '#7e7a72';
+  mb.box(-0.55, 0, -0.55, 0.55, 0.7, 0.55, st2); mb.box(-0.62, 0.7, -0.62, 0.62, 0.82, 0.62, st);
+  mb.frus(0.82, 2.0, 0.34, 0.26, 0.2, 0.16, st);              // robed body
+  mb.ico(0, 2.12, 0.08, 0.15, 0.17, 0.15, st, 0.05, 0, 3);      // bowed head
+  mb.ico(0, 2.12, -0.02, 0.18, 0.2, 0.16, st2, 0.05, 0, 4);    // hood
+  for (const sd of [1, -1]) { mb.tri([sd * 0.12, 1.9, -0.15], [sd * 0.75, 2.5, -0.35], [sd * 0.3, 1.0, -0.3], st2); mb.tri([sd * 0.12, 1.9, -0.15], [sd * 0.3, 1.0, -0.3], [sd * 0.1, 1.2, -0.2], st); }
+  mb.beam([0.2, 1.75, 0.15], [0.05, 2.05, 0.2], 0.08, st); mb.beam([-0.2, 1.75, 0.15], [-0.05, 2.05, 0.2], 0.08, st); // hands to the face
+  mb.ico(0.35, 0.85, 0.3, 0.3, 0.1, 0.25, '#5a6a3e', 0.2, 0, 6);
+  return mb;
+}
+function mkFountainM() {
+  const mb = new MB(100); mb.smooth = false; const st = '#8e8a82', st2 = '#74706a';
+  for (let k = 0; k < 10; k++) { const a0 = k / 10 * TAU, a1 = (k + 1) / 10 * TAU, h = k === 3 ? 0.25 : 0.62; mb.push().ry(-(a0 + a1) / 2).box(-0.5, 0, 1.45, 0.5, h, 1.75, k % 2 ? st : st2).pop(); }
+  mb.cyl(0, 0, 0, 1.5, 1.5, 0.15, 10, '#5a5444', false);
+  mb.cyl(0, 0.15, 0, 0.35, 0.28, 1.2, 8, st); mb.cyl(0, 1.35, 0, 0.75, 0.55, 0.22, 8, st2); mb.ico(0, 1.75, 0, 0.18, 0.4, 0.18, st, 0.1, 0, 7);
+  mb.ico(-0.6, 0.18, 0.5, 0.45, 0.06, 0.4, '#3e4a36', 0.2, 0, 8); mb.ico(1.9, 0.12, 0.6, 0.3, 0.15, 0.25, st2, 0.25, 0, 9);
+  return mb;
+}
+// small ground detail (no colliders, no outlines)
+const DECOR_BUILD = {
+  mushroom: () => { const mb = new MB(110); const R = mulberry(5); for (let k = 0; k < 4; k++) { const x = (R() - 0.5) * 0.4, z = (R() - 0.5) * 0.4, h = 0.08 + R() * 0.12, c = k % 3 === 0 ? '#a8402e' : k % 3 === 1 ? '#c8a878' : '#8a6a4a'; mb.cyl(x, 0, z, 0.025, 0.022, h, 5, '#e8e0cc'); mb.cyl(x, h, z, 0.08 + R() * 0.04, 0.0, 0.07, 6, c); } return mb; },
+  fern: () => { const mb = new MB(111); mb.wind = 1; for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + 0.2, c = Math.cos(a), s = Math.sin(a), L = 0.55 + (k % 3) * 0.12; mb.tri([c * 0.03 - s * 0.05, 0, s * 0.03 + c * 0.05], [c * 0.03 + s * 0.05, 0, s * 0.03 - c * 0.05], [c * L, 0.3 + (k % 2) * 0.1, s * L], k % 2 ? '#4e7a38' : '#5a8642'); mb.tri([c * L * 0.4 - s * 0.12, 0.2, s * L * 0.4 + c * 0.12], [c * L * 0.4 + s * 0.12, 0.2, s * L * 0.4 - c * 0.12], [c * L, 0.3 + (k % 2) * 0.1, s * L], '#467034'); } return mb; },
+  puddle: () => { const mb = new MB(112); mb.smooth = false; const R = mulberry(7), N = 9, pts = []; for (let k = 0; k < N; k++) { const a = k / N * TAU, r = 0.7 + R() * 0.4; pts.push([Math.cos(a) * r * 1.3, 0.03, Math.sin(a) * r]); } for (let k = 0; k < N; k++) mb.tri([0, 0.03, 0], pts[(k + 1) % N], pts[k], '#66727a'); for (let k = 0; k < N; k++) { const p = pts[k], q = pts[(k + 1) % N]; mb.quad([p[0] * 1.2, 0.012, p[2] * 1.2], [q[0] * 1.2, 0.012, q[2] * 1.2], q, p, '#6e604a'); } return mb; },
+  heathbush: () => { const mb = new MB(113); mb.wind = 0.6; const R = mulberry(9); for (let k = 0; k < 5; k++) mb.ico((R() - 0.5) * 0.5, 0.16 + R() * 0.1, (R() - 0.5) * 0.5, 0.2, 0.16, 0.2, k % 2 ? '#7a5a7e' : '#5e6a3e', 0.2, 0, 20 + k); return mb; },
+  deadbush: () => { const mb = new MB(114); const R = mulberry(10); for (let k = 0; k < 7; k++) { const a = k / 7 * TAU + R(), L = 0.4 + R() * 0.3; mb.tube([0, 0, 0], [Math.cos(a) * L * 0.6, 0.5 + R() * 0.3, Math.sin(a) * L * 0.6], 0.025, 0.008, 3, '#7a6650'); } return mb; },
+  snowtuft: () => { const mb = new MB(115); for (let k = 0; k < 4; k++) { const a = k * 1.6, x = Math.cos(a) * 0.08, z = Math.sin(a) * 0.08; mb.tri([x - 0.04, 0, z], [x + 0.04, 0, z], [x * 2.5, 0.32, z * 2.5], '#8a8a6a'); } mb.ico(0, 0.02, 0, 0.3, 0.06, 0.25, '#e8ecf2', 0.2, 0, 3); return mb; },
+  leaves: () => { const mb = new MB(116); mb.smooth = false; const R = mulberry(11), cols = ['#8a5a2a', '#a8742e', '#6e4a26', '#9a6a34']; for (let k = 0; k < 9; k++) { const x = (R() - 0.5) * 1.0, z = (R() - 0.5) * 1.0, a = R() * TAU, c = Math.cos(a) * 0.09, s = Math.sin(a) * 0.09; mb.tri([x - c, 0.02, z - s], [x + s * 0.6, 0.025, z - c * 0.6], [x + c, 0.02, z + s], cols[k % 4]); } return mb; },
+  twigs: () => { const mb = new MB(117); const R = mulberry(12); for (let k = 0; k < 4; k++) { const a = R() * TAU, x = (R() - 0.5) * 0.6, z = (R() - 0.5) * 0.6; mb.beam([x, 0.03, z], [x + Math.cos(a) * 0.5, 0.04, z + Math.sin(a) * 0.5], 0.03, '#6a5038'); } return mb; },
+  stones: () => { const mb = new MB(118); mb.smooth = false; const R = mulberry(13); for (let k = 0; k < 5; k++) mb.ico((R() - 0.5) * 0.8, 0.03, (R() - 0.5) * 0.8, 0.1 + R() * 0.08, 0.06, 0.1 + R() * 0.06, k % 2 ? '#8e8a82' : '#7a766e', 0.25, 0, 30 + k); return mb; },
+  grassclump: () => { const mb = new MB(119); mb.wind = 1; for (let k = 0; k < 8; k++) { const a = k / 8 * TAU + 0.4, x = Math.cos(a) * 0.1, z = Math.sin(a) * 0.1, h = 0.45 + (k % 3) * 0.15; mb.tri([x - 0.035, 0, z], [x + 0.035, 0, z], [x * 3.2, h, z * 3.2], k % 2 ? '#6a8a44' : '#7a9650'); mb.tri([x, 0, z - 0.035], [x, 0, z + 0.035], [x * 3.2, h, z * 3.2], '#5e7e3e'); } return mb; },
+  cattail: () => { const mb = new MB(120); mb.wind = 1; for (let k = 0; k < 6; k++) { const a = k * 1.3, x = Math.cos(a) * 0.12, z = Math.sin(a) * 0.12; mb.tri([x - 0.03, 0, z], [x + 0.03, 0, z], [x * 2, 1.0 + (k % 3) * 0.2, z * 2], '#6a8a3e'); } return mb; }
+};
+Object.assign(STATIC_BUILD, { birch: () => mkBirchM(false), willow: mkWillowM, log: mkLogM, logsnow: mkLogM, stump: mkStumpM, bigrock: () => mkBigRockM(0), bigrocksnow: () => mkBigRockM(1), grave: () => mkGraveM(0), grave2: () => mkGraveM(1), tomb: mkTombM, gstatue: mkStatueM, fountain: mkFountainM }, DECOR_BUILD);
+Object.assign(STATIC_FAR, { birch: () => mkBirchM(true) });

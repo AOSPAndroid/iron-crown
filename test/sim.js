@@ -1,4 +1,4 @@
-// Long headless simulation: tutorial, gear, day / night / snow fights, death, save + continue. Must finish with zero exceptions.
+// Long headless simulation: story opening, quests, gremlins, a haunted manor, gear, day / night / snow fights, death, save + continue. Must finish with zero exceptions.
 const { run } = require('./harness');
 let errors = 0;
 const origErr = console.error; console.error = (...a) => { errors++; origErr(...a); };
@@ -7,7 +7,7 @@ const t0 = Date.now();
 run('for(let i=0;i<30;i++) step(0.016)');
 run('startNew()');
 run('for(let i=0;i<200000 && S.mode==="loading";i++) step(0.016)');
-console.log('mode after load', run('S.mode'), 'tut', run('S.tut'), 'ents', run('S.ents.length'), 'chunks', run('CHUNKS.size'));
+console.log('mode after load', run('S.mode'), 'ents', run('S.ents.length'), 'chunks', run('CHUNKS.size'));
 run(`
 // virtual joystick toward a world point (camera-relative input)
 function stick(tx, ty, stop) {
@@ -25,37 +25,30 @@ function randKeys() {
   const foe = S.ents.find(e => e.team === 1 && !e.dead && dist(e, P) < 25);
   if (foe && Math.random() < 0.8) stick(foe.x, foe.y, 1.2); else { touch.active = true; touch.jx = Math.random() * 2 - 1; touch.jy = Math.random() * 2 - 1; }
 }
-function sim(sec) { const n = Math.round(sec / 0.033); for (let i = 0; i < n; i++) { if (i % 6 === 0) randKeys(); step(0.033); if (S.mode === 'shop') closeShop(); if (S.mode === 'inv') closeInv(); if (S.mode === 'paused') closePause(); if (S.mode === 'over') { overClick({ target: { closest: () => ({ dataset: { a: 'rise' } }) } }); } } release(); }
+function sim(sec) { const n = Math.round(sec / 0.033); for (let i = 0; i < n; i++) { if (i % 6 === 0) randKeys(); step(0.033); if (S.mode === 'shop') closeShop(); if (S.mode === 'inv') closeInv(); if (S.mode === 'paused') closePause(); if (S.mode === 'talk') closeTalk(); if (S.mode === 'log') closeLog(); if (S.mode === 'over') { overClick({ target: { closest: () => ({ dataset: { a: 'rise' } }) } }); } } release(); }
 `);
-// tutorial, played with the new mechanics: rhythm combo, parry-grab, perfect dodge, then finish
-run(`var tl = [];
-for (let i = 0; i < 4000 && S.tut === 0; i++) {
-  const b = S.ents.find(e => e.tut); if (!b) { step(0.033); continue; }
-  const d = stick(b.x, b.y, 1.3);
-  keys.KeyJ = false; keys.KeyK = false;
-  if (S.tutStep === 0 || S.tutStep >= 3) {
-    // press attack when the combo window opens (or start a string when idle)
-    const a = P.act; if (!a || (a.k === 'atk' && a.t >= a.mv.w + a.mv.a && a.t < a.mv.w + a.mv.a + 0.05)) keys.KeyJ = d < 1.9 && i % 2 === 0;
-  } else if (S.tutStep === 1) {
-    // parry: tap block when the bandit's punch is ~0.1s from landing
-    if (b.state === 'wind' && b.atk && b.wt > foeWind(b.atk, b.hitIdx) - 0.12) keys.KeyK = true;
-  } else if (S.tutStep === 2) {
-    if (b.state === 'wind' && b.atk && b.wt > foeWind(b.atk, b.hitIdx) - 0.08 && !(P.act && P.act.k === 'dash')) edge.Space = true;
-  }
-  if (tl[tl.length - 1] !== S.tutStep) tl.push(S.tutStep);
-  step(0.033);
-}
-release();`);
-console.log('tutorial steps seen', run('tl.join(">")'), 'tut', run('S.tut'), 'hp', run('Math.round(P.hp)'), 'drops', run('S.drops.map(d=>d.id||d.kind).join(",")'));
-run(`for(let i=0;i<300 && S.tut===1;i++){ const d=S.drops.find(d=>d.id==='rusty_sword'); if(d) stick(d.x,d.y,0.2); step(0.033); } release();`);
-console.log('tut after pickup', run('S.tut'), 'hands', run('JSON.stringify(P.hands)'));
-run(`edge.KeyH=true; for(let i=0;i<300 && S.tut===2;i++){ if(i%30===0) edge.KeyH=true; step(0.033); }`);
-console.log('tut after horse', run('S.tut'), 'mounted', run('P.mounted'));
+// story opening: the prologue, then the stranger at the inn (no tutorial)
+console.log('opening', run('S.mode'), 'quest', run('S.Q.act[0].title'), 'bandits', run("S.ents.filter(e=>e.kind==='bandit').length"));
+run(`closeTalk(); for (let i = 0; i < 10; i++) step(0.033);
+{ const st = S.ents.find(e => e.kind === 'stranger'), tav = st.struct, d = tav.doors[0];
+  for (let i = 0; i < 600 && structAt(P.x, P.y) !== tav; i++) { const out = !structAt(P.x, P.y) && Math.hypot(P.x - d.ox, P.y - d.oy) > 1.2; stick(out ? d.ox : d.ix, out ? d.oy : d.iy, 0.3); step(0.033); }
+  for (let i = 0; i < 300 && dist(P, st) > 2.2; i++) { stick(st.x, st.y, 1.8); step(0.033); } release();
+  for (let i = 0; i < 5; i++) step(0.033); S.interact = findInteract(); doInteract(); var talkView = TALK && TALK.view; talkAct('story'); for (let i = 0; i < 10; i++) step(0.033); }`);
+console.log('stranger talk', run('talkView'), 'quest now', run('S.Q.act[0] && S.Q.act[0].title'), 'hands', run('JSON.stringify(P.hands)'), 'inv', run('P.inv.map(q=>q.id).join(",")'));
+// chapter 2: the gremlins at the Old Mill steal the signet; fight them with the new gear, pick it up, bring it back
+run(`{ const q = S.Q.act[0], st = qStep(q); P.x = st.x + 30; P.y = st.y; S.horse.x = P.x + 3; S.horse.y = P.y; P.hp = P.maxHp = 400; for (let i = 0; i < 40; i++) step(0.033);
+  for (let i = 0; i < 2400 && qStep(q) && qStep(q).t === 'item'; i++) { const drop = S.drops.find(d => d.qid === q.id); const foe = S.ents.find(e => e.qid === q.id && !e.dead && e.team === 1);
+    if (drop) { stick(drop.x, drop.y, 0.2); keys.KeyJ = false; } else if (foe) { stick(foe.x, foe.y, 1.0); keys.KeyJ = i % 6 < 2; } else stick(st.x, st.y, 1); P.hp = Math.max(P.hp, 200); step(0.033); }
+  release(); var signetStep = qStep(q) && qStep(q).t; }`);
+console.log('signet recovered, next step', run('signetStep'), 'gremlins stole', run('S.stats.stolen'), 'recovered', run('S.stats.recovered'));
+run(`{ const q = S.Q.act[0], st = S.ents.find(e => e.kind === 'stranger'); P.x = st.x + 1.2; P.y = st.y; for (let i = 0; i < 10; i++) step(0.033); S.interact = findInteract(); doInteract(); var tv2 = TALK && TALK.view; talkAct('turnin'); for (let i = 0; i < 10; i++) step(0.033); }`);
+console.log('turn-in view', run('tv2'), 'main chapter', run('S.Q.main'), 'quest', run('S.Q.act[0] && S.Q.act[0].title'), 'gold', run('P.gold'));
+run(`while (S.Q.story.length) S.Q.story.shift(); if (S.mode === 'talk') closeTalk();`);
 run(`P.gold=5000; invAdd('torch'); invAdd('kite_shield'); invAdd('long_bow'); invAdd('arrows',50); invAdd('pistol'); invAdd('claymore'); invAdd('chainmail'); invAdd('potion',5);`);
 run(`openShop(S.ents.find(e=>e.kind==='merchant')); shopClick({target:{closest:()=>({dataset:{a:'buy',i:'0'}})}}); shopClick({target:{closest:()=>({dataset:{a:'tab',t:'sell'}})}}); shopClick({target:{closest:()=>({dataset:{a:'sell',i:'0'}})}}); closeShop();`);
 run(`openInv(); invClick({target:{closest:()=>({dataset:{a:'eq',i:String(P.inv.findIndex(q=>q.id==='kite_shield')),s:'0'}})}}); invClick({target:{closest:()=>({dataset:{a:'eq',i:String(P.inv.findIndex(q=>q.id==='chainmail')),s:'0'}})}}); closeInv();`);
 console.log('hands', run('JSON.stringify(P.hands)'), 'armor', run('P.armor'), 'inv', run('P.inv.length'));
-run('S.tut=3; S.dirT=0; sim(60)');
+run('S.dirT=0; sim(60)');
 console.log('day sword+shield: ents', run('S.ents.length'), 'kills', run('S.kills'), 'hp', run('Math.round(P.hp)'), 'lvl', run('P.level'), 'style', run('Math.round(S.style)'));
 run(`const bi=P.inv.findIndex(q=>q.id==='long_bow'); if(bi>=0) equipFromInv(bi,1); S.dirT=0; sim(40)`);
 console.log('bow: kills', run('S.kills'), 'arrows', run("invCount('arrows')"));
@@ -64,6 +57,14 @@ console.log('claymore: kills', run('S.kills'), 'hp', run('Math.round(P.hp)'));
 run(`unequipHand(1); const pi=P.inv.findIndex(q=>q.id==='pistol'); if(pi>=0) equipFromInv(pi,1); const si=P.inv.findIndex(q=>q.id==='iron_sword'||q.id==='rusty_sword'); spawnGroup('archers'); sim(30)`);
 run(`S.time=0.85; S.dirT=0; const ti=P.inv.findIndex(q=>q.id==='torch'); if(ti>=0) equipFromInv(ti,1); spawnGroup('vampires'); spawnGroup('witches'); sim(60)`);
 console.log('night: ents', run('S.ents.map(e=>e.kind).join(",")'), 'dark', run('S.darkness.toFixed(2)'), 'hp', run('Math.round(P.hp)'), 'mode', run('S.mode'));
+run(`S.time=0.9; spawnGroup('gremlins'); spawnGroup('gremlinbrute'); P.gold += 200; sim(50)`);
+console.log('gremlin night: stolen', run('S.stats.stolen'), 'recovered', run('S.stats.recovered'), 'lost', run('S.stats.lost'), 'hp', run('Math.round(P.hp)'), 'mode', run('S.mode'));
+run(`{ const m = nearestManor(16, 16, 900), g = l2w(m, 0, MAN_G + 6); P.x = g[0]; P.y = g[1]; S.horse.x = P.x + 3; S.horse.y = P.y; P.mounted = false; S.time = 0.85; P.hp = P.maxHp = 3000; for (let i = 0; i < 40; i++) step(0.033);
+  var manorFoes = S.ents.filter(e => e.manor === m).map(e => e.kind).join(','); const d = manorWorld(m).house.doors[0];
+  const wps = [l2w(m, 3.6, 19), l2w(m, 3.6, 6), [d.ox, d.oy], [d.ix, d.iy]]; let wi = 0;
+  for (let i = 0; i < 1500 && structAt(P.x, P.y) !== manorWorld(m).house; i++) { const w = wps[Math.min(wi, 3)]; if (Math.hypot(P.x - w[0], P.y - w[1]) < 0.8) wi++; stick(w[0], w[1], 0.2); keys.KeyJ = i % 7 < 2; P.hp = Math.max(P.hp, 1000); if (S.mode === 'talk') closeTalk(); step(0.033); }
+  release(); var inManor = structAt(P.x, P.y) === manorWorld(m).house; sim(40); var manorM = m; }`);
+console.log('manor', run('manorM.name'), 'foes', run('manorFoes'), 'inside', run('inManor'), 'cut', run('S.cut.s && S.cut.s.kind'), 'mode', run('S.mode'));
 run(`P.x=10; P.y=-420; S.horse.x=P.x; S.horse.y=P.y; S.time=0.4; for(let i=0;i<30;i++) step(0.033);`);
 console.log('biome at snow', run('biomeAt(P.x,P.y)'));
 run(`S.dirT=0; spawnGroup('frostgiant'); spawnGroup('giant'); sim(60)`);
@@ -74,7 +75,7 @@ run(`P.x=0; P.y=500; sim(20); P.x=900; P.y=0; sim(20); P.x=-900; P.y=200; sim(20
 // buildings: walk into Ashford's tavern, rest at the inn, trade with the blacksmith; then storm a castle, its keep, and a ruin at night
 run(`P.x=16; P.y=22; S.horse.x=20; S.horse.y=22; P.mounted=false; for(let i=0;i<40;i++) step(0.033);
 { const L=villageLayout(villageFor(0,0)), tav=L.structs.find(s=>s.type==='tavern'), d=tav.doors[0]; for(let i=0;i<400 && structAt(P.x,P.y)!==tav;i++){ stick(Math.hypot(P.x-d.ox,P.y-d.oy)>1.2 && !structAt(P.x,P.y) ? d.ox : d.ix, Math.hypot(P.x-d.ox,P.y-d.oy)>1.2 && !structAt(P.x,P.y) ? d.oy : d.iy, 0.3); step(0.033); }
-  release(); var inTavern = structAt(P.x,P.y)===tav; S.ents=S.ents.filter(e=>e.team!==1); const ip=l2w(tav,3.0,-0.6); P.x=ip[0]; P.y=ip[1]; P.hp=10; P.gold+=20; for(let i=0;i<3;i++) step(0.033); S.interact=findInteract(); doInteract(); for(let i=0;i<30;i++) step(0.033); }
+  release(); var inTavern = structAt(P.x,P.y)===tav; S.ents=S.ents.filter(e=>e.team!==1); const ip=l2w(tav,3.0,-0.6); P.x=ip[0]; P.y=ip[1]; P.hp=10; P.gold+=20; for(let i=0;i<3;i++) step(0.033); S.interact=findInteract(); doInteract(); if (S.mode==='talk') talkAct('rest'); for(let i=0;i<30;i++) step(0.033); }
 const sm=S.ents.find(e=>e.kind==='smith'); if(sm){ openShop(sm); shopClick({target:{closest:()=>({dataset:{a:'buy',i:'0'}})}}); closeShop(); }`);
 console.log('tavern entered', run('inTavern'), 'hp after inn', run('Math.round(P.hp)'), 'cut', run('S.cut.s && S.cut.s.type'));
 run(`{ const cs=nearestCastle(16,16,900), g=l2w(cs,0,CAS_S+12); P.x=g[0]; P.y=g[1]; S.horse.x=P.x+3; S.horse.y=P.y; S.time=0.4; for(let i=0;i<60;i++) step(0.033);

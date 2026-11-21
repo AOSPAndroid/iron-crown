@@ -140,12 +140,12 @@ layout(location=5) in vec4 aI1;
 uniform mat4 uVP, uModel;
 uniform mat4 uBones[18];
 uniform int uMode;
-uniform float uTime, uWind, uId;
+uniform float uTime, uWind, uId, uAoG;
 uniform vec3 uPlayer, uCamPos;
-out vec3 vPos, vNrm; out vec4 vCol; out vec2 vEx; out float vCut; flat out float vId;
+out vec3 vPos, vNrm; out vec4 vCol; out vec2 vEx; out float vCut, vAo; flat out float vId;
 void main() {
   vec3 p = aPos, n = aNrm; vec4 col = aCol;
-  vec4 wp; vCut = 0.0; vId = uId;
+  vec4 wp; vCut = 0.0; vId = uId; vAo = 9.0;
   if (uMode == 1) {
     float c = cos(aI0.w), s = sin(aI0.w), sc = aI1.x;
     vec3 q = p * sc;
@@ -157,15 +157,17 @@ void main() {
     vId = 100.0 + floor(fract(aI1.z * 0.6180339 + aI0.x * 0.013 + aI0.z * 0.007) * 60000.0);
     vec2 ea = uCamPos.xz, eb = uPlayer.xz, ab = eb - ea; float tt = clamp(dot(aI0.xz - ea, ab) / max(dot(ab, ab), 1e-3), 0.0, 1.0);
     vCut = (aI1.w > 0.0 && tt > 0.05 && tt < 0.9 && length(aI0.xz - ea - ab * tt) < aI1.w * sc && wp.y > uPlayer.y + 0.4) ? 1.0 : 0.0;
+    vAo = q.y;
   } else {
     if (uMode == 2) { mat4 B = uBones[int(aExt.x * 255.0 + 0.5)]; p = (B * vec4(p, 1.0)).xyz; n = mat3(B) * n; }
     wp = uModel * vec4(p, 1.0); n = mat3(uModel) * n;
+    vAo = uMode == 2 ? wp.y - uAoG : wp.y - uModel[3][1];
   }
   vPos = wp.xyz; vNrm = n; vCol = col; vEx = aExt.yw;
   gl_Position = uVP * wp;
 }`;
 const FS_MESH = GLSL_LIGHT + `
-in vec3 vPos, vNrm; in vec4 vCol; in vec2 vEx; in float vCut; flat in float vId;
+in vec3 vPos, vNrm; in vec4 vCol; in vec2 vEx; in float vCut, vAo; flat in float vId;
 uniform int uMat;
 uniform float uEmK, uTintA, uOW, uGhost, uCutOn;
 uniform vec3 uTint, uPlayer;
@@ -208,7 +210,7 @@ void main() {
   vec3 V = normalize(uCamPos - vPos);
   if (dot(n, V) < 0.0) n = -n;
   vec3 base = vCol.rgb;
-  if (uGhost > 0.0) { o = vec4(uTint, uGhost * (0.4 + 0.6 * pow(1.0 - max(dot(n, V), 0.0), 1.5))); o1 = vec4(0.0); return; }
+  if (uGhost > 0.0) { float fr = pow(1.0 - max(dot(n, V), 0.0), 1.5); vec3 gc = uTint * (0.55 + 0.6 * fr) + vCol.rgb * 0.12 * (1.0 - fr); o = vec4(gc, uGhost * (0.3 + 0.7 * fr)); o1 = vec4(0.0); return; }
   if (uMat == 1) { // terrain: soft painted variation
     float k = vn(vPos.xz * 0.35) * 0.45 + vn(vPos.xz * 1.3) * 0.3 + vn(vPos.xz * 4.0) * 0.15 + vn(vPos.xz * 11.0) * 0.1;
     base *= 0.8 + 0.38 * k;
@@ -227,6 +229,10 @@ void main() {
     return;
   }
   vec3 c = toon(vPos, n, base, V);
+  if (uMat == 0) { // contact occlusion: vertical faces darken toward the ground they stand on
+    float ao = mix(0.52, 1.0, smoothstep(-0.05, 0.75, vAo));
+    c *= mix(1.0, ao, clamp(1.0 - abs(n.y) * 1.1, 0.0, 1.0));
+  }
   float em = vEx.x * uEmK;
   c = mix(c, base * 1.35 + vec3(0.08, 0.04, 0.0), em);
   c = mix(c, uTint, uTintA);
@@ -386,7 +392,9 @@ function camFocus() {
   let fx = P.x, fy = P.y;
   const tg = S.mode === 'play' && P.lock && !P.lock.dead ? P.lock : null;
   if (tg) { let dx = tg.x - P.x, dy = tg.y - P.y; const d = Math.hypot(dx, dy); if (d > 0.1) { const k = Math.min(d * 0.32, 5) / d; fx += dx * k; fy += dy * k; } }
-  const ahead = PORTRAIT ? 2.4 : 1.4;
+  let ahead = PORTRAIT ? 2.4 : 1.4;
+  // in a conversation, frame the speaker above the dialogue box
+  if (S.mode === 'talk' && typeof TALK !== 'undefined' && TALK) { if (TALK.e) { fx = lerp(P.x, TALK.e.x, 0.65); fy = lerp(P.y, TALK.e.y, 0.65); } ahead = PORTRAIT ? -3.4 : -2.6; }
   return [fx + Math.cos(CAMK.yaw) * ahead, fy + Math.sin(CAMK.yaw) * ahead];
 }
 function updateCamera(dt, snap) {
@@ -396,7 +404,7 @@ function updateCamera(dt, snap) {
   const inB = S.cut && S.cut.s && S.cut.s.roof ? S.cut.k : 0;
   let cz = 0; { const cs = S.mode === 'play' && typeof castleGround === 'function' ? castleGround(P.x, P.y) : null; if (cs) { const l = w2l(cs, P.x, P.y), o = Math.max(Math.abs(l[0]), Math.abs(l[1])) - CAS_S; cz = clamp(1 - (o - 6) / 30, 0, 1); } }
   CAMK.cz = (CAMK.cz || 0) + (cz - (CAMK.cz || 0)) * Math.min(1, dt * 1.2);
-  const zt = (P.mounted ? 1.16 : 1) * (near ? 1.1 : 1) * (S.mode === 'title' ? 1.12 : 1) * (1 - 0.13 * inB) * (1 + 0.2 * CAMK.cz * (1 - inB));
+  const zt = (S.mode === 'talk' ? 0.86 : 1) * (P.mounted ? 1.16 : 1) * (near ? 1.1 : 1) * (S.mode === 'title' ? 1.12 : 1) * (1 - 0.13 * inB) * (1 + 0.2 * CAMK.cz * (1 - inB));
   CAMK.zoom += (zt - CAMK.zoom) * Math.min(1, dt * 1.6);
   if (CAMK.zoomLock) CAMK.zoom = CAMK.zoomLock; // test hook (screenshots)
   const f = camFocus();
@@ -465,7 +473,7 @@ function updateEnv(dt) {
   const b = S.curBiome >= 0 ? S.curBiome : biomeAt(CAM.x, CAM.y);
   const tb = BIOME_FOG[b] || BIOME_FOG[0], k = dt ? Math.min(1, dt * 0.8) : 1;
   envBiome = mix3(envBiome, tb, k);
-  const fk = b === B_SWAMP ? 1.7 : b === B_SNOW ? 1.25 : b === B_FOREST ? 1.1 : b === B_DESERT ? 0.9 : 1;
+  const nm = typeof NEAR_MANOR !== 'undefined' && NEAR_MANOR, fk = (b === B_SWAMP ? 1.7 : b === B_SNOW ? 1.25 : b === B_FOREST ? 1.1 : b === B_DESERT ? 0.9 : 1) * (nm ? 1.45 : 1);
   envFogK += (fk - envFogK) * k;
   const d = S.darkness, blood = S.bloodMoon;
   const ang = (S.time - 0.25) * TAU, sy = Math.sin(ang), sx = Math.cos(ang);
@@ -483,7 +491,7 @@ function updateEnv(dt) {
   ENV.gnd = mix3([0.26, 0.24, 0.22], blood ? [0.08, 0.03, 0.03] : [0.05, 0.06, 0.12], d);
   ENV.shTint = mix3([0.74, 0.78, 1.0], [0.7, 0.75, 1.0], d);
   ENV.rim = 0.25 - d * 0.1;
-  const fogDay = envBiome, fogN = blood ? [0.14, 0.04, 0.06] : mix3([0.05, 0.07, 0.17], envBiome, 0.08), fogDusk = [0.82, 0.58, 0.5];
+  const fogDay = nm ? mix3(envBiome, [0.5, 0.54, 0.58], 0.5) : envBiome, fogN = blood ? [0.14, 0.04, 0.06] : mix3([0.05, 0.07, 0.17], envBiome, 0.08), fogDusk = [0.82, 0.58, 0.5];
   let fc = mix3(fogDay, fogN, d); fc = mix3(fc, fogDusk, dusk * 0.5);
   ENV.fog = fc;
   ENV.hor = mix3(fc, [1, 1, 1], 0.04 * (1 - d));

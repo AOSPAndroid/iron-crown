@@ -74,9 +74,9 @@ for (let i = 0; i < 60 * 40; i++) { P.x = kin[0]; P.y = kin[1]; P.hp = P.maxHp; 
 check('AI: a foe outside the castle finds the gate and the keep door', run('reachedK') > 0, 'after ' + run('reachedK.toFixed(1)') + 's, foe local ' + run('w2l(CA,cf.x,cf.y).map(v=>v.toFixed(1)).join(",")'));
 
 // 7. village life: inn rest for gold, smithy stock, merchant in the shop
-run(`quiet(); var inn = S.ents.find(e => e.kind === 'innkeeper'), tav = bld('tavern'); var ip = l2w(tav, 3.0, -0.6); place(ip[0], ip[1]); P.hp = 40; P.gold = 100; S.interact = findInteract(); var lbl = S.interact && S.interact.label; var innRef = S.interact && S.interact.ref; doInteract(); var innOK = innRef && innRef.kind === 'innkeeper' && P.hp === P.maxHp && P.gold === 100 - innCost(innRef);
-P.gold = 1; P.hp = 30; doInteract(); var innPoor = P.hp === 30 && P.gold === 1;`);
-check('inn: the innkeeper sells a bed (heals, saves) for a few gold', run('innOK') && /REST/.test(run('lbl')), 'label=' + run('lbl') + ' gold=' + run('P.gold'));
+run(`quiet(); var inn = S.ents.find(e => e.kind === 'innkeeper'), tav = bld('tavern'); var ip = l2w(tav, 3.0, -0.6); place(ip[0], ip[1]); P.hp = 40; P.gold = 100; S.interact = findInteract(); var lbl = S.interact && S.interact.label; var innRef = S.interact && S.interact.ref; doInteract(); var talked = S.mode === 'talk' && /Rent a bed/.test(document.getElementById('talkPanel').innerHTML); talkAct('rest'); var innOK = innRef && innRef.kind === 'innkeeper' && P.hp === P.maxHp && P.gold === 100 - innCost(innRef);
+S.mode = 'play'; P.gold = 1; P.hp = 30; doInteract(); talkAct('rest'); var innPoor = P.hp === 30 && P.gold === 1; S.mode = 'play';`);
+check('inn: the innkeeper talks (quests) and sells a bed (heals, saves) for a few gold', run('innOK') && run('talked') && /TALK/.test(run('lbl')), 'label=' + run('lbl') + ' gold=' + run('P.gold'));
 check('inn: no gold, no bed', run('innPoor'));
 run(`var sm = S.ents.find(e => e.kind === 'smith'); sm.stock = null; var st = genStock(sm).map(s => ITEMS[s.id].type); var smithOK = st.length >= 5 && st.every(t => ['sword', 'sword2', 'armor', 'shield'].includes(t));
 var mer = S.ents.find(e => e.kind === 'merchant'); var merIn = mer.struct && mer.struct.type === 'shop' && structContains(mer.struct, mer.x, mer.y);`);

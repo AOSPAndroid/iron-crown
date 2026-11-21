@@ -8,7 +8,7 @@ SHOTS = ROOT / 'shots'; SHOTS.mkdir(exist_ok=True)
 ARGS = ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist']
 SETUP = """
 window.scene = function(opts){
-  window.__FREEZE=false; S.mode='play'; P.drawing=false; P.draw=0; P.blocking=false; P.act=null; P.lock=null; P.iframes=0; P.parryT=0; P.counterT=0; P.riposteT=0;
+  window.__FREEZE=false; show('talk', false); show('qlog', false); TALK = null; S.mode='play'; P.drawing=false; P.draw=0; P.blocking=false; P.act=null; P.lock=null; P.iframes=0; P.parryT=0; P.counterT=0; P.riposteT=0;
   P.v=opts.v||0; P.step=opts.step||0; P.vx=0; P.vy=0; S.slowT=0; S.hitstop=0; S.pflash=0; S.flash=0; S.cueT=0; S.style=opts.style||0;
   S.ents = S.ents.filter(e=>e.team===2||e.post); S.projs=[]; S.parts=[]; S.drops=[]; S.corpses=[]; S.banner=null; S.msgs=[]; S.texts=[]; S.fx=[]; S.ghosts=[]; S.marks=[];
   S.tok.clear(); S.tokR.clear();
@@ -77,6 +77,18 @@ BSCENES = {
   'ruin': "(() => { const c=castleOf('ruin', 2); return scene({x:c.x-10, y:c.y+CAS_S+9, a:-1.3, time:0.42, zoom:2.3, hands:['torch','longsword'], armor:'chainmail'}); })()",
   'ruin_in': "(() => { const c=castleOf('ruin', 2), p=cl(c, 6, 16); return scene({x:p[0], y:p[1], a:headingOf(c,0,-1), time:0.86, yaw:headingOf(c,0,-1), zoom:1.6, hands:['torch','longsword'], armor:'chainmail', pre:()=>{ for (const [lx,lz,k] of [[2,8,'vampire'],[10,9,'vampire'],[7,3,'witch']]) { const q=l2w(c, lx, lz); const e=spawnEnt(k, q[0], q[1], {D:0}); e.a=Math.atan2(P.y-e.y,P.x-e.x); e.cd=99; e.tT=99; if(k==='witch') e.elev=1.3; } }}); })()",
 }
+# story, quests, gremlins, haunted manors, the richer ground
+SSCENES = {
+  'dialogue': "(() => { const st=S.ents.find(e=>e.kind==='stranger'), tav=st.struct, p=l2w(tav, -2.3, 1.1); scene({x:p[0], y:p[1], a:Math.atan2(st.y-p[1], st.x-p[0]), time:0.86, yaw:headingOf(tav,0,-1), zoom:1.3, hands:[null,null], armor:'tunic'}); window.__FREEZE=false; openTalk(st); updateCamera(0,true); window.__FREEZE=true; render(0.05); render(0.05); return 0; })()",
+  'questlog': "(() => { const v=villageFor(0,0); scene({x:v.x+2, y:v.y+4, time:0.5, hands:['torch','rusty_sword'], armor:'gambeson'}); const inn=S.ents.find(e=>e.kind==='innkeeper'), pr=S.ents.find(e=>e.kind==='priest'); window.__FREEZE=false; acceptQuest(npcBusiness(inn).offers[0]); acceptQuest(npcBusiness(pr).offers[0]); S.banner=null; openLog(); window.__FREEZE=true; render(0.05); return 0; })()",
+  'gremlins': """scene({x:16,y:-74, a:-1.4, time:0.9, hands:['torch','iron_sword'], armor:'leather', style:200, ents:[['gremlin',1.9,0.6,{atk:1,frac:0.6}],['gremlin',2.6,-2.2,{atk:0,frac:0.35}],['gremlin_bomber',8,3,{atk:0,frac:0.65}],['gremlin_shaman',10,-3,{atk:0,frac:0.55}],['gremlin',4.5,4.5,{thief:true,stolen:30,fleeT:9,fleeAge:1}],['gremlin_brute',7,-6.5,{atk:0,frac:0.45}]],
+     pre:()=>{ addText(P.x,P.y,2.6,'-30 gold!','#ffd84a',true); }})""",
+  'manor_ext': "(() => { const m=nearestManor(16,16,900), p=l2w(m, 3.4, 11.5); return scene({x:p[0], y:p[1], a:headingOf(m,0,-1), time:0.77, yaw:headingOf(m,0,-1), zoom:2.7, hands:['torch','iron_sword'], armor:'leather'}); })()",
+  'manor_int': "(() => { const m=nearestManor(16,16,900), p=l2w(m, 1.0, MAN_HZ+1.6); scene({x:p[0], y:p[1], a:headingOf(m,-0.3,-1), time:0.9, yaw:headingOf(m,0,-1), zoom:1.55, hands:['torch','iron_sword'], armor:'chainmail', ents:[['ghost',4.5,2.5,{elev:0.4}],['vlord',8.0,-1.0,{atk:3,frac:0.4}]]}); return 0; })()",
+  'ghost': "(() => { const m=nearestManor(16,16,900), p=l2w(m, -12, 10); return scene({x:p[0], y:p[1], a:headingOf(m,0,-1), time:0.88, yaw:headingOf(m,0.3,-1), zoom:1.1, hands:['torch','iron_sword'], armor:'chainmail', ents:[['ghost',2.4,0.6,{atk:0,frac:0.55,elev:0.4}],['ghost',4.5,-2.5,{elev:0.3}],['gremlin',3.5,2.6]]}); })()",
+  'ground': "(() => { let s=null; for(let r=180;r<1600 && !s;r+=40) for(let k=0;k<24;k++){ const a=k/24*Math.PI*2, x=Math.cos(a)*r, y=Math.sin(a)*r; if(biomeAt(x,y)===1 && biomeAt(x+10,y)===1 && !nearVillage(x,y,40) && !manorGround(x,y,30) && !castleGround(x,y) && !isWet(tileBase(x,y))) { s=[x,y]; break; } } return scene({x:s[0], y:s[1], time:0.4, hands:['buckler','iron_sword'], armor:'leather', v:2, step:1, zoom:1.25}); })()",
+  'road': "(() => { const a=villageFor(0,0), b=villageLinks(a)[0], r=ROADS.get(a.id<b.id?a.id+'|'+b.id:b.id+'|'+a.id) || [...ROADS.values()][0], p=r.pts[1]; return scene({x:p[0], y:p[1], time:0.36, hands:['buckler','iron_sword'], armor:'leather', mounted:true, v:4, step:2, zoom:1.5}); })()",
+}
 async def shoot(pg, name, js):
     await pg.evaluate(js)
     await pg.wait_for_timeout(300)
@@ -91,24 +103,28 @@ async def main(w, h, touch, tag, only):
         await pg.goto(URL); await pg.wait_for_timeout(1500)
         await pg.screenshot(path=str(SHOTS / f'sc_{tag}_title.png'))
         await pg.evaluate("document.getElementById('btnNew').click()"); await pg.wait_for_timeout(2500)
-        if not only or 'tutorial' in only:
+        if not only or 'story' in only or 'start' in only:
             await pg.wait_for_timeout(600)
-            await pg.screenshot(path=str(SHOTS / f'sc_{tag}_tutorial.png'))
+            await pg.screenshot(path=str(SHOTS / f'sc_{tag}_start.png'))
         await pg.evaluate(SETUP + '; 0')
-        for k, js in SCENES.items():
-            if only and k not in only: continue
+        for k, js in SSCENES.items():
+            if only and k not in only and 'story' not in only: continue
             await shoot(pg, tag + '_' + k, js)
-        if not only or 'snow' in only:
+        for k, js in SCENES.items():
+            if only and (k not in only or 'story' in only): continue
+            await shoot(pg, tag + '_' + k, js)
+        if (not only or 'snow' in only) and 'story' not in only:
             s = await pg.evaluate("findBiome(2)")
             await shoot(pg, tag + '_snow', f"scene({{x:{s[0]},y:{s[1]}, time:0.5, hands:['torch','longsword'], armor:'chainmail', v:2, step:1, ents:[['frostgiant',9,-3,{{atk:1,frac:0.5}}],['bandit',3.5,2.5]]}})")
-        if not only or 'swamp' in only:
+        if (not only or 'swamp' in only) and 'story' not in only:
             s = await pg.evaluate("findBiome(3)")
             await shoot(pg, tag + '_swamp', f"scene({{x:{s[0]},y:{s[1]}, time:0.82, hands:['torch','iron_sword'], armor:'leather', ents:[['witch',7,2,{{elev:1.3,atk:1,frac:0.5}}]], pre:()=>{{ S.projs.push({{x:P.x+2,y:P.y-3,elev:1.3,vx:-6,vy:8,vz:0,team:1,dmg:10,life:3,kind:'fire',col:'y',target:P}}); }}}})")
-        if not only or 'desert' in only:
+        if (not only or 'desert' in only) and 'story' not in only:
             s = await pg.evaluate("findBiome(5)")
             await shoot(pg, tag + '_desert', f"scene({{x:{s[0]},y:{s[1]}, time:0.42, hands:[null,'long_bow'], ents:[['archer',8,0,{{atk:0,frac:0.6}}]], pre:()=>{{ P.hands=['long_bow','long_bow']; P.act={{k:'bow',t:0.8}}; P.drawing=true; P.draw=0.8; }}}})")
         for k, js in BSCENES.items():
             if only and k not in only and 'b' not in only: continue
+            if only and 'story' in only: continue
             if not only and False: continue
             await shoot(pg, tag + '_' + k, js)
         info = await pg.evaluate("[GLOK, RW, RH, SW, SH, GCH.size, lastRenderMs.toFixed(1)]")
@@ -118,7 +134,7 @@ async def main(w, h, touch, tag, only):
         await b.close()
 def grid():
     from PIL import Image, ImageDraw
-    order = ['field', 'fight', 'perfect', 'parry', 'giant', 'night', 'village', 'snow', 'mounted', 'swamp', 'desert', 'tutorial']
+    order = ['field', 'fight', 'perfect', 'parry', 'giant', 'night', 'village', 'snow', 'mounted', 'swamp', 'desert', 'start']
     for tag, cols, tw in (('d', 3, 640), ('m', 6, 260)):
         ims = [(n, Image.open(SHOTS / f'sc_{tag}_{n}.png').convert('RGB')) for n in order if (SHOTS / f'sc_{tag}_{n}.png').exists()]
         if not ims: continue
@@ -151,12 +167,31 @@ def grid_buildings():
     G = Image.new('RGB', (W, sum(g.height for g in parts) + 8 * (len(parts) - 1)), (0, 0, 0)); y = 0
     for g in parts: G.paste(g, (0, y)); y += g.height + 8
     G.save(SHOTS / 'grid_buildings.png'); print('grid ->', SHOTS / 'grid_buildings.png', G.size)
+def grid_story():
+    from PIL import Image, ImageDraw
+    order = ['start', 'dialogue', 'questlog', 'gremlins', 'manor_ext', 'manor_int', 'ghost', 'ground', 'road']
+    parts = []
+    for tag, cols, tw in (('d', 3, 640), ('m', 5, 300)):
+        ims = [(n, Image.open(SHOTS / f'sc_{tag}_{n}.png').convert('RGB')) for n in order if (SHOTS / f'sc_{tag}_{n}.png').exists()]
+        if not ims: continue
+        th = int(ims[0][1].height * tw / ims[0][1].width)
+        rows = (len(ims) + cols - 1) // cols
+        G = Image.new('RGB', (cols * tw, rows * (th + 18)), (14, 12, 20)); d = ImageDraw.Draw(G)
+        for i, (n, im) in enumerate(ims):
+            x, y = (i % cols) * tw, (i // cols) * (th + 18)
+            G.paste(im.resize((tw, th), Image.LANCZOS), (x, y + 18)); d.text((x + 6, y + 3), n, fill=(240, 220, 160))
+        G.save(SHOTS / f'grid_story_{tag}.png'); parts.append(G)
+    W = max(g.width for g in parts); parts = [g.resize((W, int(g.height * W / g.width)), Image.LANCZOS) for g in parts]
+    G = Image.new('RGB', (W, sum(g.height for g in parts) + 8 * (len(parts) - 1)), (0, 0, 0)); y = 0
+    for g in parts: G.paste(g, (0, y)); y += g.height + 8
+    G.save(SHOTS / 'grid_story.png'); print('grid ->', SHOTS / 'grid_story.png', G.size)
 async def run():
     tags = [a for a in sys.argv[1:] if a in ('d', 'm')] or ['d', 'm']
     only = [a for a in sys.argv[1:] if a not in ('d', 'm')]
     if 'd' in tags: await main(1280, 720, False, 'd', only)
     if 'm' in tags: await main(390, 844, True, 'm', only)
 if __name__ == '__main__':
-    if sys.argv[1:2] == ['grid']: grid(); grid_buildings()
+    if sys.argv[1:2] == ['grid']: grid(); grid_buildings(); grid_story()
+    elif sys.argv[1:2] == ['grids']: grid_story()
     elif sys.argv[1:2] == ['gridb']: grid_buildings()
     else: asyncio.run(run())

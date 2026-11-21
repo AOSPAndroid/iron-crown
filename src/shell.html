@@ -70,6 +70,24 @@ body:not(.touchdev) .tc{display:none}
 #bPot{width:44px;height:44px;right:14px;bottom:204px;font-size:10px}
 #bBag{width:44px;height:44px;right:114px;bottom:168px;font-size:9px}
 #bPause{position:fixed;left:50%;top:0;transform:translateX(-50%);width:38px;height:28px;z-index:6;display:flex;align-items:center;justify-content:center;font:700 12px ui-monospace,monospace;color:#c8b898;background:rgba(13,10,7,.6);border:1px solid #4a3a28;cursor:pointer;touch-action:none}
+#bQuest{position:fixed;left:calc(50% + 24px);top:0;height:28px;padding:0 9px;z-index:6;display:flex;align-items:center;justify-content:center;font:700 11px ui-monospace,monospace;letter-spacing:.08em;color:#e8c050;background:rgba(13,10,7,.6);border:1px solid #6a5428;cursor:pointer;touch-action:none}
+#talk{align-items:flex-end;background:linear-gradient(to top,rgba(6,4,2,.85),rgba(6,4,2,.25) 60%,rgba(6,4,2,0))}
+#talk .card{margin:0 auto 4vh;max-width:620px;border-color:#8a6a30;box-shadow:0 0 0 3px #1a120a inset}
+.talk p{margin:0 0 9px;line-height:1.55;font-size:13.5px}
+.choices{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.choices button{font:inherit;font-size:12.5px;font-weight:700;background:#1f160d;color:var(--gold);border:1px solid #8a6a30;padding:9px 12px;cursor:pointer;text-align:left}
+.choices button:hover{background:#3a2a14}
+.choices button.dim2{color:#a89878;border-color:#4a3a28}
+.quest{border:1px solid #2e2418;padding:8px 10px;margin:8px 0;background:#160f09}
+.quest.tracked{border-color:#8a6a30}
+.quest .qt{font-weight:700;margin-bottom:3px}
+.quest .step{font-size:12px;margin:3px 0 0 4px;line-height:1.45}
+.quest .step.done{opacity:.5}
+.quest .bt{display:flex;gap:6px;margin-top:7px}
+.quest .bt button{font:inherit;font-size:11px;font-weight:700;background:#1f160d;color:var(--gold);border:1px solid #8a6a30;padding:6px 10px;cursor:pointer}
+.quest .bt button:disabled{opacity:.5;cursor:default}
+.quest .bt button.dim2{color:#a89878;border-color:#4a3a28}
+#pause .keys{margin-top:16px}
 </style>
 </head>
 <body>
@@ -88,12 +106,13 @@ body:not(.touchdev) .tc{display:none}
   <div class="tb" id="bBag">BAG</div>
 </div>
 <div id="bPause" class="hidden">II</div>
+<div id="bQuest" class="hidden">QUESTS</div>
 
 <div id="title" class="ov hidden">
   <div class="panel">
     <pre class="logo" id="logo"></pre>
     <div class="yr">~ 1 7 0 0 ~</div>
-    <p class="lore">Anno Domini 1700. The Usurper's redcoats march on the realm by day; when the sun sets, vampires and witches rise from the moors, and giants walk the frozen north. You wake in Ashford with a linen tunic and your bare fists.</p>
+    <p class="lore">Anno Domini 1700. The King is dead, his heir has vanished, and the Lord Protector wears the Iron Crown. His redcoats hold the roads by day; by night the old wards fail, and vampires, witches, giants and giggling gremlins come out. You wake in Ashford with a linen tunic, your bare fists, and a stranger asking for you.</p>
     <button class="btn" id="btnCont">Continue</button><br>
     <button class="btn" id="btnNew">New Game</button>
     <div class="keys kb">
@@ -101,15 +120,15 @@ body:not(.touchdev) .tc{display:none}
       <b>J / L-click</b> attack — tap in rhythm for combos, hold for a heavy<br>
       <b>K / R-click</b> block · parry (tap just before a hit) · off-hand<br>
       <b>L / Tab</b> lock-on (again = next) · <b>Z X</b> turn camera<br>
-      <b>E</b> use · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
-      <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it</span>
+      <b>E</b> use / talk · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
+      <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it · <span class="gold">!</span> / <span class="gold">?</span> = quest giver</span>
     </div>
     <div class="keys tc">
       <b>Left thumb</b>: joystick · <b>ROLL</b>: roll through attacks and behind foes<br>
       <b>ATTACK</b>: tap in rhythm for combos, hold for a heavy<br>
       <b>BLOCK / PARRY</b>: tap just before a hit lands · <b>LOCK</b>: target<br>
-      <b>HORSE</b> · <b>USE</b> · <b>BAG</b> · <b>POT</b> · <b>II</b> pause<br>
-      <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it</span>
+      <b>HORSE</b> · <b>USE</b> (talk) · <b>BAG</b> · <b>POT</b> · <b>QUESTS</b> · <b>II</b> pause<br>
+      <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it · <span class="gold">!</span> / <span class="gold">?</span> = quest giver</span>
     </div>
   </div>
 </div>
@@ -117,14 +136,26 @@ body:not(.touchdev) .tc{display:none}
 <div id="loading" class="ov hidden"><div class="panel"><div class="gold" style="letter-spacing:.2em">FORGING THE REALM…</div><div class="bar"><div id="loadbar"></div></div></div></div>
 
 <div id="inv" class="ov hidden"><div class="card" id="invPanel"></div></div>
+<div id="talk" class="ov hidden"><div class="card" id="talkPanel"></div></div>
+<div id="qlog" class="ov hidden"><div class="card" id="logPanel"></div></div>
 <div id="shop" class="ov hidden"><div class="card" id="shopPanel"></div></div>
 
 <div id="pause" class="ov hidden">
   <div class="panel">
     <div class="gold" style="letter-spacing:.3em;font-size:20px;margin-bottom:14px">PAUSED</div>
     <button class="btn" id="btnResume">Resume</button><br>
+    <button class="btn ghost" id="btnLog">Quest log</button><br>
     <button class="btn ghost" id="btnSound">Sound: On</button><br>
-    <button class="btn ghost" id="btnQuit">Save &amp; quit to title</button>
+    <button class="btn ghost" id="btnQuit">Save &amp; quit to title</button><br>
+    <div class="keys kb">
+      <b>WASD</b> move · <b>Space</b> roll · <b>J / L-click</b> attack (hold = heavy)<br>
+      <b>K / R-click</b> block · parry · <b>L / Tab</b> lock-on · <b>Z X</b> camera<br>
+      <b>E</b> use / talk · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag
+    </div>
+    <div class="keys tc">
+      Joystick moves · <b>ROLL</b> · <b>ATTACK</b> (hold = heavy) · <b>BLOCK / PARRY</b><br>
+      <b>USE</b> talks to <span class="gold">!</span> quest givers · <b>QUESTS</b> opens the log
+    </div>
   </div>
 </div>
 

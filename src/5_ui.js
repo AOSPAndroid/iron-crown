@@ -107,13 +107,21 @@ function drawMinimap(x0, y0, sz) {
       ctx.fillRect(X - 3 * g, Y - g, 7 * g, 4 * g); ctx.fillRect(X - 3 * g, Y - 3 * g, 2 * g, 2 * g); ctx.fillRect(X + 2 * g, Y - 3 * g, 2 * g, 2 * g); ctx.fillRect(X, Y - 3 * g, g, 2 * g);
     }
   }
+  for (const m of manorsNear(P.x, P.y, 600)) {
+    const d = Math.hypot(m.x - P.x, m.y - P.y), cl = S.manors[m.id] && S.manors[m.id].cleared, col = cl ? '#8a8098' : '#b88aff';
+    if (d < MM_RANGE + 30) { ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, sz, sz); ctx.clip(); poly(m, -MAN_G, -MAN_G, MAN_G, MAN_G, 'rgba(30,26,40,0.45)', col); poly(m, -MAN_W, MAN_HZ - MAN_D, MAN_W, MAN_HZ + MAN_D, '#5a5068', '#1a120a'); ctx.restore(); }
+    else { const q = toMM(m.x, m.y, d < 420); if (!q) continue; const X = Math.round(q[0]), Y = Math.round(q[1]); ctx.fillStyle = '#000'; ctx.fillRect(X - 4, Y - 4, 9, 8); ctx.fillStyle = col; ctx.fillRect(X - 3, Y - 1, 7, 4); ctx.fillRect(X - 2, Y - 3, 5, 2); ctx.fillRect(X, Y - 4, 1, 1); }
+  }
   if (!P.mounted) { const q = toMM(S.horse.x, S.horse.y, true); if (q) dot(q, q[2] ? '#d8a060' : '#8a6a40', 3); }
   for (const e of S.ents) {
     if (e.dead) continue;
-    const col = e.team === 2 ? '#ffd84a' : e.team === 0 ? '#6a9aff' : (e.k.boss ? '#ff7a2a' : e.k.unholy ? '#d070ff' : '#ff4a3a');
-    const q = toMM(e.x, e.y, e.team === 1 && dist(e, P) < 90); if (!q) continue;
-    dot(q, q[2] ? col : '#a03a2a', e.k.boss ? 4 : 3);
+    const col = e.team === 2 ? '#ffd84a' : e.team === 0 ? '#6a9aff' : (e.thief ? '#ffe040' : e.k.boss || e.elite ? '#ff7a2a' : e.k.unholy ? '#d070ff' : e.k.gremlin ? '#a8d040' : '#ff4a3a');
+    const q = toMM(e.x, e.y, e.team === 1 && (dist(e, P) < 90 || e.thief)); if (!q) continue;
+    dot(q, q[2] ? col : (e.thief ? '#ffe040' : '#a03a2a'), e.k.boss || e.elite || e.thief ? 4 : 3);
   }
+  // tracked objective: a gold diamond (on the rim when out of range)
+  const tg = S.Q && questTarget();
+  if (tg) { const q = toMM(tg.x, tg.y, true); if (q) { const X = q[0], Y = q[1], r = q[2] ? 4 : 5, pul = ((S.t * 3) | 0) % 2; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(X, Y - r - 2); ctx.lineTo(X + r + 2, Y); ctx.lineTo(X, Y + r + 2); ctx.lineTo(X - r - 2, Y); ctx.closePath(); ctx.fill(); ctx.fillStyle = pul ? '#ffe070' : '#e8b030'; ctx.beginPath(); ctx.moveTo(X, Y - r); ctx.lineTo(X + r, Y); ctx.lineTo(X, Y + r); ctx.lineTo(X - r, Y); ctx.closePath(); ctx.fill(); } }
   // player arrow
   ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx + 5, cy + 5); ctx.lineTo(cx - 5, cy + 5); ctx.closePath(); ctx.fill();
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(cx, cy - 4); ctx.lineTo(cx + 3, cy + 3); ctx.lineTo(cx - 3, cy + 3); ctx.closePath(); ctx.fill();
@@ -189,11 +197,11 @@ function drawHUD() {
   drawCombo(x0 + 4, hy + 28);
   // --- boss bar
   let boss = null, bd = 45;
-  for (const e of S.ents) if (e.k.boss && !e.dead) { const d = dist(e, P); if (d < bd) { bd = d; boss = e; } }
+  for (const e of S.ents) if ((e.k.boss || e.elite) && !e.dead && e.team === 1) { const d = dist(e, P); if (d < bd) { bd = d; boss = e; } }
   let ty = narrow ? hy + 56 : hy + 34;
   if (boss) {
     const w = narrow ? Math.min(200, VW - mmS - 40) : Math.min(220, VW - 40), bx = (VW - w) / 2, by = narrow ? hy + 54 : 36;
-    hudText(boss.k.name.toUpperCase(), VW / 2, by, '#ff7a5a', 'center');
+    hudText((boss.ename || boss.k.name).toUpperCase(), VW / 2, by, '#ff7a5a', 'center');
     hudBar(bx, by + 16, w, 6, boss.hp / boss.maxHp, '#e8443a', '#3a1414');
     hudBar(bx, by + 24, w, 2, boss.poise / boss.poiseMax, boss.state === 'stagger' ? '#ff9a3a' : '#ffd84a', '#2a2410');
     if (narrow) ty = Math.max(ty, by + 28);
@@ -201,6 +209,18 @@ function drawHUD() {
   // --- messages (left column)
   const colW = Math.max(120, VW - mmS - 30);
   const maxCh = Math.floor(colW / 7.3);
+  // --- tracked quest objective
+  { const q = S.Q && qById(S.Q.track), st = qStep(q);
+    if (q && st) {
+      const tg = questTarget(q), dd = tg ? Math.round(Math.hypot(tg.x - P.x, tg.y - P.y)) : null, w = Math.min(narrow ? VW - 16 : 360, colW);
+      const lines = wrapText(st.txt + stepProgress(st) + (dd !== null && dd > 6 ? ' · ' + dd + 'm' : ''), Math.floor((w - 22) / 7.3)).slice(0, 2);
+      hudPanel(6, ty - 2, w, 20 + lines.length * 14);
+      ctx.fillStyle = q.main ? '#e8c050' : '#c8d0a0'; ctx.beginPath(); ctx.moveTo(14, ty + 3); ctx.lineTo(18, ty + 7); ctx.lineTo(14, ty + 11); ctx.lineTo(10, ty + 7); ctx.closePath(); ctx.fill();
+      ctx.font = 'bold 11px ui-monospace,Menlo,monospace'; hudText(q.title + (q.main ? '' : '  (side)'), 23, ty + 2, q.main ? '#e8c050' : '#c8d0a0'); ctx.font = HUD_FONT;
+      lines.forEach((l, i) => hudText(l, 12, ty + 17 + i * 14, '#e8dcc0'));
+      ty += 26 + lines.length * 14;
+    }
+  }
   for (const m of S.msgs) {
     const col = m.t < 1 ? shadeMsg(m.col, m.t) : m.col;
     for (const l of wrapText(m.txt, maxCh).slice(0, 2)) { hudText(l, 8, ty, col); ty += 15; }
@@ -298,6 +318,12 @@ function sfx(n) {
       case 'lock': tn(900, 1300, 0.06, 'triangle', 0.05); break;
       case 'nope': tn(200, 160, 0.08, 'square', 0.04); break;
       case 'rank': tn(880, 1320, 0.15, 'triangle', 0.07); break;
+      case 'giggle': { const b = 900 + Math.random() * 500; for (let i = 0; i < 5; i++) tn(b + (i % 2) * 260, b - 120 + (i % 2) * 300, 0.06, 'square', 0.022, i * 0.075); break; }
+      case 'scratch': nz(0.07, 'highpass', 2500, 4000, 0.14); break;
+      case 'screech': tn(1800, 2600, 0.25, 'sawtooth', 0.05); tn(2400, 1500, 0.3, 'square', 0.03, 0.12); nz(0.3, 'bandpass', 3000, 2000, 0.1, 3); break;
+      case 'wail': tn(420, 300, 1.2, 'sine', 0.07); tn(560, 380, 1.1, 'sine', 0.04, 0.2); break;
+      case 'chant': tn(160, 150, 0.5, 'sawtooth', 0.05); tn(240, 230, 0.5, 'triangle', 0.04, 0.1); break;
+      case 'boom': nz(0.45, 'lowpass', 1400, 60, 0.6); tn(90, 40, 0.3, 'sine', 0.35); break;
     }
   } catch (e) { }
 }
@@ -319,7 +345,7 @@ function readInput() {
   S.mouseAim = !IS_TOUCH && MOUSE.ok && performance.now() - MOUSE.t < 4000;
   const inp = {
     mx, my,
-    atk: !!(keys.KeyJ || mouseL || touch.atk), off: !!(keys.KeyK || keys.KeyQ || mouseR || touch.off),
+    atk: !!(keys.KeyJ || mouseL || touch.atk), off: !!(keys.KeyK || mouseR || touch.off),
     dash: consume('Space') || consume('ShiftLeft') || consume('ShiftRight') || touch.dash,
     lock: consume('KeyL') || consume('Tab') || touch.lock,
     horse: consume('KeyH') || touch.horse, pot: consume('KeyR') || touch.pot, use: consume('KeyE') || touch.use
@@ -334,7 +360,8 @@ function onKeyDown(e) {
   if (!keys[e.code]) edge[e.code] = true;
   keys[e.code] = true;
   const c = e.code;
-  if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); }
+  if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); else if (S.mode === 'log') closeLog(); else if (S.mode === 'talk') closeTalk(); }
+  else if (c === 'KeyQ') { if (S.mode === 'play') openLog(); else if (S.mode === 'log') closeLog(); }
   else if (c === 'KeyM') setMute(!AU.muted);
   else if (c === 'KeyI' || c === 'KeyB') { if (S.mode === 'play') openInv(); else if (S.mode === 'inv') closeInv(); }
   else if (c === 'Tab') e.preventDefault();
@@ -384,6 +411,7 @@ function bindTouch() {
   tap('bPot', () => { touch.pot = true; });
   tap('bBag', () => { if (S.mode === 'play') openInv(); });
   tap('bPause', () => { if (S.mode === 'play') openPause(); });
+  const bq = $('bQuest'); if (bq) bq.addEventListener('click', () => { audioInit(); if (S.mode === 'play') openLog(); else if (S.mode === 'log') closeLog(); });
 }
 function layoutTouch() {
   const pb = typeof document !== 'undefined' ? $('bPause') : null;
@@ -402,10 +430,12 @@ function offBtn() {
 function syncUI() {
   if (typeof document === 'undefined') return;
   const showTouch = IS_TOUCH && S.mode === 'play';
+  if (S.mode === 'play' && S.Q && S.Q.story.length) { const b = S.Q.story.shift(); openStory(b.title, b.lines); }
   const k = [showTouch, S.mode, S.interact ? S.interact.label : '', atkBtn(), offBtn(), invCount('potion'), P.mounted, S.horse.state, !!P.lock].join('|');
   if (k === uiKey) return; uiKey = k;
   $('touch').classList.toggle('on', showTouch);
   $('bPause').classList.toggle('hidden', S.mode !== 'play');
+  { const bq = $('bQuest'); if (bq) bq.classList.toggle('hidden', S.mode !== 'play'); }
   const u = $('bUse'); u.style.display = S.interact && showTouch && S.interact.type !== 'mount' ? 'flex' : 'none'; if (S.interact) u.textContent = S.interact.label;
   const mi = mainItem();
   $('bAtk').innerHTML = atkBtn() + '<small>' + (mi ? mi.short : 'fists') + (mi && (mi.type === 'bow' || mi.type === 'gun') ? '' : ' · hold') + '</small>';
@@ -467,11 +497,11 @@ function resetWorld() { newState(); CHUNKS.clear(); VILC.clear(); lastChunk = nu
 function startNew() {
   resetWorld();
   startLoading(() => {
-    spawnEnt('bandit', 16, -12, { tut: true, hp: 22, maxHp: 22, D: 0 });
-    S.tut = 0; S.tutStep = 0; S.time = 0.29;
-    const tp = tutPrompt(); banner(tp[0], tp[1], 99, '#9ae0ff');
+    S.time = 0.29; S.dirT = 45;
+    startMain(0, true);
     msg('Ashford, Anno Domini 1700.', '#ffe070', 6);
     sfx('horn');
+    openStory('THE IRON CROWN', storyText('prologue'), 'Begin');
   });
 }
 function continueGame() {
@@ -557,16 +587,18 @@ function genStock(m) {
   return out;
 }
 function sellPrice(id) { return id === 'arrows' ? 8 : Math.max(1, Math.floor(ITEMS[id].price * 0.4)); }
+function repDisc(m) { const v = m && m.village; return v && v.id && S.Q ? Math.min(0.15, 0.03 * (S.Q.rep[v.id] || 0)) : 0; }
+function buyPrice(m, s) { return Math.max(1, Math.round(s.price * (1 - repDisc(m)))); }
 function shopHTML() {
   const m = shopRef, v = m.village;
   const title = m.role === 'smith' ? 'BLACKSMITH' : m.role === 'qm' ? 'QUARTERMASTER' : 'MERCHANT';
   let h = '<div class="hdr"><b>' + title + (v ? ' OF ' + esc(v.name.toUpperCase()) : '') + '</b><button class="x" data-a="close">✕</button></div>';
-  h += '<div class="stats">Your purse: <span class="gold">$' + P.gold + '</span> · Bag ' + P.inv.length + '/' + INV_MAX + '</div>';
+  h += '<div class="stats">Your purse: <span class="gold">$' + P.gold + '</span> · Bag ' + P.inv.length + '/' + INV_MAX + (repDisc(m) ? ' · <span class="gold">friend of ' + esc(v.name) + ': -' + Math.round(repDisc(m) * 100) + '%</span>' : '') + '</div>';
   h += '<div class="tabs"><button data-a="tab" data-t="buy" class="' + (shopTab === 'buy' ? 'on' : '') + '">Buy</button><button data-a="tab" data-t="sell" class="' + (shopTab === 'sell' ? 'on' : '') + '">Sell</button></div>';
   if (shopTab === 'buy') {
     m.stock.forEach((s, i) => {
-      const it = ITEMS[s.id], can = P.gold >= s.price;
-      h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt"><button data-a="buy" data-i="' + i + '"' + (can ? '' : ' disabled') + '>$' + s.price + '</button></span></div>';
+      const it = ITEMS[s.id], pr = buyPrice(m, s), can = P.gold >= pr;
+      h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt"><button data-a="buy" data-i="' + i + '"' + (can ? '' : ' disabled') + '>$' + pr + '</button></span></div>';
     });
   } else {
     if (!P.inv.length) h += '<div class="dim pad">Nothing to sell. (Equipped items must be unequipped first.)</div>';
@@ -591,7 +623,8 @@ function shopClick(e) {
   if (a === 'tab') shopTab = b.dataset.t;
   else if (a === 'buy') {
     const s = shopRef.stock[i];
-    if (s && P.gold >= s.price) { if (invAdd(s.id, s.n)) { P.gold -= s.price; sfx('coin'); autoEquip(s.id); } else { sfx('hurt'); } }
+    const pr = s ? buyPrice(shopRef, s) : 0;
+    if (s && P.gold >= pr) { if (invAdd(s.id, s.n)) { P.gold -= pr; sfx('coin'); autoEquip(s.id); } else { sfx('hurt'); } }
   } else if (a === 'sell') {
     const s = P.inv[i];
     if (s) {
@@ -601,6 +634,97 @@ function shopClick(e) {
     }
   }
   $('shopPanel').innerHTML = shopHTML();
+}
+
+// ---------- dialogue: quest givers, story beats, offers (Accept / Decline) ----------
+let TALK = null;
+const ROLE_GREET = {
+  innkeeper: ['Come in out of the cold. A bed is %COST% gold, and the stew is free if you don\'t ask what\'s in it.'],
+  priest: ['Peace be with you, traveller. These are dark days; the dead do not rest as they should.'],
+  captain: ['Royal army. We hold this road for the true Crown, whatever the Protector says.'],
+  stranger: ['The hooded man watches the door more than his ale.'],
+  heir: ['Elinor smiles, though she looks tired. "The realm is mending. Slowly."'],
+  captive: ['"Is it over? Please, take me home."']
+};
+function npcTitle(e) { if (e.kind === 'stranger') return S.Q.main >= 2 ? 'Sir Aldous Grey' : 'The Stranger'; if (e.kind === 'heir') return 'Lady Elinor'; if (e.cname) return e.cname; return giverName(e).replace(/^the /, '').replace(/^./, c => c.toUpperCase()); }
+function openTalk(e) {
+  TALK = { e, view: 'menu', offers: [] }; S.mode = 'talk'; clearInputs();
+  const b = npcBusiness(e);
+  if (b.story.length) TALK.view = 'story', TALK.q = b.story[0];
+  else if (b.turnin.length) TALK.view = 'turnin', TALK.q = b.turnin[0];
+  else if (b.free.length) TALK.view = 'free', TALK.q = b.free[0];
+  talkRender(); show('talk', true);
+}
+function openStory(title, lines, btn) { TALK = { e: null, view: 'narr', title, lines, btn: btn || 'Continue' }; S.mode = 'talk'; clearInputs(); talkRender(); show('talk', true); }
+function closeTalk() { show('talk', false); TALK = null; if (S.mode === 'talk') S.mode = 'play'; }
+function talkRender() {
+  const T = TALK; if (!T) return;
+  let h = '', who = T.e ? npcTitle(T.e) : T.title, lines = [], btns = [];
+  const e = T.e;
+  if (T.view === 'narr') { lines = T.lines; btns.push(['close', T.btn]); }
+  else if (T.view === 'story') { const q = T.q; lines = storyLines(q) || ['"' + qStep(q).txt + '"']; btns.push(['story', 'Continue']); }
+  else if (T.view === 'turnin') { const q = T.q; lines = storyLines(q) || ['"You did it? Then you\'ve earned this."', 'You report: ' + q.steps[q.si - 1 >= 0 ? q.si - 1 : 0].txt.toLowerCase() + '.']; btns.push(['turnin', 'Claim reward']); }
+  else if (T.view === 'free') { lines = ['"Bless you! I thought I\'d die out here."', '"Lead the way. I\'ll stay close."']; btns.push(['free', 'Follow me']); }
+  else if (T.view === 'offer') {
+    const q = T.offer; who = npcTitle(e) + ' · ' + q.title;
+    lines = (q.lines || []).concat(['<span class="dim">Objective: ' + esc(q.steps[0].txt) + (q.steps.length > 1 ? ', then ' + esc(q.steps[q.steps.length - 1].txt.charAt(0).toLowerCase() + q.steps[q.steps.length - 1].txt.slice(1)) : '') + '</span>', '<span class="gold">Reward: ' + q.rew.gold + ' gold · ' + q.rew.xp + ' XP' + (q.rew.items && q.rew.items.length ? ' · gear' : '') + (q.rew.rep ? ' · reputation' : '') + '</span>']);
+    btns.push(['accept', 'Accept'], ['decline', 'Decline']);
+  } else {
+    const greet = (ROLE_GREET[e.kind] || ['"Good day."']).map(l => l.replace('%COST%', e.role === 'inn' ? innCost(e) : ''));
+    lines = greet.slice();
+    T.offers = npcBusiness(e).offers;
+    if (T.offers.length && S.Q.act.filter(q => !q.main).length < QMAX_SIDE) { lines.push('"I could use someone handy with a blade..."'); T.offers.forEach((q, i) => btns.push(['offer:' + i, '! ' + q.title])); }
+    else if (T.offers.length) lines.push('<span class="dim">(Your quest log is full.)</span>');
+    if (e.role === 'inn') btns.push(['rest', 'Rent a bed (' + innCost(e) + 'g)']);
+    btns.push(['close', 'Farewell']);
+  }
+  h += '<div class="hdr"><b>' + esc(who) + '</b><button class="x" data-a="close">✕</button></div>';
+  h += '<div class="talk">' + lines.map(l => '<p>' + (l.indexOf('<span') === 0 ? l : esc(l)) + '</p>').join('') + '</div>';
+  h += '<div class="choices">' + btns.map(b => '<button data-a="' + b[0] + '"' + (b[0] === 'decline' || b[0] === 'close' && T.view === 'menu' ? ' class="dim2"' : '') + '>' + esc(b[1]) + '</button>').join('') + '</div>';
+  $('talkPanel').innerHTML = h;
+}
+function talkAct(a) {
+  const T = TALK; if (!T) return;
+  if (a === 'close') { closeTalk(); return; }
+  if (a === 'story') { const q = T.q; closeTalk(); storyStep(q); return; }
+  if (a === 'turnin') { const q = T.q; closeTalk(); turnIn(q); return; }
+  if (a === 'free') { const q = T.q; freeCaptive(q, T.e); closeTalk(); return; }
+  if (a === 'rest') { const e = T.e; closeTalk(); innRest(e); return; }
+  if (a.startsWith('offer:')) { T.offer = T.offers[+a.slice(6)]; T.view = 'offer'; talkRender(); return; }
+  if (a === 'accept') { const q = T.offer; closeTalk(); acceptQuest(q); return; }
+  if (a === 'decline') { T.view = 'menu'; T.offer = null; talkRender(); return; }
+}
+function talkClick(e) { const b = e.target.closest('button'); if (!b) return; talkAct(b.dataset.a); }
+// ---------- quest log ----------
+function logHTML() {
+  let h = '<div class="hdr"><b>QUEST LOG</b><button class="x" data-a="close">✕</button></div>';
+  const act = S.Q.act.slice().sort((a, b) => (b.main ? 1 : 0) - (a.main ? 1 : 0));
+  if (!act.length) h += '<div class="dim pad">No quests. Look for <span class="gold">!</span> over innkeepers, priests and captains.</div>';
+  for (const q of act) {
+    const st = qStep(q), tg = questTarget(q), d = tg ? Math.round(Math.hypot(tg.x - P.x, tg.y - P.y)) : null, tr = S.Q.track === q.id;
+    h += '<div class="quest' + (tr ? ' tracked' : '') + '"><div class="qt">' + (q.main ? '<span class="gold">◆ ' : '◇ ') + esc(q.title) + (q.main ? '</span> <span class="dim">· chapter ' + (q.ch + 1) + ' of ' + MAIN_TITLES.length + '</span>' : ' <span class="dim">· ' + esc(q.giver ? q.giver.name : '') + '</span>') + '</div>';
+    if (q.sum) h += '<div class="dim">' + esc(q.sum) + '</div>';
+    q.steps.forEach((x, i) => { if (i > q.si) return; h += '<div class="step' + (i < q.si ? ' done' : '') + '">' + (i < q.si ? '✓ ' : '› ') + esc(x.txt) + (i === q.si ? esc(stepProgress(x)) + (d !== null ? ' <span class="dim">· ' + d + 'm</span>' : '') : '') + '</div>'; });
+    h += '<div class="bt">' + (tr ? '<button disabled>Tracked</button>' : '<button data-a="track" data-q="' + esc(q.id) + '">Track</button>') + (q.main ? '' : '<button class="dim2" data-a="abandon" data-q="' + esc(q.id) + '">Abandon</button>') + '</div></div>';
+  }
+  const doneT = S.Q.done.map(id => id.startsWith('main') ? MAIN_TITLES[+id.slice(4)] : null).filter(Boolean);
+  const sideN = S.Q.done.filter(id => !id.startsWith('main')).length;
+  h += '<div class="sec">STORY</div><div class="dim pad">' + (doneT.length ? doneT.map(esc).join(' · ') : 'The story has only begun.') + (sideN ? '<br>Side quests completed: ' + sideN : '') + '</div>';
+  const reps = Object.entries(S.Q.rep).filter(r => r[1] > 0).map(([id, n]) => { const v = villageByKey(id); return v ? esc(v.name) + ' ' + '★'.repeat(Math.min(5, n)) : null; }).filter(Boolean);
+  if (reps.length) h += '<div class="sec">REPUTATION</div><div class="dim pad">' + reps.join(' · ') + '<br>Friendly villages sell to you for less.</div>';
+  if (S.stats.stolen) h += '<div class="dim pad">Gremlins have stolen ' + S.stats.stolen + ' gold from you; you got ' + S.stats.recovered + ' back.</div>';
+  h += '<div class="foot"><button data-a="close" class="big">Back to the field</button></div>';
+  return h;
+}
+function openLog() { S.mode = 'log'; clearInputs(); $('logPanel').innerHTML = logHTML(); show('qlog', true); }
+function closeLog() { S.mode = 'play'; show('qlog', false); }
+function logClick(e) {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const a = b.dataset.a;
+  if (a === 'close') { closeLog(); return; }
+  if (a === 'track') S.Q.track = b.dataset.q;
+  else if (a === 'abandon') abandonQuest(b.dataset.q);
+  $('logPanel').innerHTML = logHTML();
 }
 
 // game over
@@ -622,6 +746,7 @@ let lastT = 0;
 function step(dt) {
   if (typeof window !== 'undefined' && window.__FREEZE) { render(dt); syncUI(); return; } // test hook: hold a staged frame
   if (S.mode === 'play' || S.mode === 'dying') update(dt, readInput());
+  else if (S.mode === 'talk' || S.mode === 'log') { S.fade = Math.max(0, S.fade - dt); updateCamera(dt); }
   else if (S.mode === 'title') {
     S.t += dt; P.a += dt * 0.1; S.time = 0.735; S.darkness = darkAt(S.time);
     manageChunks(3); updateCamera(dt);
@@ -661,9 +786,12 @@ function init() {
   $('btnResume').addEventListener('click', closePause);
   $('btnSound').addEventListener('click', () => { audioInit(); setMute(!AU.muted); });
   $('btnQuit').addEventListener('click', () => { if (S.mode === 'paused') saveGame(); show('pause', false); resetWorld(); manageChunks(25); updateCamera(0, true); showTitle(); });
+  { const bl = $('btnLog'); if (bl) bl.addEventListener('click', () => { show('pause', false); S.mode = 'play'; openLog(); }); }
   $('invPanel').addEventListener('click', invClick);
   $('shopPanel').addEventListener('click', shopClick);
   $('overPanel').addEventListener('click', overClick);
+  $('talkPanel').addEventListener('click', talkClick);
+  $('logPanel').addEventListener('click', logClick);
   bindTouch();
   if (IS_TOUCH) document.body.classList.add('touchdev');
   setMute(AU.muted);

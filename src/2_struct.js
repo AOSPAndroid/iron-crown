@@ -361,6 +361,8 @@ function villageLayout(v) {
     const B = BLD[t], rr0 = R0 + B.D / 2 + (t === 'chapel' ? -0.5 : 0);
     const s = placeBuilding(L, t, vs, v.x + Math.cos(ac) * rr0, v.y + Math.sin(ac) * rr0, ac + Math.PI, v);
     placed.push(s);
+    // the hooded stranger waits by the tavern hearth in Ashford
+    if (t === 'tavern' && v.id === '0,0') { const p = l2w(s, -3.75, 0.7); L.npcs.push({ kind: 'stranger', x: p[0], y: p[1], a: headingOf(s, 1, -0.15), struct: s }); }
     // barrels and crates by the doors of the tavern and the smithy
     if (t === 'tavern' || t === 'smithy') for (const sx of [-1, 1]) {
       const p = l2w(s, sx * (B.W / 2 - 0.7), B.D / 2 + 1.35);
