@@ -44,6 +44,15 @@ class MB {
     this.quad(p[3], p[2], p[6], p[7], tc); this.quad(p[4], p[5], p[1], p[0], col);
     return this;
   }
+  // tapered box (frustum) centred on x=0: half-width/half-depth w0,d0 at y0 and w1,d1 at y1
+  frus(y0, y1, w0, d0, w1, d1, col, z) {
+    z = z || 0;
+    const p = [[-w0, y0, z - d0], [w0, y0, z - d0], [w1, y1, z - d1], [-w1, y1, z - d1], [-w0, y0, z + d0], [w0, y0, z + d0], [w1, y1, z + d1], [-w1, y1, z + d1]];
+    this.quad(p[0], p[1], p[2], p[3], col); this.quad(p[5], p[4], p[7], p[6], col);
+    this.quad(p[4], p[0], p[3], p[7], col); this.quad(p[1], p[5], p[6], p[2], col);
+    this.quad(p[3], p[2], p[6], p[7], col); this.quad(p[4], p[5], p[1], p[0], col);
+    return this;
+  }
   bc(cx, cy, cz, sx, sy, sz, col, top) { return this.box(cx - sx / 2, cy - sy / 2, cz - sz / 2, cx + sx / 2, cy + sy / 2, cz + sz / 2, col, top); }
   beam(a, b, w, col) {
     const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.hypot(dx, dy, dz) || 1e-3;
@@ -213,14 +222,15 @@ function buildItem(mb, it, side) {
   switch (it.t) {
     case 'sword': case 'claymore': {
       const big = it.t === 'claymore', L = big ? 1.15 : 0.78, bc = hexC(it.col || '#d8e0e8');
-      mb.rx(0.35);
-      mb.cap([0, -0.02, 0], [0, 0.12, 0], 0.035, '#5a3418', 6);
-      mb.sph(0, 0.17, 0, 0.05, 0.05, 0.05, '#e8c050', 0);
-      mb.bc(0, -0.06, 0, big ? 0.36 : 0.28, 0.05, 0.07, '#e8c050');
-      mb.box(-0.05, -0.08 - L, -0.016, 0.05, -0.08, 0.016, bc);
-      mb.box(-0.015, -0.08 - L, -0.02, 0.015, -0.1, 0.02, bc.map(v => Math.min(1, v * 1.15)));
-      mb.tri([-0.05, -0.08 - L, 0], [0.05, -0.08 - L, 0], [0, -0.2 - L, 0], bc);
-      if (it.tier >= 4) { const e = mb.em; mb.em = 0.7; mb.box(-0.022, -0.08 - L, -0.021, 0.022, -0.1, 0.021, '#ffe080'); mb.em = e; }
+      mb.rx(-0.8);
+      const bw = big ? 0.045 : 0.032, bt = 0.011;
+      mb.tube([0, -0.02, 0], [0, 0.13, 0], 0.026, 0.024, 6, '#4a2c14', true);
+      mb.ico(0, 0.16, 0, 0.04, 0.04, 0.04, '#c8a048', 0, 0, 5);
+      mb.bc(0, -0.045, 0, big ? 0.34 : 0.24, 0.035, 0.05, '#c8a048');
+      mb.box(-bw, -0.06 - L, -bt, bw, -0.065, bt, bc);
+      mb.box(-0.008, -0.06 - L * 0.9, -bt - 0.003, 0.008, -0.1, bt + 0.003, bc.map(v => v * 0.72));
+      mb.tri([-bw, -0.06 - L, 0], [bw, -0.06 - L, 0], [0, -0.06 - L - (big ? 0.17 : 0.12), 0], bc);
+      if (it.tier >= 4) { const e = mb.em; mb.em = 0.7; mb.box(-0.009, -0.06 - L * 0.9, -bt - 0.004, 0.009, -0.1, bt + 0.004, '#ffe080'); mb.em = e; }
       break;
     }
     case 'pike':
@@ -274,39 +284,40 @@ function buildItem(mb, it, side) {
 // chibi humanoid (giants reuse it at scale); spec keys: coat pants boots skin hair hat ...; side items L / R
 function buildHuman(spec) {
   const mb = new MB(91), s = spec, giant = !!s.giant;
+  mb.smooth = false; // faceted, angular look
   const skin = s.skin || '#f4c8a0', coat = s.coat || '#9a8a6a', pants = s.pants || '#6a5a42', boots = s.boots || '#3a2a1c';
   // legs + boots
   for (const side of [1, -1]) {
     const x = side * 0.1;
     mb.bone = side > 0 ? BN.legL : BN.legR;
-    if (!s.robe) mb.cap([x, 0.45, 0], [x, 0.3, 0.0], 0.088, s.greaves ? '#e8eef4' : pants, 8);
+    if (!s.robe) mb.tube([x, 0.48, 0], [x, 0.29, 0.0], 0.095, 0.078, 6, s.greaves ? '#e8eef4' : pants, true);
     mb.bone = side > 0 ? BN.shinL : BN.shinR;
-    if (!s.robe) { mb.cap([x, 0.3, 0], [x, 0.15, 0.0], 0.078, s.greaves ? '#e8eef4' : pants, 8); if (!giant) mb.tube([x, 0.24, 0], [x, 0.1, 0.01], 0.085, 0.09, 8, boots, true); }
-    mb.sph(x, 0.08, 0.035, 0.09, 0.08, 0.14, boots);
+    if (!s.robe) { mb.tube([x, 0.31, 0], [x, 0.12, 0.0], 0.076, 0.062, 6, s.greaves ? '#e8eef4' : pants, true); if (!giant) mb.tube([x, 0.25, 0], [x, 0.09, 0.005], 0.08, 0.082, 6, boots, true); }
+    mb.box(x - 0.068, 0, -0.07, x + 0.068, 0.11, 0.15, boots);
   }
   // hips / skirt
   mb.bone = BN.hips;
   if (s.robe) mb.tube([0, 0.02, 0], [0, 0.72, 0], 0.32, 0.2, 10, s.robe, true);
   else if (giant) { mb.sph(0, 0.52, 0, 0.27, 0.16, 0.2, s.fur); for (let i = 0; i < 7; i++) { const a = i / 7 * TAU; mb.sph(Math.cos(a) * 0.22, 0.4, Math.sin(a) * 0.16, 0.08, 0.12, 0.08, s.fur, 0); } mb.tube([0, 0.6, 0], [0, 0.66, 0], 0.27, 0.27, 10, s.belt, true); }
   else {
-    mb.sph(0, 0.52, 0, 0.19, 0.12, 0.15, pants);
+    mb.box(-0.18, 0.42, -0.13, 0.18, 0.62, 0.13, pants);
     if (!s.plate) mb.tube([0, 0.38, 0], [0, 0.62, 0], 0.24, 0.2, 10, coat, false);
   }
   if (s.apron) mb.box(-0.15, 0.32, 0.17, 0.15, 0.7, 0.19, s.apron);
   // torso
   mb.bone = BN.torso;
   const tw = giant ? 0.28 : 0.22;
-  mb.sph(0, 0.74, 0, tw, 0.24, tw * 0.78, giant ? skin : coat);
+  mb.frus(0.5, 0.92, tw * 0.8, tw * 0.6, tw * 1.05, tw * 0.68, giant ? skin : coat); mb.frus(0.92, 1.0, tw * 1.05, tw * 0.68, tw * 0.62, tw * 0.5, giant ? skin : coat);
   if (giant) { mb.sph(0, 0.78, 0.1, 0.22, 0.14, 0.12, skin); mb.beam([0.2, 0.92, 0.12], [-0.2, 0.58, 0.14], 0.07, s.fur); }
-  if (s.quilt) for (let i = 0; i < 3; i++) mb.tube([-tw * 0.95, 0.62 + i * 0.1, 0], [tw * 0.95, 0.62 + i * 0.1, 0], 0.012, 0.012, 4, '#a8844e');
+  if (s.quilt) for (let i = 0; i < 3; i++) mb.bc(0, 0.64 + i * 0.1, tw * 0.66, tw * 1.8, 0.018, 0.02, '#a8844e');
   if (s.mail) { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) mb.sph(-0.12 + j * 0.08, 0.6 + i * 0.075, 0.165, 0.03, 0.025, 0.012, '#8a96a2', 0); }
-  if (s.plate) { mb.sph(0, 0.76, 0.02, tw + 0.025, 0.23, tw * 0.82, s.plate); mb.sph(0.06, 0.82, 0.17, 0.05, 0.08, 0.02, '#ffffff', 0); }
+  if (s.plate) { mb.frus(0.56, 0.95, tw * 0.86, tw * 0.68, tw * 1.1, tw * 0.75, s.plate, 0.01); mb.bc(0.07, 0.8, tw * 0.76 + 0.01, 0.04, 0.14, 0.01, '#ffffff'); }
   if (s.pauldron) for (const side of [1, -1]) mb.sph(side * 0.24, 0.9, 0, 0.11, 0.07, 0.12, s.plate || '#dce6f0');
   if (s.facing) { mb.box(0.05, 0.56, 0.155, 0.12, 0.92, 0.17, s.facing); mb.box(-0.12, 0.56, 0.155, -0.05, 0.92, 0.17, s.facing); }
-  if (s.cross) { mb.beam([0.18, 0.93, 0.13], [-0.16, 0.54, 0.15], 0.05, '#ffffff'); mb.beam([-0.18, 0.93, 0.135], [0.16, 0.54, 0.155], 0.05, '#ffffff'); }
-  if (s.straps) { mb.beam([0.17, 0.92, 0.14], [-0.15, 0.56, 0.15], 0.045, '#4a2e16'); }
+  if (s.cross) { mb.beam([0.18, 0.93, 0.155], [-0.16, 0.54, 0.14], 0.05, '#ffffff'); mb.beam([-0.18, 0.93, 0.16], [0.16, 0.54, 0.145], 0.05, '#ffffff'); }
+  if (s.straps) { mb.beam([0.17, 0.92, 0.155], [-0.15, 0.56, 0.14], 0.045, '#4a2e16'); }
   if (s.buttons) for (let i = 0; i < 3; i++) mb.sph(0, 0.62 + i * 0.1, 0.175, 0.022, 0.022, 0.015, '#ffd84a', 0);
-  if (s.belt || s.cross) mb.tube([0, 0.56, 0], [0, 0.61, 0], tw + 0.01, tw + 0.01, 10, s.belt || '#3a2414', false);
+  if (s.belt || s.cross) mb.bc(0, 0.585, 0, tw * 1.72, 0.06, tw * 1.3, s.belt || '#3a2414');
   if (s.collar) { mb.box(0.08, 0.9, -0.12, 0.2, 1.1, 0.06, s.capeIn || s.cape); mb.box(-0.2, 0.9, -0.12, -0.08, 1.1, 0.06, s.capeIn || s.cape); }
   if (s.pack) mb.sph(0, 0.76, -0.2, 0.18, 0.2, 0.1, '#8a6034');
   // head (big, round)
@@ -347,9 +358,9 @@ function buildHuman(spec) {
     mb.bone = side > 0 ? BN.armL : BN.armR;
     const x = side * (giant ? 0.3 : 0.27), ar = giant ? 0.1 : 0.068;
     const sleeve = giant ? skin : s.plateArms ? '#e8eef4' : s.robe ? s.coat : coat;
-    mb.cap([x, 0.88, 0], [x, 0.6, 0], ar, sleeve, 8);
-    if (s.cuff) mb.tube([x, 0.6, 0], [x, 0.56, 0], ar + 0.015, ar + 0.015, 8, s.cuff, true);
-    mb.sph(x, HAND.y + 0.02, HAND.z, ar * 1.12, ar * 1.12, ar * 1.12, s.plateArms ? '#c8d2dc' : skin, 0);
+    mb.tube([x, 0.92, 0], [x, 0.58, 0], ar * 1.08, ar * 0.86, 6, sleeve, true); mb.ico(x, 0.89, 0, ar * 1.25, ar * 1.1, ar * 1.25, sleeve, 0, 0, 3);
+    if (s.cuff) mb.tube([x, 0.6, 0], [x, 0.56, 0], ar + 0.015, ar + 0.015, 6, s.cuff, true);
+    mb.bc(x, HAND.y + 0.02, HAND.z, ar * 1.6, ar * 1.9, ar * 1.7, s.plateArms ? '#c8d2dc' : skin);
     if (giant && side < 0) { // spiked club
       mb.push().tr(x, HAND.y, 0.03).rx(0.3);
       mb.tube([0, 0.1, 0], [0, -0.3, 0], 0.06, 0.08, 8, s.club, true); mb.tube([0, -0.3, 0], [0, -1.0, 0], 0.08, 0.17, 8, s.club, true);
@@ -451,7 +462,7 @@ function buildSheath(mb, list) {
   }
 }
 function buildHorse(o) {
-  const mb = new MB(33);
+  const mb = new MB(33); mb.smooth = false;
   const coat = o.coat || '#a86a3a', dark = o.dark || '#3a2414', cloth = o.cloth || '#36589e';
   mb.bone = BN.hbody;
   mb.sph(0, 1.15, 0, 0.38, 0.36, 0.82, coat);
@@ -459,9 +470,9 @@ function buildHorse(o) {
   if (o.saddle) { mb.sph(0, 1.48, -0.02, 0.4, 0.06, 0.42, cloth); mb.sph(0, 1.54, -0.05, 0.27, 0.1, 0.3, '#6a3a1c'); mb.sph(0, 1.62, -0.25, 0.18, 0.08, 0.05, '#6a3a1c'); mb.bc(0.34, 1.18, 0, 0.02, 0.36, 0.04, '#3a2414'); mb.bc(-0.34, 1.18, 0, 0.02, 0.36, 0.04, '#3a2414'); }
   for (const [b, lb, x, z] of [[BN.hFL, 1, 0.2, 0.55], [BN.hFR, 2, -0.2, 0.55], [BN.hBL, 3, 0.2, -0.55], [BN.hBR, 4, -0.2, -0.55]]) {
     mb.bone = b; const kneeY = HPIVL[lb][1];
-    mb.cap([x, 0.98, z], [x, kneeY, z], z > 0 ? 0.105 : 0.12, coat, 8);
+    mb.tube([x, 1.0, z], [x, kneeY, z], z > 0 ? 0.11 : 0.13, 0.075, 6, coat, true);
     mb.bone = lb;
-    mb.cap([x, kneeY, z], [x, 0.17, z], 0.07, coat, 8);
+    mb.tube([x, kneeY + 0.02, z], [x, 0.15, z], 0.072, 0.06, 6, coat, true);
     mb.sph(x, 0.19, z + 0.01, 0.085, 0.07, 0.09, coat, 0);
     if (o.stockings) mb.tube([x, 0.42, z], [x, 0.14, z], 0.085, 0.09, 8, '#f4f0e6', false);
     mb.sph(x, 0.07, z + 0.02, 0.1, 0.08, 0.12, dark, 0);

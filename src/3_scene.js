@@ -816,7 +816,7 @@ function playerPose() {
       if (!m) o.legs = 'brace';
       break;
     }
-    case 'dash': set(1, [0.75, 0, 0.35]); set(-1, [0.75, 0, 0.35]); o.lean = 0.5; o.legs = 'dash'; o.cape = 0.55; break;
+    case 'dash': set(1, [-1.35, 0.35, 0.25]); set(-1, [-1.35, -0.35, 0.25]); o.lean = 0.65; o.nod = 0.45; o.legs = 'sit'; o.cape = 0.3; break;
     case 'bow': set(1, [-1.52, -0.12, 0]); set(-1, [-1.4, -0.62, 0]); o.tw = -0.25; break;
     case 'shoot': { const s = a.hand === 0 ? 1 : -1; set(s, [-1.55, -s * 0.05, 0]); break; }
     case 'parry': { const kind = offKind(); if (kind === 'parryW') set(wS, [-1.85, -wS * 0.95, 0.3]); else { set(1, [-1.45, 0.35, 0.3]); set(-1, [-1.45, -0.35, 0.3]); } o.lean = 0.05; break; }
@@ -856,16 +856,20 @@ function drawPlayer() {
     drawRig(mesh, RIDERM, tint, ta);
     PBONES.set(BONES);
     TORCH_TIP = hasTorch() ? handPoint(BW[P.hands[0] === 'torch' ? BN.armL : BN.armR], RIDERM, P.hands[0] === 'torch' ? 1 : -1, 0, 0, 0.78) : null;
-    WEAPON_TIP = handPoint(BW[armB], RIDERM, wS, 0, it ? -0.45 : 0, it ? -0.15 : 0.05);
+    WEAPON_TIP = handPoint(BW[armB], RIDERM, wS, 0, it ? -0.38 : 0, it ? 0.4 : 0.05);
     shadowAt(P.x, P.y, 1.25);
     return;
   }
   computeHumanBones(o);
-  m4trs(MODELM, P.x, gh + (dying ? 0.15 : 0), P.y, yaw, dying ? -Math.PI / 2 : 0, 0, 1);
+  const rolling = P.act && P.act.k === 'dash' && !dying;
+  if (rolling) {
+    const u = clamp(P.act.t / P.act.dur, 0, 1), spin = TAU * (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)), c = 0.5;
+    m4trs(TMPM2, P.x, gh + c, P.y, yaw, spin, 0, 1); m4trs(TMPM, 0, -c, 0, 0, 0, 0, 1); m4mul(MODELM, TMPM2, TMPM);
+  } else m4trs(MODELM, P.x, gh + (dying ? 0.15 : 0), P.y, yaw, dying ? -Math.PI / 2 : 0, 0, 1);
   drawRig(mesh, MODELM, tint, ta);
   PBONES.set(BONES);
   TORCH_TIP = hasTorch() && !dying ? handPoint(BW[P.hands[0] === 'torch' ? BN.armL : BN.armR], MODELM, P.hands[0] === 'torch' ? 1 : -1, 0, 0, 0.78) : null;
-  WEAPON_TIP = handPoint(BW[armB], MODELM, wS, 0, it ? -0.45 : 0, it ? -0.15 : 0.05);
+  WEAPON_TIP = handPoint(BW[armB], MODELM, wS, 0, it ? -0.38 : 0, it ? 0.4 : 0.05);
   shadowAt(P.x, P.y, 0.62);
 }
 // dash afterimages: the player's mesh in the current pose, translucent cyan

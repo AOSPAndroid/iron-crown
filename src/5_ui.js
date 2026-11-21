@@ -601,8 +601,9 @@ function init() {
   window.addEventListener('resize', () => { resize(); buildLogo(); uiKey = ''; });
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
-  window.addEventListener('blur', () => { clearInputs(); if (S.mode === 'play') openPause(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'play') openPause(); });
+  // losing focus only releases held keys/buttons; the game keeps running (pause is manual: P / Esc / II)
+  window.addEventListener('blur', () => { clearInputs(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearInputs(); });
   window.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; MOUSE.x = e.clientX; MOUSE.y = e.clientY; MOUSE.ok = true; MOUSE.t = performance.now(); });
   canvas.addEventListener('pointerdown', e => { audioInit(); if (e.pointerType !== 'mouse') return; MOUSE.t = performance.now(); if (e.button === 0) mouseL = true; if (e.button === 2) mouseR = true; });
   window.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') return; if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });

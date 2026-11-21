@@ -71,8 +71,8 @@ run(`arena([null,"iron_sword"]); tick(1, { atk: true }); tick(3); tick(1, { dash
 check('dash cannot cancel a wind-up', run('duringWind') === 'atk', run('duringWind'));
 run(`arena([null,"iron_sword"]); tick(1, { atk: true }); const ma = P.act; while (P.act === ma && ma.t < ma.mv.w + ma.mv.a + 0.02) tick(1); tick(1, { dash: true }); tick(1); var duringRec = P.act.k;`);
 check('dash cancels attack recovery', run('duringRec') === 'dash', run('duringRec'));
-run(`arena(); tick(1, { dash: true }); var ifr = P.iframes; tick(Math.round(0.2 / DT)); var ifr2 = P.iframes;`);
-check('dash i-frames ~0.16s (tunic)', Math.abs(run('ifr') - 0.16) < 0.01 && run('ifr2') <= 0, 'start=' + run('ifr.toFixed(3)'));
+run(`arena(); tick(1, { dash: true }); var ifr = P.iframes; tick(Math.round(0.28 / DT)); var ifr2 = P.iframes;`);
+check('roll i-frames ~0.24s (tunic)', Math.abs(run('ifr') - 0.24) < 0.01 && run('ifr2') <= 0, 'start=' + run('ifr.toFixed(3)'));
 // 5. heavy sweet spot
 run(`arena([null,"iron_sword"]); let hk = 0; tick(Math.round((HOLD_HEAVY + CHARGE_FULL.sword + 0.06) / DT), { atk: true }); tick(1); var crit = P.act && P.act.heavyCrit;`);
 check('heavy: release in the sweet spot = crit + guard break', run('crit') === true, 'heavyCrit=' + run('crit'));
@@ -91,6 +91,14 @@ check('input buffer: press 0.1s before the window still chains', run('bufNext') 
 // 9. style rank: rises with skill, drops when hit
 run(`arena([null,"iron_sword"]); S.style = 0; styleAdd(350); var r1 = styleRank()[0]; hurtPlayer(5, { x: P.x + 1, y: P.y }); var r2 = styleRank()[0];`);
 check('style: rank rises with skill and drops when hit', run('r1') === 'B' && run('r2') !== 'B', run('r1') + ' -> ' + run('r2'));
+
+// 10. forward roll through a foe: it loses track, you end up behind it, and the strike from behind is a x2.2 ROLL STRIKE
+run(`arena([null,'iron_sword']); var rb = spawnEnt('soldier', P.x + 1.6, P.y, { D: 0 }); rb.target = P; rb.tT = 99; rb.a = Math.PI; rb.cd = 99; rb.hp = rb.maxHp = 9999;
+startDash(1, 0); var lostSeen = false, winSeen = false; for (let i = 0; i < 60; i++) { tick(1); if (rb.lostT > 0) lostSeen = true; if (P.rollStrikeT > 0) winSeen = true; }
+var behindOK = P.x > rb.x && Math.abs(angDiff(rb.a, Math.atan2(P.y - rb.y, P.x - rb.x))) > 1.95;
+P.act = null; P.a = Math.PI; var h0b = rb.hp; tick(1, { atk: true }); tick(50); var rollDmg = h0b - rb.hp;`);
+check('roll past a foe: it loses track and you end up behind it', run('lostSeen && winSeen && behindOK'), 'lost=' + run('lostSeen') + ' win=' + run('winSeen') + ' behind=' + run('behindOK'));
+check('roll strike from behind hits ~x2.2', run('rollDmg') > 17 * 1.9, 'dmg ' + run('Math.round(rollDmg)'));
 
 let pass = 0;
 for (const [n, ok, info] of results) { console.log((ok ? 'PASS ' : 'FAIL ') + n + (info ? '  [' + info + ']' : '')); if (ok) pass++; }

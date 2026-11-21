@@ -79,7 +79,7 @@ body:not(.touchdev) .tc{display:none}
   <div id="zone"></div>
   <div id="base"><div id="knob"></div></div>
   <div class="tb" id="bAtk">ATTACK</div>
-  <div class="tb" id="bDash">DASH</div>
+  <div class="tb" id="bDash">ROLL</div>
   <div class="tb" id="bOff">PARRY</div>
   <div class="tb" id="bLock">LOCK</div>
   <div class="tb" id="bHorse">HORSE</div>
@@ -97,7 +97,7 @@ body:not(.touchdev) .tc{display:none}
     <button class="btn" id="btnCont">Continue</button><br>
     <button class="btn" id="btnNew">New Game</button>
     <div class="keys kb">
-      <b>WASD / arrows</b> move · <b>Space / Shift</b> dash (i-frames)<br>
+      <b>WASD / arrows</b> move · <b>Space / Shift</b> forward roll (i-frames; roll past a foe, then strike its back)<br>
       <b>J / L-click</b> attack — tap in rhythm for combos, hold for a heavy<br>
       <b>K / R-click</b> block · parry (tap just before a hit) · off-hand<br>
       <b>L / Tab</b> lock-on (again = next) · <b>Z X</b> turn camera<br>
@@ -105,7 +105,7 @@ body:not(.touchdev) .tc{display:none}
       <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it</span>
     </div>
     <div class="keys tc">
-      <b>Left thumb</b>: joystick · <b>DASH</b>: dodge through attacks<br>
+      <b>Left thumb</b>: joystick · <b>ROLL</b>: roll through attacks and behind foes<br>
       <b>ATTACK</b>: tap in rhythm for combos, hold for a heavy<br>
       <b>BLOCK / PARRY</b>: tap just before a hit lands · <b>LOCK</b>: target<br>
       <b>HORSE</b> · <b>USE</b> · <b>BAG</b> · <b>POT</b> · <b>II</b> pause<br>
@@ -1075,6 +1075,15 @@ class MB {
     this.quad(p[3], p[2], p[6], p[7], tc); this.quad(p[4], p[5], p[1], p[0], col);
     return this;
   }
+  // tapered box (frustum) centred on x=0: half-width/half-depth w0,d0 at y0 and w1,d1 at y1
+  frus(y0, y1, w0, d0, w1, d1, col, z) {
+    z = z || 0;
+    const p = [[-w0, y0, z - d0], [w0, y0, z - d0], [w1, y1, z - d1], [-w1, y1, z - d1], [-w0, y0, z + d0], [w0, y0, z + d0], [w1, y1, z + d1], [-w1, y1, z + d1]];
+    this.quad(p[0], p[1], p[2], p[3], col); this.quad(p[5], p[4], p[7], p[6], col);
+    this.quad(p[4], p[0], p[3], p[7], col); this.quad(p[1], p[5], p[6], p[2], col);
+    this.quad(p[3], p[2], p[6], p[7], col); this.quad(p[4], p[5], p[1], p[0], col);
+    return this;
+  }
   bc(cx, cy, cz, sx, sy, sz, col, top) { return this.box(cx - sx / 2, cy - sy / 2, cz - sz / 2, cx + sx / 2, cy + sy / 2, cz + sz / 2, col, top); }
   beam(a, b, w, col) {
     const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.hypot(dx, dy, dz) || 1e-3;
@@ -1244,14 +1253,15 @@ function buildItem(mb, it, side) {
   switch (it.t) {
     case 'sword': case 'claymore': {
       const big = it.t === 'claymore', L = big ? 1.15 : 0.78, bc = hexC(it.col || '#d8e0e8');
-      mb.rx(0.35);
-      mb.cap([0, -0.02, 0], [0, 0.12, 0], 0.035, '#5a3418', 6);
-      mb.sph(0, 0.17, 0, 0.05, 0.05, 0.05, '#e8c050', 0);
-      mb.bc(0, -0.06, 0, big ? 0.36 : 0.28, 0.05, 0.07, '#e8c050');
-      mb.box(-0.05, -0.08 - L, -0.016, 0.05, -0.08, 0.016, bc);
-      mb.box(-0.015, -0.08 - L, -0.02, 0.015, -0.1, 0.02, bc.map(v => Math.min(1, v * 1.15)));
-      mb.tri([-0.05, -0.08 - L, 0], [0.05, -0.08 - L, 0], [0, -0.2 - L, 0], bc);
-      if (it.tier >= 4) { const e = mb.em; mb.em = 0.7; mb.box(-0.022, -0.08 - L, -0.021, 0.022, -0.1, 0.021, '#ffe080'); mb.em = e; }
+      mb.rx(-0.8);
+      const bw = big ? 0.045 : 0.032, bt = 0.011;
+      mb.tube([0, -0.02, 0], [0, 0.13, 0], 0.026, 0.024, 6, '#4a2c14', true);
+      mb.ico(0, 0.16, 0, 0.04, 0.04, 0.04, '#c8a048', 0, 0, 5);
+      mb.bc(0, -0.045, 0, big ? 0.34 : 0.24, 0.035, 0.05, '#c8a048');
+      mb.box(-bw, -0.06 - L, -bt, bw, -0.065, bt, bc);
+      mb.box(-0.008, -0.06 - L * 0.9, -bt - 0.003, 0.008, -0.1, bt + 0.003, bc.map(v => v * 0.72));
+      mb.tri([-bw, -0.06 - L, 0], [bw, -0.06 - L, 0], [0, -0.06 - L - (big ? 0.17 : 0.12), 0], bc);
+      if (it.tier >= 4) { const e = mb.em; mb.em = 0.7; mb.box(-0.009, -0.06 - L * 0.9, -bt - 0.004, 0.009, -0.1, bt + 0.004, '#ffe080'); mb.em = e; }
       break;
     }
     case 'pike':
@@ -1305,39 +1315,40 @@ function buildItem(mb, it, side) {
 // chibi humanoid (giants reuse it at scale); spec keys: coat pants boots skin hair hat ...; side items L / R
 function buildHuman(spec) {
   const mb = new MB(91), s = spec, giant = !!s.giant;
+  mb.smooth = false; // faceted, angular look
   const skin = s.skin || '#f4c8a0', coat = s.coat || '#9a8a6a', pants = s.pants || '#6a5a42', boots = s.boots || '#3a2a1c';
   // legs + boots
   for (const side of [1, -1]) {
     const x = side * 0.1;
     mb.bone = side > 0 ? BN.legL : BN.legR;
-    if (!s.robe) mb.cap([x, 0.45, 0], [x, 0.3, 0.0], 0.088, s.greaves ? '#e8eef4' : pants, 8);
+    if (!s.robe) mb.tube([x, 0.48, 0], [x, 0.29, 0.0], 0.095, 0.078, 6, s.greaves ? '#e8eef4' : pants, true);
     mb.bone = side > 0 ? BN.shinL : BN.shinR;
-    if (!s.robe) { mb.cap([x, 0.3, 0], [x, 0.15, 0.0], 0.078, s.greaves ? '#e8eef4' : pants, 8); if (!giant) mb.tube([x, 0.24, 0], [x, 0.1, 0.01], 0.085, 0.09, 8, boots, true); }
-    mb.sph(x, 0.08, 0.035, 0.09, 0.08, 0.14, boots);
+    if (!s.robe) { mb.tube([x, 0.31, 0], [x, 0.12, 0.0], 0.076, 0.062, 6, s.greaves ? '#e8eef4' : pants, true); if (!giant) mb.tube([x, 0.25, 0], [x, 0.09, 0.005], 0.08, 0.082, 6, boots, true); }
+    mb.box(x - 0.068, 0, -0.07, x + 0.068, 0.11, 0.15, boots);
   }
   // hips / skirt
   mb.bone = BN.hips;
   if (s.robe) mb.tube([0, 0.02, 0], [0, 0.72, 0], 0.32, 0.2, 10, s.robe, true);
   else if (giant) { mb.sph(0, 0.52, 0, 0.27, 0.16, 0.2, s.fur); for (let i = 0; i < 7; i++) { const a = i / 7 * TAU; mb.sph(Math.cos(a) * 0.22, 0.4, Math.sin(a) * 0.16, 0.08, 0.12, 0.08, s.fur, 0); } mb.tube([0, 0.6, 0], [0, 0.66, 0], 0.27, 0.27, 10, s.belt, true); }
   else {
-    mb.sph(0, 0.52, 0, 0.19, 0.12, 0.15, pants);
+    mb.box(-0.18, 0.42, -0.13, 0.18, 0.62, 0.13, pants);
     if (!s.plate) mb.tube([0, 0.38, 0], [0, 0.62, 0], 0.24, 0.2, 10, coat, false);
   }
   if (s.apron) mb.box(-0.15, 0.32, 0.17, 0.15, 0.7, 0.19, s.apron);
   // torso
   mb.bone = BN.torso;
   const tw = giant ? 0.28 : 0.22;
-  mb.sph(0, 0.74, 0, tw, 0.24, tw * 0.78, giant ? skin : coat);
+  mb.frus(0.5, 0.92, tw * 0.8, tw * 0.6, tw * 1.05, tw * 0.68, giant ? skin : coat); mb.frus(0.92, 1.0, tw * 1.05, tw * 0.68, tw * 0.62, tw * 0.5, giant ? skin : coat);
   if (giant) { mb.sph(0, 0.78, 0.1, 0.22, 0.14, 0.12, skin); mb.beam([0.2, 0.92, 0.12], [-0.2, 0.58, 0.14], 0.07, s.fur); }
-  if (s.quilt) for (let i = 0; i < 3; i++) mb.tube([-tw * 0.95, 0.62 + i * 0.1, 0], [tw * 0.95, 0.62 + i * 0.1, 0], 0.012, 0.012, 4, '#a8844e');
+  if (s.quilt) for (let i = 0; i < 3; i++) mb.bc(0, 0.64 + i * 0.1, tw * 0.66, tw * 1.8, 0.018, 0.02, '#a8844e');
   if (s.mail) { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if ((i + j) % 2) mb.sph(-0.12 + j * 0.08, 0.6 + i * 0.075, 0.165, 0.03, 0.025, 0.012, '#8a96a2', 0); }
-  if (s.plate) { mb.sph(0, 0.76, 0.02, tw + 0.025, 0.23, tw * 0.82, s.plate); mb.sph(0.06, 0.82, 0.17, 0.05, 0.08, 0.02, '#ffffff', 0); }
+  if (s.plate) { mb.frus(0.56, 0.95, tw * 0.86, tw * 0.68, tw * 1.1, tw * 0.75, s.plate, 0.01); mb.bc(0.07, 0.8, tw * 0.76 + 0.01, 0.04, 0.14, 0.01, '#ffffff'); }
   if (s.pauldron) for (const side of [1, -1]) mb.sph(side * 0.24, 0.9, 0, 0.11, 0.07, 0.12, s.plate || '#dce6f0');
   if (s.facing) { mb.box(0.05, 0.56, 0.155, 0.12, 0.92, 0.17, s.facing); mb.box(-0.12, 0.56, 0.155, -0.05, 0.92, 0.17, s.facing); }
-  if (s.cross) { mb.beam([0.18, 0.93, 0.13], [-0.16, 0.54, 0.15], 0.05, '#ffffff'); mb.beam([-0.18, 0.93, 0.135], [0.16, 0.54, 0.155], 0.05, '#ffffff'); }
-  if (s.straps) { mb.beam([0.17, 0.92, 0.14], [-0.15, 0.56, 0.15], 0.045, '#4a2e16'); }
+  if (s.cross) { mb.beam([0.18, 0.93, 0.155], [-0.16, 0.54, 0.14], 0.05, '#ffffff'); mb.beam([-0.18, 0.93, 0.16], [0.16, 0.54, 0.145], 0.05, '#ffffff'); }
+  if (s.straps) { mb.beam([0.17, 0.92, 0.155], [-0.15, 0.56, 0.14], 0.045, '#4a2e16'); }
   if (s.buttons) for (let i = 0; i < 3; i++) mb.sph(0, 0.62 + i * 0.1, 0.175, 0.022, 0.022, 0.015, '#ffd84a', 0);
-  if (s.belt || s.cross) mb.tube([0, 0.56, 0], [0, 0.61, 0], tw + 0.01, tw + 0.01, 10, s.belt || '#3a2414', false);
+  if (s.belt || s.cross) mb.bc(0, 0.585, 0, tw * 1.72, 0.06, tw * 1.3, s.belt || '#3a2414');
   if (s.collar) { mb.box(0.08, 0.9, -0.12, 0.2, 1.1, 0.06, s.capeIn || s.cape); mb.box(-0.2, 0.9, -0.12, -0.08, 1.1, 0.06, s.capeIn || s.cape); }
   if (s.pack) mb.sph(0, 0.76, -0.2, 0.18, 0.2, 0.1, '#8a6034');
   // head (big, round)
@@ -1378,9 +1389,9 @@ function buildHuman(spec) {
     mb.bone = side > 0 ? BN.armL : BN.armR;
     const x = side * (giant ? 0.3 : 0.27), ar = giant ? 0.1 : 0.068;
     const sleeve = giant ? skin : s.plateArms ? '#e8eef4' : s.robe ? s.coat : coat;
-    mb.cap([x, 0.88, 0], [x, 0.6, 0], ar, sleeve, 8);
-    if (s.cuff) mb.tube([x, 0.6, 0], [x, 0.56, 0], ar + 0.015, ar + 0.015, 8, s.cuff, true);
-    mb.sph(x, HAND.y + 0.02, HAND.z, ar * 1.12, ar * 1.12, ar * 1.12, s.plateArms ? '#c8d2dc' : skin, 0);
+    mb.tube([x, 0.92, 0], [x, 0.58, 0], ar * 1.08, ar * 0.86, 6, sleeve, true); mb.ico(x, 0.89, 0, ar * 1.25, ar * 1.1, ar * 1.25, sleeve, 0, 0, 3);
+    if (s.cuff) mb.tube([x, 0.6, 0], [x, 0.56, 0], ar + 0.015, ar + 0.015, 6, s.cuff, true);
+    mb.bc(x, HAND.y + 0.02, HAND.z, ar * 1.6, ar * 1.9, ar * 1.7, s.plateArms ? '#c8d2dc' : skin);
     if (giant && side < 0) { // spiked club
       mb.push().tr(x, HAND.y, 0.03).rx(0.3);
       mb.tube([0, 0.1, 0], [0, -0.3, 0], 0.06, 0.08, 8, s.club, true); mb.tube([0, -0.3, 0], [0, -1.0, 0], 0.08, 0.17, 8, s.club, true);
@@ -1482,7 +1493,7 @@ function buildSheath(mb, list) {
   }
 }
 function buildHorse(o) {
-  const mb = new MB(33);
+  const mb = new MB(33); mb.smooth = false;
   const coat = o.coat || '#a86a3a', dark = o.dark || '#3a2414', cloth = o.cloth || '#36589e';
   mb.bone = BN.hbody;
   mb.sph(0, 1.15, 0, 0.38, 0.36, 0.82, coat);
@@ -1490,9 +1501,9 @@ function buildHorse(o) {
   if (o.saddle) { mb.sph(0, 1.48, -0.02, 0.4, 0.06, 0.42, cloth); mb.sph(0, 1.54, -0.05, 0.27, 0.1, 0.3, '#6a3a1c'); mb.sph(0, 1.62, -0.25, 0.18, 0.08, 0.05, '#6a3a1c'); mb.bc(0.34, 1.18, 0, 0.02, 0.36, 0.04, '#3a2414'); mb.bc(-0.34, 1.18, 0, 0.02, 0.36, 0.04, '#3a2414'); }
   for (const [b, lb, x, z] of [[BN.hFL, 1, 0.2, 0.55], [BN.hFR, 2, -0.2, 0.55], [BN.hBL, 3, 0.2, -0.55], [BN.hBR, 4, -0.2, -0.55]]) {
     mb.bone = b; const kneeY = HPIVL[lb][1];
-    mb.cap([x, 0.98, z], [x, kneeY, z], z > 0 ? 0.105 : 0.12, coat, 8);
+    mb.tube([x, 1.0, z], [x, kneeY, z], z > 0 ? 0.11 : 0.13, 0.075, 6, coat, true);
     mb.bone = lb;
-    mb.cap([x, kneeY, z], [x, 0.17, z], 0.07, coat, 8);
+    mb.tube([x, kneeY + 0.02, z], [x, 0.15, z], 0.072, 0.06, 6, coat, true);
     mb.sph(x, 0.19, z + 0.01, 0.085, 0.07, 0.09, coat, 0);
     if (o.stockings) mb.tube([x, 0.42, z], [x, 0.14, z], 0.085, 0.09, 8, '#f4f0e6', false);
     mb.sph(x, 0.07, z + 0.02, 0.1, 0.08, 0.12, dark, 0);
@@ -2442,7 +2453,7 @@ function playerPose() {
       if (!m) o.legs = 'brace';
       break;
     }
-    case 'dash': set(1, [0.75, 0, 0.35]); set(-1, [0.75, 0, 0.35]); o.lean = 0.5; o.legs = 'dash'; o.cape = 0.55; break;
+    case 'dash': set(1, [-1.35, 0.35, 0.25]); set(-1, [-1.35, -0.35, 0.25]); o.lean = 0.65; o.nod = 0.45; o.legs = 'sit'; o.cape = 0.3; break;
     case 'bow': set(1, [-1.52, -0.12, 0]); set(-1, [-1.4, -0.62, 0]); o.tw = -0.25; break;
     case 'shoot': { const s = a.hand === 0 ? 1 : -1; set(s, [-1.55, -s * 0.05, 0]); break; }
     case 'parry': { const kind = offKind(); if (kind === 'parryW') set(wS, [-1.85, -wS * 0.95, 0.3]); else { set(1, [-1.45, 0.35, 0.3]); set(-1, [-1.45, -0.35, 0.3]); } o.lean = 0.05; break; }
@@ -2482,16 +2493,20 @@ function drawPlayer() {
     drawRig(mesh, RIDERM, tint, ta);
     PBONES.set(BONES);
     TORCH_TIP = hasTorch() ? handPoint(BW[P.hands[0] === 'torch' ? BN.armL : BN.armR], RIDERM, P.hands[0] === 'torch' ? 1 : -1, 0, 0, 0.78) : null;
-    WEAPON_TIP = handPoint(BW[armB], RIDERM, wS, 0, it ? -0.45 : 0, it ? -0.15 : 0.05);
+    WEAPON_TIP = handPoint(BW[armB], RIDERM, wS, 0, it ? -0.38 : 0, it ? 0.4 : 0.05);
     shadowAt(P.x, P.y, 1.25);
     return;
   }
   computeHumanBones(o);
-  m4trs(MODELM, P.x, gh + (dying ? 0.15 : 0), P.y, yaw, dying ? -Math.PI / 2 : 0, 0, 1);
+  const rolling = P.act && P.act.k === 'dash' && !dying;
+  if (rolling) {
+    const u = clamp(P.act.t / P.act.dur, 0, 1), spin = TAU * (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)), c = 0.5;
+    m4trs(TMPM2, P.x, gh + c, P.y, yaw, spin, 0, 1); m4trs(TMPM, 0, -c, 0, 0, 0, 0, 1); m4mul(MODELM, TMPM2, TMPM);
+  } else m4trs(MODELM, P.x, gh + (dying ? 0.15 : 0), P.y, yaw, dying ? -Math.PI / 2 : 0, 0, 1);
   drawRig(mesh, MODELM, tint, ta);
   PBONES.set(BONES);
   TORCH_TIP = hasTorch() && !dying ? handPoint(BW[P.hands[0] === 'torch' ? BN.armL : BN.armR], MODELM, P.hands[0] === 'torch' ? 1 : -1, 0, 0, 0.78) : null;
-  WEAPON_TIP = handPoint(BW[armB], MODELM, wS, 0, it ? -0.45 : 0, it ? -0.15 : 0.05);
+  WEAPON_TIP = handPoint(BW[armB], MODELM, wS, 0, it ? -0.38 : 0, it ? 0.4 : 0.05);
   shadowAt(P.x, P.y, 0.62);
 }
 // dash afterimages: the player's mesh in the current pose, translucent cyan
@@ -2847,7 +2862,8 @@ const SAVE_KEY = 'ironcrown1700_save_v1';
 let S = null, P = null;
 
 // ---------- combat tuning (seconds) ----------
-const DASH = { dur: 0.28, ifr: 0.16, dist: 4.4, cost: 22, minSt: 18, rec: 0.08 };
+// forward roll: short, with i-frames through the first ~60%; rolling past a foe leaves it turned the wrong way
+const DASH = { dur: 0.4, ifr: 0.24, dist: 2.9, cost: 22, minSt: 18, rec: 0.08 };
 const BUF = 0.14;                 // input buffer for attack / dash / off-hand
 const CHAIN_GRACE = 0.14;         // combo can still continue this long after recovery ends
 const SHARP = 0.1;                // pressing within this of the window opening = "sharp" (bonus)
@@ -2936,7 +2952,7 @@ function burst(x, y, elev, col, n, chars, spd, em, sz) {
 function fx(o) { o.t = 0; S.fx.push(o); if (S.fx.length > 80) S.fx.shift(); return o; }
 function sparks(x, y, elev, col, n, big) { for (let i = 0; i < n; i++) { const a = rr(0, TAU), s = rr(2, 7); part(x, y, elev, Math.cos(a) * s, Math.sin(a) * s, rr(1, 4), rr(0.15, 0.32), '+', col || '!#fff4c0', 6, true, big ? 0.55 : 0.36); } }
 // keyboard / touch labels for prompts
-function btnName(k) { const t = typeof IS_TOUCH !== 'undefined' && IS_TOUCH; return t ? ({ atk: 'ATTACK', off: 'BLOCK', dash: 'DASH', lock: 'LOCK' })[k] : ({ atk: 'J / click', off: 'K / right-click', dash: 'Space', lock: 'L / Tab' })[k]; }
+function btnName(k) { const t = typeof IS_TOUCH !== 'undefined' && IS_TOUCH; return t ? ({ atk: 'ATTACK', off: 'BLOCK', dash: 'ROLL', lock: 'LOCK' })[k] : ({ atk: 'J / click', off: 'K / right-click', dash: 'Space', lock: 'L / Tab' })[k]; }
 
 // ---------- style rank ----------
 function styleRank() { let r = STYLE_RANKS[0]; for (const x of STYLE_RANKS) if (S.style >= x[1]) r = x; return r; }
@@ -3046,7 +3062,7 @@ function moveToward(e, tx, ty, spd, dt) {
   let dx = tx - e.x, dy = ty - e.y; const d = Math.hypot(dx, dy) || 1; let ux = dx / d, uy = dy / d;
   if (blockedAt(e.x + ux * 1.6, e.y + uy * 1.6, e.r)) { const s = e.strafe, ca = Math.cos(1.0 * s), sa = Math.sin(1.0 * s); const nx = ux * ca - uy * sa, ny = ux * sa + uy * ca; ux = nx; uy = ny; }
   const t = tileAt(e.x, e.y); const slow = (t === T_WATER || t === T_BOG) ? 0.6 : t === T_DRIFT ? 0.8 : 1;
-  e.x += ux * spd * slow * dt; e.y += uy * spd * slow * dt; e.a = Math.atan2(uy, ux); e.moving = true;
+  e.x += ux * spd * slow * dt; e.y += uy * spd * slow * dt; e.a += clamp(angDiff(e.a, Math.atan2(uy, ux)), -7 * dt, 7 * dt); e.moving = true;
 }
 function blinkTo(e, x, y) {
   if (blockedAt(x, y, e.r)) return false;
@@ -3227,13 +3243,15 @@ function foeRange(e) {
 }
 function updateFoe(e, t, dt) {
   const k = e.k, dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
+  const lost = e.lostT > 0; if (lost) e.lostT -= dt;
+  if (lost && e.state !== 'wind' && e.state !== 'aim' && e.state !== 'gallop' && e.state !== 'stagger' && e.state !== 'rec') return;
   switch (e.state) {
     case 'stagger': e.stT -= dt; if (e.stT <= 0) { e.state = 'move'; e.cd = 0.4; } return;
     case 'rec': e.rt -= dt; if (e.rt <= 0) { e.state = 'move'; tokFree(e); } return;
     case 'wind': {
       const a = e.atk, W = foeWind(a, e.hitIdx);
       e.wt += dt;
-      if (a.k !== 'slam' && a.k !== 'aoe' && a.k !== 'throw' && e.wt < W * 0.6) e.wdir += clamp(angDiff(e.wdir, ang), -6 * dt, 6 * dt);
+      if (!lost && a.k !== 'slam' && a.k !== 'aoe' && a.k !== 'throw' && e.wt < W * 0.6) e.wdir += clamp(angDiff(e.wdir, ang), -6 * dt, 6 * dt);
       e.a = e.wdir;
       if (e.wt >= W) resolveFoe(e, t);
       return;
@@ -3443,8 +3461,12 @@ function attackHits(a) {
     const stg = e.state === 'stagger' || e.downT > 0;
     let dmg = base * mv.dmg * dmgMult() * (a.crit || 1) * (a.sharp ? 1.15 : 1) * (stg ? 1.3 : 1) * rr(0.95, 1.05);
     if (mv.burn || (it && it.fire)) { dmg *= e.k.unholy ? 2.3 : 1; e.burnT = 3; e.burnDps = e.k.unholy ? 7 : 3; }
-    const crit = a.crit > 0 || stg;
-    hurtEnt(e, dmg, P.x, P.y, mv.kb * (a.crit ? 1.4 : 1), true, false, { crit, poise: mv.poise * (a.crit ? 1.8 : 1), gb: mv.gb });
+    const behind = !e.k.hover && Math.abs(angDiff(e.a, Math.atan2(P.y - e.y, P.x - e.x))) > 1.95;
+    const bs = behind ? (P.rollStrikeT > 0 ? 2.2 : 1.6) : 1;
+    dmg *= bs;
+    const crit = a.crit > 0 || stg || bs > 1;
+    hurtEnt(e, dmg, P.x, P.y, mv.kb * (a.crit ? 1.4 : 1), true, false, { crit, poise: mv.poise * (a.crit ? 1.8 : 1) * (bs > 1 ? 1.6 : 1), gb: mv.gb });
+    if (bs > 1 && !a.crit) { addText(e.x, e.y, e.k.h + 1.0, bs > 2 ? 'ROLL STRIKE!' : 'BACKSTAB!', bs > 2 ? '#7af0ff' : '#ffb040', true); styleAdd(bs > 2 ? 25 : 10); if (bs > 2) P.rollStrikeT = 0; }
     const hx = P.x + Math.cos(a.dir) * Math.min(range, d + e.r) * 0.8, hy = P.y + Math.sin(a.dir) * Math.min(range, d + e.r) * 0.8;
     sparks(hx, hy, P.mounted ? 1.9 : 1.1, crit ? '!#ffb040' : '!#fff4c0', crit ? 12 : 7, crit || mv.fin);
     if (a.crit) addText(e.x, e.y, e.k.h + 1.0, a.crit >= 2.6 ? 'RIPOSTE!' : 'COUNTER!', '#ffb040', true);
@@ -3466,7 +3488,8 @@ function startDash(dx, dy) {
   const l = Math.hypot(dx, dy); let a;
   if (l > 0.2) a = Math.atan2(dy, dx); else a = P.a + Math.PI; // backstep when no direction held
   const heavy = 1 - armorSlow();
-  P.act = { k: 'dash', t: 0, dur: DASH.dur, a, dist: DASH.dist * (1 - heavy * 0.9), done: 0, sx: P.x, sy: P.y };
+  P.act = { k: 'dash', t: 0, dur: DASH.dur, a, dist: DASH.dist * (1 - heavy * 0.9), done: 0, sx: P.x, sy: P.y, front: S.ents.filter(e => e.team === 1 && !e.dead && dist(e, P) < 4.5 && (e.x - P.x) * Math.cos(a) + (e.y - P.y) * Math.sin(a) > 0) };
+  P.a = a;
   P.iframes = DASH.ifr * (1 - heavy * 0.6);
   P.comboStep = 0;
   for (let i = 0; i < 6; i++) { const an = a + Math.PI + rr(-0.9, 0.9); part(P.x + rr(-0.3, 0.3), P.y + rr(-0.3, 0.3), 0.15, Math.cos(an) * rr(1, 3), Math.sin(an) * rr(1, 3), rr(0.5, 1.5), rr(0.35, 0.6), '~', '#ece4d4', 2); }
@@ -3587,10 +3610,16 @@ function updatePlayer(dt, inp) {
         break;
       }
       case 'dash': {
-        const p0 = a.done, p1 = Math.min(1, a.t / a.dur), e0 = 1 - Math.pow(1 - p0, 3), e1 = 1 - Math.pow(1 - p1, 3);
+        const p0 = a.done, p1 = Math.min(1, a.t / a.dur), e0 = p0 * (2 - p0), e1 = p1 * (2 - p1);
         const s = (e1 - e0) * a.dist; P.x += Math.cos(a.a) * s; P.y += Math.sin(a.a) * s; a.done = p1;
         P.ghostT -= dt; if (P.ghostT <= 0) { P.ghostT = 0.045; S.ghosts.push({ x: P.x, y: P.y, a: P.a, t: 0.22, m: P.mounted }); }
-        if (a.t >= a.dur + DASH.rec) P.act = null;
+        // rolled past a foe? it loses you for a moment (no turning, its swing whiffs) -> strike its back
+        if (a.front) for (const e of a.front) {
+          if (e.dead || e.passed) continue;
+          const ahead = (e.x - P.x) * Math.cos(a.a) + (e.y - P.y) * Math.sin(a.a);
+          if (ahead < -0.15 && dist(e, P) < 3) { e.passed = true; e.lostT = e.k.boss ? 0.3 : 0.55; P.rollStrikeT = 0.9; styleAdd(6); }
+        }
+        if (a.t >= a.dur + DASH.rec) { if (a.front) for (const e of a.front) e.passed = false; P.act = null; }
         break;
       }
       case 'charge': {
@@ -3631,7 +3660,7 @@ function updatePlayer(dt, inp) {
     else if (act && act.k === 'stun') { /* keep buffered */ }
   }
   // ---- attack
-  if (P.buf.atk > 0 && (!P.act || P.act.k === 'dash' && P.act.t > 0.18 || (P.act.k === 'rec' && P.act.t > P.act.dur * 0.6))) {
+  if (P.buf.atk > 0 && (!P.act || P.act.k === 'dash' && P.act.t > DASH.dur * 0.7 || (P.act.k === 'rec' && P.act.t > P.act.dur * 0.6))) {
     P.buf.atk = 0;
     if (isBow) P.act = { k: 'bow', t: 0 };
     else if (it && it.type === 'gun') shootGun(mainHand());
@@ -3688,6 +3717,7 @@ function updatePlayer(dt, inp) {
   const engaged = (P.act && P.act.k !== 'dash') || P.blocking || P.lock || P.drawing || NEAR_FOE || P.hurtT > 0;
   const wasSheathed = (P.sheathT || 0) > 2.2;
   P.sheathT = engaged ? 0 : (P.sheathT || 0) + dt;
+  if (P.rollStrikeT > 0) P.rollStrikeT -= dt;
   if (wasSheathed && !P.sheathT && P.hands.some(h => h && ITEMS[h].type !== 'torch')) sfx('equip');
   if (m && P.v > 6 && Math.random() < dt * 14) part(P.x - Math.cos(P.a) * 1.2, P.y - Math.sin(P.a) * 1.2, 0.1, rr(-1, 1), rr(-1, 1), 1, 0.45, t === T_SNOW || t === T_DRIFT ? '*' : '.', TDEF[t][0], 6);
   // trample
@@ -4730,8 +4760,9 @@ function init() {
   window.addEventListener('resize', () => { resize(); buildLogo(); uiKey = ''; });
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
-  window.addEventListener('blur', () => { clearInputs(); if (S.mode === 'play') openPause(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'play') openPause(); });
+  // losing focus only releases held keys/buttons; the game keeps running (pause is manual: P / Esc / II)
+  window.addEventListener('blur', () => { clearInputs(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearInputs(); });
   window.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; MOUSE.x = e.clientX; MOUSE.y = e.clientY; MOUSE.ok = true; MOUSE.t = performance.now(); });
   canvas.addEventListener('pointerdown', e => { audioInit(); if (e.pointerType !== 'mouse') return; MOUSE.t = performance.now(); if (e.button === 0) mouseL = true; if (e.button === 2) mouseR = true; });
   window.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') return; if (e.button === 0) mouseL = false; if (e.button === 2) mouseR = false; });

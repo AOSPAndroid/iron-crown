@@ -7,7 +7,8 @@ const SAVE_KEY = 'ironcrown1700_save_v1';
 let S = null, P = null;
 
 // ---------- combat tuning (seconds) ----------
-const DASH = { dur: 0.28, ifr: 0.16, dist: 4.4, cost: 22, minSt: 18, rec: 0.08 };
+// forward roll: short, with i-frames through the first ~60%; rolling past a foe leaves it turned the wrong way
+const DASH = { dur: 0.4, ifr: 0.24, dist: 2.9, cost: 22, minSt: 18, rec: 0.08 };
 const BUF = 0.14;                 // input buffer for attack / dash / off-hand
 const CHAIN_GRACE = 0.14;         // combo can still continue this long after recovery ends
 const SHARP = 0.1;                // pressing within this of the window opening = "sharp" (bonus)
@@ -96,7 +97,7 @@ function burst(x, y, elev, col, n, chars, spd, em, sz) {
 function fx(o) { o.t = 0; S.fx.push(o); if (S.fx.length > 80) S.fx.shift(); return o; }
 function sparks(x, y, elev, col, n, big) { for (let i = 0; i < n; i++) { const a = rr(0, TAU), s = rr(2, 7); part(x, y, elev, Math.cos(a) * s, Math.sin(a) * s, rr(1, 4), rr(0.15, 0.32), '+', col || '!#fff4c0', 6, true, big ? 0.55 : 0.36); } }
 // keyboard / touch labels for prompts
-function btnName(k) { const t = typeof IS_TOUCH !== 'undefined' && IS_TOUCH; return t ? ({ atk: 'ATTACK', off: 'BLOCK', dash: 'DASH', lock: 'LOCK' })[k] : ({ atk: 'J / click', off: 'K / right-click', dash: 'Space', lock: 'L / Tab' })[k]; }
+function btnName(k) { const t = typeof IS_TOUCH !== 'undefined' && IS_TOUCH; return t ? ({ atk: 'ATTACK', off: 'BLOCK', dash: 'ROLL', lock: 'LOCK' })[k] : ({ atk: 'J / click', off: 'K / right-click', dash: 'Space', lock: 'L / Tab' })[k]; }
 
 // ---------- style rank ----------
 function styleRank() { let r = STYLE_RANKS[0]; for (const x of STYLE_RANKS) if (S.style >= x[1]) r = x; return r; }
@@ -206,7 +207,7 @@ function moveToward(e, tx, ty, spd, dt) {
   let dx = tx - e.x, dy = ty - e.y; const d = Math.hypot(dx, dy) || 1; let ux = dx / d, uy = dy / d;
   if (blockedAt(e.x + ux * 1.6, e.y + uy * 1.6, e.r)) { const s = e.strafe, ca = Math.cos(1.0 * s), sa = Math.sin(1.0 * s); const nx = ux * ca - uy * sa, ny = ux * sa + uy * ca; ux = nx; uy = ny; }
   const t = tileAt(e.x, e.y); const slow = (t === T_WATER || t === T_BOG) ? 0.6 : t === T_DRIFT ? 0.8 : 1;
-  e.x += ux * spd * slow * dt; e.y += uy * spd * slow * dt; e.a = Math.atan2(uy, ux); e.moving = true;
+  e.x += ux * spd * slow * dt; e.y += uy * spd * slow * dt; e.a += clamp(angDiff(e.a, Math.atan2(uy, ux)), -7 * dt, 7 * dt); e.moving = true;
 }
 function blinkTo(e, x, y) {
   if (blockedAt(x, y, e.r)) return false;
@@ -387,13 +388,15 @@ function foeRange(e) {
 }
 function updateFoe(e, t, dt) {
   const k = e.k, dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy), ang = Math.atan2(dy, dx);
+  const lost = e.lostT > 0; if (lost) e.lostT -= dt;
+  if (lost && e.state !== 'wind' && e.state !== 'aim' && e.state !== 'gallop' && e.state !== 'stagger' && e.state !== 'rec') return;
   switch (e.state) {
     case 'stagger': e.stT -= dt; if (e.stT <= 0) { e.state = 'move'; e.cd = 0.4; } return;
     case 'rec': e.rt -= dt; if (e.rt <= 0) { e.state = 'move'; tokFree(e); } return;
     case 'wind': {
       const a = e.atk, W = foeWind(a, e.hitIdx);
       e.wt += dt;
-      if (a.k !== 'slam' && a.k !== 'aoe' && a.k !== 'throw' && e.wt < W * 0.6) e.wdir += clamp(angDiff(e.wdir, ang), -6 * dt, 6 * dt);
+      if (!lost && a.k !== 'slam' && a.k !== 'aoe' && a.k !== 'throw' && e.wt < W * 0.6) e.wdir += clamp(angDiff(e.wdir, ang), -6 * dt, 6 * dt);
       e.a = e.wdir;
       if (e.wt >= W) resolveFoe(e, t);
       return;
@@ -603,8 +606,12 @@ function attackHits(a) {
     const stg = e.state === 'stagger' || e.downT > 0;
     let dmg = base * mv.dmg * dmgMult() * (a.crit || 1) * (a.sharp ? 1.15 : 1) * (stg ? 1.3 : 1) * rr(0.95, 1.05);
     if (mv.burn || (it && it.fire)) { dmg *= e.k.unholy ? 2.3 : 1; e.burnT = 3; e.burnDps = e.k.unholy ? 7 : 3; }
-    const crit = a.crit > 0 || stg;
-    hurtEnt(e, dmg, P.x, P.y, mv.kb * (a.crit ? 1.4 : 1), true, false, { crit, poise: mv.poise * (a.crit ? 1.8 : 1), gb: mv.gb });
+    const behind = !e.k.hover && Math.abs(angDiff(e.a, Math.atan2(P.y - e.y, P.x - e.x))) > 1.95;
+    const bs = behind ? (P.rollStrikeT > 0 ? 2.2 : 1.6) : 1;
+    dmg *= bs;
+    const crit = a.crit > 0 || stg || bs > 1;
+    hurtEnt(e, dmg, P.x, P.y, mv.kb * (a.crit ? 1.4 : 1), true, false, { crit, poise: mv.poise * (a.crit ? 1.8 : 1) * (bs > 1 ? 1.6 : 1), gb: mv.gb });
+    if (bs > 1 && !a.crit) { addText(e.x, e.y, e.k.h + 1.0, bs > 2 ? 'ROLL STRIKE!' : 'BACKSTAB!', bs > 2 ? '#7af0ff' : '#ffb040', true); styleAdd(bs > 2 ? 25 : 10); if (bs > 2) P.rollStrikeT = 0; }
     const hx = P.x + Math.cos(a.dir) * Math.min(range, d + e.r) * 0.8, hy = P.y + Math.sin(a.dir) * Math.min(range, d + e.r) * 0.8;
     sparks(hx, hy, P.mounted ? 1.9 : 1.1, crit ? '!#ffb040' : '!#fff4c0', crit ? 12 : 7, crit || mv.fin);
     if (a.crit) addText(e.x, e.y, e.k.h + 1.0, a.crit >= 2.6 ? 'RIPOSTE!' : 'COUNTER!', '#ffb040', true);
@@ -626,7 +633,8 @@ function startDash(dx, dy) {
   const l = Math.hypot(dx, dy); let a;
   if (l > 0.2) a = Math.atan2(dy, dx); else a = P.a + Math.PI; // backstep when no direction held
   const heavy = 1 - armorSlow();
-  P.act = { k: 'dash', t: 0, dur: DASH.dur, a, dist: DASH.dist * (1 - heavy * 0.9), done: 0, sx: P.x, sy: P.y };
+  P.act = { k: 'dash', t: 0, dur: DASH.dur, a, dist: DASH.dist * (1 - heavy * 0.9), done: 0, sx: P.x, sy: P.y, front: S.ents.filter(e => e.team === 1 && !e.dead && dist(e, P) < 4.5 && (e.x - P.x) * Math.cos(a) + (e.y - P.y) * Math.sin(a) > 0) };
+  P.a = a;
   P.iframes = DASH.ifr * (1 - heavy * 0.6);
   P.comboStep = 0;
   for (let i = 0; i < 6; i++) { const an = a + Math.PI + rr(-0.9, 0.9); part(P.x + rr(-0.3, 0.3), P.y + rr(-0.3, 0.3), 0.15, Math.cos(an) * rr(1, 3), Math.sin(an) * rr(1, 3), rr(0.5, 1.5), rr(0.35, 0.6), '~', '#ece4d4', 2); }
@@ -747,10 +755,16 @@ function updatePlayer(dt, inp) {
         break;
       }
       case 'dash': {
-        const p0 = a.done, p1 = Math.min(1, a.t / a.dur), e0 = 1 - Math.pow(1 - p0, 3), e1 = 1 - Math.pow(1 - p1, 3);
+        const p0 = a.done, p1 = Math.min(1, a.t / a.dur), e0 = p0 * (2 - p0), e1 = p1 * (2 - p1);
         const s = (e1 - e0) * a.dist; P.x += Math.cos(a.a) * s; P.y += Math.sin(a.a) * s; a.done = p1;
         P.ghostT -= dt; if (P.ghostT <= 0) { P.ghostT = 0.045; S.ghosts.push({ x: P.x, y: P.y, a: P.a, t: 0.22, m: P.mounted }); }
-        if (a.t >= a.dur + DASH.rec) P.act = null;
+        // rolled past a foe? it loses you for a moment (no turning, its swing whiffs) -> strike its back
+        if (a.front) for (const e of a.front) {
+          if (e.dead || e.passed) continue;
+          const ahead = (e.x - P.x) * Math.cos(a.a) + (e.y - P.y) * Math.sin(a.a);
+          if (ahead < -0.15 && dist(e, P) < 3) { e.passed = true; e.lostT = e.k.boss ? 0.3 : 0.55; P.rollStrikeT = 0.9; styleAdd(6); }
+        }
+        if (a.t >= a.dur + DASH.rec) { if (a.front) for (const e of a.front) e.passed = false; P.act = null; }
         break;
       }
       case 'charge': {
@@ -791,7 +805,7 @@ function updatePlayer(dt, inp) {
     else if (act && act.k === 'stun') { /* keep buffered */ }
   }
   // ---- attack
-  if (P.buf.atk > 0 && (!P.act || P.act.k === 'dash' && P.act.t > 0.18 || (P.act.k === 'rec' && P.act.t > P.act.dur * 0.6))) {
+  if (P.buf.atk > 0 && (!P.act || P.act.k === 'dash' && P.act.t > DASH.dur * 0.7 || (P.act.k === 'rec' && P.act.t > P.act.dur * 0.6))) {
     P.buf.atk = 0;
     if (isBow) P.act = { k: 'bow', t: 0 };
     else if (it && it.type === 'gun') shootGun(mainHand());
@@ -848,6 +862,7 @@ function updatePlayer(dt, inp) {
   const engaged = (P.act && P.act.k !== 'dash') || P.blocking || P.lock || P.drawing || NEAR_FOE || P.hurtT > 0;
   const wasSheathed = (P.sheathT || 0) > 2.2;
   P.sheathT = engaged ? 0 : (P.sheathT || 0) + dt;
+  if (P.rollStrikeT > 0) P.rollStrikeT -= dt;
   if (wasSheathed && !P.sheathT && P.hands.some(h => h && ITEMS[h].type !== 'torch')) sfx('equip');
   if (m && P.v > 6 && Math.random() < dt * 14) part(P.x - Math.cos(P.a) * 1.2, P.y - Math.sin(P.a) * 1.2, 0.1, rr(-1, 1), rr(-1, 1), 1, 0.45, t === T_SNOW || t === T_DRIFT ? '*' : '.', TDEF[t][0], 6);
   // trample
