@@ -34,8 +34,8 @@ function hudBar(x, y, w, h, f, col, bg) { ctx.fillStyle = '#000'; ctx.fillRect(x
 function slot(x, y, it, label, active) {
   hudPanel(x, y, 24, 24);
   if (active) { ctx.strokeStyle = '#ffd84a'; ctx.strokeRect(x + 0.5, y + 0.5, 23, 23); }
-  const name = itemIcon(it), rows = ICONS[name], s = 2, w = rows[0].length * s, h = rows.length * s;
-  icon(name, x + 12 - w / 2, y + 12 - h / 2, s, it && it.type === 'armor' ? { A: it.color } : null);
+  if (it && typeof thumbCanvas === 'function') { hudThumb(it.id, x + 1, y + 1, 22); if (it.lvl) { ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; hudText('+' + it.lvl, x + 23, y + 15, '#ffd84a', 'right'); ctx.font = HUD_FONT; } }
+  else { const name = itemIcon(it), rows = ICONS[name], s = 2, w = rows[0].length * s, h = rows.length * s; icon(name, x + 12 - w / 2, y + 12 - h / 2, s, it && it.type === 'armor' ? { A: it.color } : null); }
   if (label) { ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; hudText(label, x + 2, y + 1, '#c8b898'); ctx.font = HUD_FONT; }
 }
 let MM = null, mmT = 0;
@@ -222,13 +222,15 @@ function drawHUD() {
     }
   }
   for (const m of S.msgs) {
-    const col = m.t < 1 ? shadeMsg(m.col, m.t) : m.col;
-    for (const l of wrapText(m.txt, maxCh).slice(0, 2)) { hudText(l, 8, ty, col); ty += 15; }
+    const col = m.t < 1 ? shadeMsg(m.col, m.t) : m.col, ix = m.icon ? 26 : 0;
+    if (m.icon) { ctx.globalAlpha = clamp(m.t, 0.2, 1); ctx.fillStyle = 'rgba(10,8,6,0.55)'; ctx.fillRect(6, ty - 3, 21, 21); hudThumb(m.icon, 7, ty - 2, 19); ctx.globalAlpha = 1; }
+    for (const l of wrapText(m.txt, maxCh - (ix ? 4 : 0)).slice(0, 2)) { hudText(l, 8 + ix, ty, col); ty += 15; }
+    if (m.icon) ty += 4;
   }
   // --- banner
   if (S.banner) {
     const b = S.banner, w = Math.min(460, VW - 24), inner = Math.floor((w - 24) / 7.3);
-    const lines = wrapText(b.sub, inner), h = 30 + lines.length * 15;
+    const lines = wrapText(b.sub, inner), ic = b.icons && b.icons.length ? Math.min(b.icons.length, 6) : 0, h = 30 + lines.length * 15 + (ic ? 40 : 0);
     const bx = Math.round((VW - w) / 2);
     // below the stats panels when it would overlap them (narrow or short landscape screens)
     const by = narrow ? Math.round(Math.max(ty + 6, VH * 0.24)) : bx < pw + 16 ? Math.max(hy + 30, boss ? 64 : 36) : (boss ? 64 : 36);
@@ -238,12 +240,15 @@ function drawHUD() {
     ctx.strokeStyle = '#8a6a30'; ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1); ctx.strokeStyle = '#3a2a14'; ctx.strokeRect(bx + 3.5, by + 3.5, w - 7, h - 7);
     ctx.font = 'bold 14px ui-monospace,Menlo,Consolas,monospace'; hudText(b.title, VW / 2, by + 8, b.col, 'center');
     ctx.font = HUD_FONT; lines.forEach((l, i) => hudText(l, VW / 2, by + 28 + i * 15, '#e8dcc0', 'center'));
+    for (let i = 0; i < ic; i++) { const ix = VW / 2 - ic * 19 + i * 38, iy = by + 30 + lines.length * 15; ctx.fillStyle = 'rgba(40,30,16,0.8)'; ctx.fillRect(ix, iy, 34, 34); ctx.strokeStyle = tierCol(ITEMS[b.icons[i]]); ctx.strokeRect(ix + 0.5, iy + 0.5, 33, 33); hudThumb(b.icons[i], ix + 2, iy + 2, 30); }
     ctx.globalAlpha = 1;
   }
+  // --- hotbar
+  drawHotbar();
   // --- interaction hint (keyboard)
   if (S.interact && !IS_TOUCH) {
-    const s = '[E] ' + S.interact.label[0] + S.interact.label.slice(1).toLowerCase(), w = s.length * 7.3 + 20;
-    hudPanel(Math.round(VW / 2 - w / 2), VH - 44, Math.round(w), 24); hudText(s, VW / 2, VH - 38, '#ffd84a', 'center');
+    const s = '[E] ' + S.interact.label[0] + S.interact.label.slice(1).toLowerCase(), w = s.length * 7.3 + 20, hy2 = hotLayout().y - 62;
+    ctx.font = HUD_FONT; hudPanel(Math.round(VW / 2 - w / 2), hy2, Math.round(w), 24); hudText(s, VW / 2, hy2 + 6, '#ffd84a', 'center');
   }
   ctx.textAlign = 'left';
 }
@@ -324,6 +329,11 @@ function sfx(n) {
       case 'wail': tn(420, 300, 1.2, 'sine', 0.07); tn(560, 380, 1.1, 'sine', 0.04, 0.2); break;
       case 'chant': tn(160, 150, 0.5, 'sawtooth', 0.05); tn(240, 230, 0.5, 'triangle', 0.04, 0.1); break;
       case 'boom': nz(0.45, 'lowpass', 1400, 60, 0.6); tn(90, 40, 0.3, 'sine', 0.35); break;
+      case 'anvil': tn(1650, 1600, 0.35, 'triangle', 0.09); tn(2480, 2400, 0.25, 'sine', 0.05); nz(0.05, 'highpass', 3500, 3500, 0.2); break;
+      case 'anvil_perfect': tn(1760, 1740, 0.6, 'triangle', 0.11); tn(2640, 2620, 0.5, 'sine', 0.07); tn(3520, 3500, 0.35, 'sine', 0.04, 0.02); nz(0.05, 'highpass', 4000, 4000, 0.22); break;
+      case 'anvil_bad': nz(0.12, 'lowpass', 1200, 300, 0.4); tn(320, 220, 0.12, 'square', 0.05); break;
+      case 'mine': tn(1300, 1100, 0.12, 'triangle', 0.07); nz(0.12, 'bandpass', 2200, 900, 0.3, 2); break;
+      case 'chop': nz(0.1, 'lowpass', 900, 250, 0.45); tn(180, 110, 0.08, 'triangle', 0.12); break;
     }
   } catch (e) { }
 }
@@ -360,7 +370,9 @@ function onKeyDown(e) {
   if (!keys[e.code]) edge[e.code] = true;
   keys[e.code] = true;
   const c = e.code;
-  if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); else if (S.mode === 'log') closeLog(); else if (S.mode === 'talk') closeTalk(); }
+  if (S.mode === 'forge' && FORGE.mg && (c === 'Space' || c === 'KeyJ' || c === 'Enter')) { if (e.preventDefault) e.preventDefault(); forgeStrike(); return; }
+  if (/^Digit[1-8]$/.test(c) && S.mode === 'play') { hotSelect(+c.slice(5) - 1, 'key'); return; }
+  if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); else if (S.mode === 'log') closeLog(); else if (S.mode === 'talk') closeTalk(); else if (S.mode === 'forge') { if (FORGE.mg) { FORGE.mg = null; forgeRender(); } else closeForge(); } }
   else if (c === 'KeyQ') { if (S.mode === 'play') openLog(); else if (S.mode === 'log') closeLog(); }
   else if (c === 'KeyM') setMute(!AU.muted);
   else if (c === 'KeyI' || c === 'KeyB') { if (S.mode === 'play') openInv(); else if (S.mode === 'inv') closeInv(); }
@@ -416,9 +428,16 @@ function bindTouch() {
 function layoutTouch() {
   const pb = typeof document !== 'undefined' ? $('bPause') : null;
   if (pb) { pb.style.top = '6px'; pb.style.height = '26px'; }
+  if (typeof document === 'undefined') return;
+  // the hotbar owns the bottom strip: in portrait the thumb controls sit above it; in landscape it fits between them
+  const L = hotLayout(), t = $('touch'), u = $('bUse');
+  if (t && t.style) t.style.bottom = (VH >= VW ? L.s + 40 : 0) + 'px'; // room for the bar and its item-name label
+  if (u && u.style) { u.style.bottom = VH >= VW ? '' : '104px'; u.style.right = VH >= VW ? '' : '196px'; }
+  layoutHotbarDOM();
 }
 let uiKey = '';
 function atkBtn() {
+  if (typeof hotConsumable === 'function' && hotConsumable()) return 'DRINK';
   const it = mainItem();
   if (!it) return P.mounted ? 'SWEEP' : 'ATTACK';
   return it.type === 'bow' ? 'DRAW' : it.type === 'gun' ? 'FIRE' : P.mounted ? 'SWEEP' : 'ATTACK';
@@ -431,14 +450,16 @@ function syncUI() {
   if (typeof document === 'undefined') return;
   const showTouch = IS_TOUCH && S.mode === 'play';
   if (S.mode === 'play' && S.Q && S.Q.story.length) { const b = S.Q.story.shift(); openStory(b.title, b.lines); }
-  const k = [showTouch, S.mode, S.interact ? S.interact.label : '', atkBtn(), offBtn(), invCount('potion'), P.mounted, S.horse.state, !!P.lock].join('|');
+  const k = [showTouch, S.mode, S.interact ? S.interact.label : '', atkBtn(), offBtn(), invCount('potion'), P.mounted, S.horse.state, !!P.lock, P.hotSel].join('|');
   if (k === uiKey) return; uiKey = k;
+  { const hb = $('hotbar'); if (hb) hb.classList.toggle('hidden', S.mode !== 'play'); }
   $('touch').classList.toggle('on', showTouch);
   $('bPause').classList.toggle('hidden', S.mode !== 'play');
   { const bq = $('bQuest'); if (bq) bq.classList.toggle('hidden', S.mode !== 'play'); }
   const u = $('bUse'); u.style.display = S.interact && showTouch && S.interact.type !== 'mount' ? 'flex' : 'none'; if (S.interact) u.textContent = S.interact.label;
   const mi = mainItem();
-  $('bAtk').innerHTML = atkBtn() + '<small>' + (mi ? mi.short : 'fists') + (mi && (mi.type === 'bow' || mi.type === 'gun') ? '' : ' · hold') + '</small>';
+  const hc = hotConsumable();
+  $('bAtk').innerHTML = atkBtn() + '<small>' + (hc ? ITEMS[hc].short + ' ×' + invCount(hc) : (mi ? mi.short : 'fists') + (mi && (mi.type === 'bow' || mi.type === 'gun') ? '' : ' · hold')) + '</small>';
   $('bOff').innerHTML = offBtn() + (offKind() === 'grab' ? '<small>grab</small>' : '');
   $('bLock').innerHTML = P.lock ? 'NEXT' : 'LOCK';
   $('bLock').classList.toggle('lit', !!P.lock);
@@ -512,46 +533,7 @@ function continueGame() {
 function openPause() { S.mode = 'paused'; clearInputs(); setMute(AU.muted); show('pause', true); }
 function closePause() { S.mode = 'play'; show('pause', false); }
 
-// inventory
-function invHTML() {
-  const arm = ITEMS[P.armor];
-  const spd = Math.round(arm.slow * 100);
-  let h = '<div class="hdr"><b>INVENTORY</b><button class="x" data-a="close">✕</button></div>';
-  h += '<div class="stats">HP ' + Math.ceil(P.hp) + '/' + P.maxHp + ' · LV ' + P.level + ' <span class="dim">(XP ' + P.xp + '/' + xpNext() + ')</span> · <span class="gold">$' + P.gold + '</span><br>Armor ' + Math.round(arm.def * 100) + '% · Speed ' + spd + '% · Damage ×' + dmgMult().toFixed(2) + '</div>';
-  h += '<div class="sec">EQUIPPED</div>';
-  const row = (label, it, btn) => '<div class="row"><span class="slot">' + label + '</span><span class="nm">' + (it ? '<b>' + esc(it.name) + '</b><br><span class="dim">' + itemDesc(it) + '</span>' : '<span class="dim">Bare fist · punch, 3-hit takedown</span>') + '</span>' + (btn || '') + '</div>';
-  if (twoHanded()) { const it = ITEMS[P.hands[1]]; h += row('Both hands', it, '<button data-a="uneq" data-s="1">Unequip</button>'); }
-  else {
-    for (const s of [0, 1]) { const it = P.hands[s] ? ITEMS[P.hands[s]] : null; h += row(s ? 'Right hand' : 'Left hand', it, it ? '<button data-a="uneq" data-s="' + s + '">Unequip</button>' : ''); }
-  }
-  h += row('Body', arm, '');
-  h += '<div class="sec">BAG (' + P.inv.length + '/' + INV_MAX + ')</div>';
-  if (!P.inv.length) h += '<div class="dim pad">Empty. Loot fallen foes, chests in ruins, or trade with merchants.</div>';
-  P.inv.forEach((s, i) => {
-    const it = ITEMS[s.id]; let b = '';
-    if (it.type === 'sword' || it.type === 'torch' || it.type === 'gun' || it.type === 'shield') b += '<button data-a="eq" data-i="' + i + '" data-s="0">L</button><button data-a="eq" data-i="' + i + '" data-s="1">R</button>';
-    else if (it.hands === 2) b += '<button data-a="eq" data-i="' + i + '" data-s="1">Equip</button>';
-    else if (it.type === 'armor') b += '<button data-a="eq" data-i="' + i + '" data-s="0">Wear</button>';
-    else if (it.type === 'potion') b += '<button data-a="drink">Drink</button>';
-    b += '<button class="dim2" data-a="drop" data-i="' + i + '">Drop</button>';
-    h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt">' + b + '</span></div>';
-  });
-  h += '<div class="foot"><button data-a="close" class="big">Back to the field</button></div>';
-  return h;
-}
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-function openInv() { S.mode = 'inv'; clearInputs(); $('invPanel').innerHTML = invHTML(); show('inv', true); }
-function closeInv() { S.mode = 'play'; show('inv', false); }
-function invClick(e) {
-  const b = e.target.closest('button'); if (!b) return;
-  const a = b.dataset.a, i = +b.dataset.i, s = +b.dataset.s;
-  if (a === 'close') { closeInv(); return; }
-  if (a === 'eq') equipFromInv(i, s);
-  else if (a === 'uneq') unequipHand(s);
-  else if (a === 'drink') drinkPotion();
-  else if (a === 'drop') { const q = P.inv[i]; if (q) { P.inv.splice(i, 1); dropItem(P.x + Math.cos(P.a) * 1.5, P.y + Math.sin(P.a) * 1.5, q.id, q.n, true); sfx('equip'); } }
-  $('invPanel').innerHTML = invHTML();
-}
 
 // shop
 let shopRef = null, shopTab = 'buy';
@@ -571,7 +553,8 @@ function genStock(m) {
     const q = Math.min(4, t), q0 = Math.max(0, q - 1);
     ids = new Set(['potion', 'arrows', TIER.sword[q0], TIER.sword[q], TIER.armor[q0], TIER.armor[q], 'tower_shield', 'war_bow', 'pistol', 'claymore']);
   } else {
-    ids = new Set(['potion', 'arrows', 'torch', TIER.bow[t], TIER.bow[up], 'buckler', TIER.armor[t]]);
+    ids = new Set(['potion', 'arrows', 'torch', 'bandage', TIER.bow[t], TIER.bow[up], 'buckler', TIER.armor[t], 'wood', 'cloth', 'leather_hide', 'iron_ore', 'herb']);
+    if (t >= 1) ids.add('steel_ingot');
     if (t === 0) { ids.add('short_bow'); ids.add('gambeson'); ids.add('iron_sword'); }
     if (t >= 1 && R() < 0.6) ids.add('pistol');
     if (R() < 0.35) ids.add('kite_shield');
@@ -580,13 +563,15 @@ function genStock(m) {
   for (const id of ids) {
     const it = ITEMS[id];
     if (id === 'arrows') out.push({ id, n: 10, price: 18 });
+    else if (it.type === 'mat') out.push({ id, n: 3, price: Math.round(it.price * 3 * (1 + R() * 0.25)) });
     else out.push({ id, n: 1, price: Math.round(it.price * (0.95 + R() * 0.2)) });
   }
-  const order = ['potion', 'arrows', 'torch'];
-  out.sort((a, b) => (order.indexOf(b.id) + 1 ? 1 : 0) - (order.indexOf(a.id) + 1 ? 1 : 0) || a.price - b.price);
+  const order = ['potion', 'arrows', 'torch'], rank = s => order.includes(s.id) ? 0 : ITEMS[s.id].type === 'mat' ? 2 : 1;
+  out.sort((a, b) => rank(a) - rank(b) || a.price - b.price);
   return out;
 }
-function sellPrice(id) { return id === 'arrows' ? 8 : Math.max(1, Math.floor(ITEMS[id].price * 0.4)); }
+function sellPrice(id) { return id === 'arrows' ? 8 : Math.max(1, Math.floor(ITEMS[id].price * (ITEMS[id].type === 'mat' ? 0.5 : 0.4))); }
+function shopRow(id, n, desc, btn) { const it = ITEMS[id]; return '<div class="row">' + thumbImg(id) + '<span class="nm">' + nameHTML(it) + (n > 1 ? ' <span class="dim">×' + n + '</span>' : '') + (it.lvl ? '' : '') + '<br><span class="dim">' + esc(desc) + '</span></span><span class="bt">' + btn + '</span></div>'; }
 function repDisc(m) { const v = m && m.village; return v && v.id && S.Q ? Math.min(0.15, 0.03 * (S.Q.rep[v.id] || 0)) : 0; }
 function buyPrice(m, s) { return Math.max(1, Math.round(s.price * (1 - repDisc(m)))); }
 function shopHTML() {
@@ -594,18 +579,19 @@ function shopHTML() {
   const title = m.role === 'smith' ? 'BLACKSMITH' : m.role === 'qm' ? 'QUARTERMASTER' : 'MERCHANT';
   let h = '<div class="hdr"><b>' + title + (v ? ' OF ' + esc(v.name.toUpperCase()) : '') + '</b><button class="x" data-a="close">✕</button></div>';
   h += '<div class="stats">Your purse: <span class="gold">$' + P.gold + '</span> · Bag ' + P.inv.length + '/' + INV_MAX + (repDisc(m) ? ' · <span class="gold">friend of ' + esc(v.name) + ': -' + Math.round(repDisc(m) * 100) + '%</span>' : '') + '</div>';
-  h += '<div class="tabs"><button data-a="tab" data-t="buy" class="' + (shopTab === 'buy' ? 'on' : '') + '">Buy</button><button data-a="tab" data-t="sell" class="' + (shopTab === 'sell' ? 'on' : '') + '">Sell</button></div>';
+  h += '<div class="tabs"><button data-a="tab" data-t="buy" class="' + (shopTab === 'buy' ? 'on' : '') + '">Buy</button><button data-a="tab" data-t="sell" class="' + (shopTab === 'sell' ? 'on' : '') + '">Sell</button>' + (m.role === 'smith' ? '<button data-a="forge" class="alt">Forge</button>' : '') + '</div>';
   if (shopTab === 'buy') {
     m.stock.forEach((s, i) => {
       const it = ITEMS[s.id], pr = buyPrice(m, s), can = P.gold >= pr;
-      h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt"><button data-a="buy" data-i="' + i + '"' + (can ? '' : ' disabled') + '>$' + pr + '</button></span></div>';
+      h += shopRow(s.id, s.n, itemDesc(it), '<button data-a="buy" data-i="' + i + '"' + (can ? '' : ' disabled') + '>$' + pr + '</button>');
     });
   } else {
-    if (!P.inv.length) h += '<div class="dim pad">Nothing to sell. (Equipped items must be unequipped first.)</div>';
+    if (!P.inv.length && !Object.keys(P.mats).length) h += '<div class="dim pad">Nothing to sell. (Equipped items must be unequipped first.)</div>';
     P.inv.forEach((s, i) => {
       const it = ITEMS[s.id];
-      h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt"><button data-a="sell" data-i="' + i + '">+$' + sellPrice(s.id) + (s.id === 'arrows' ? ' /10' : '') + '</button></span></div>';
+      h += shopRow(s.id, s.n, itemDesc(it), '<button data-a="sell" data-i="' + i + '">+$' + sellPrice(s.id) + (s.id === 'arrows' ? ' /10' : '') + '</button>');
     });
+    for (const k of Object.keys(P.mats)) h += shopRow(k, P.mats[k], itemDesc(ITEMS[k]), '<button data-a="sellmat" data-id="' + k + '">+$' + sellPrice(k) + '</button>');
   }
   h += '<div class="foot"><button data-a="close" class="big">Leave</button></div>';
   return h;
@@ -621,10 +607,12 @@ function shopClick(e) {
   const a = b.dataset.a, i = +b.dataset.i;
   if (a === 'close') { closeShop(); return; }
   if (a === 'tab') shopTab = b.dataset.t;
+  else if (a === 'forge') { const r = shopRef; closeShop(); openForge(r, 'smith'); return; }
+  else if (a === 'sellmat') { if (invTake(b.dataset.id, 1)) { P.gold += sellPrice(b.dataset.id); sfx('coin'); } }
   else if (a === 'buy') {
     const s = shopRef.stock[i];
     const pr = s ? buyPrice(shopRef, s) : 0;
-    if (s && P.gold >= pr) { if (invAdd(s.id, s.n)) { P.gold -= pr; sfx('coin'); autoEquip(s.id); } else { sfx('hurt'); } }
+    if (s && P.gold >= pr) { if (invAdd(s.id, s.n)) { P.gold -= pr; sfx('coin'); autoEquip(s.id); hotAuto(s.id); } else { sfx('hurt'); } }
   } else if (a === 'sell') {
     const s = P.inv[i];
     if (s) {
@@ -667,7 +655,7 @@ function talkRender() {
   else if (T.view === 'free') { lines = ['"Bless you! I thought I\'d die out here."', '"Lead the way. I\'ll stay close."']; btns.push(['free', 'Follow me']); }
   else if (T.view === 'offer') {
     const q = T.offer; who = npcTitle(e) + ' · ' + q.title;
-    lines = (q.lines || []).concat(['<span class="dim">Objective: ' + esc(q.steps[0].txt) + (q.steps.length > 1 ? ', then ' + esc(q.steps[q.steps.length - 1].txt.charAt(0).toLowerCase() + q.steps[q.steps.length - 1].txt.slice(1)) : '') + '</span>', '<span class="gold">Reward: ' + q.rew.gold + ' gold · ' + q.rew.xp + ' XP' + (q.rew.items && q.rew.items.length ? ' · gear' : '') + (q.rew.rep ? ' · reputation' : '') + '</span>']);
+    lines = (q.lines || []).concat(['<span class="dim">Objective: ' + esc(q.steps[0].txt) + (q.steps.length > 1 ? ', then ' + esc(q.steps[q.steps.length - 1].txt.charAt(0).toLowerCase() + q.steps[q.steps.length - 1].txt.slice(1)) : '') + '</span>', '<span class="gold">Reward: ' + q.rew.gold + ' gold · ' + q.rew.xp + ' XP' + (q.rew.items || []).map(id => id[0] === '$' ? ' · gear' : ' · ' + thumbImg(id, 'sm') + esc(ITEMS[id].name)).join('') + (q.rew.rep ? ' · reputation' : '') + '</span>']);
     btns.push(['accept', 'Accept'], ['decline', 'Decline']);
   } else {
     const greet = (ROLE_GREET[e.kind] || ['"Good day."']).map(l => l.replace('%COST%', e.role === 'inn' ? innCost(e) : ''));
@@ -747,6 +735,7 @@ function step(dt) {
   if (typeof window !== 'undefined' && window.__FREEZE) { render(dt); syncUI(); return; } // test hook: hold a staged frame
   if (S.mode === 'play' || S.mode === 'dying') update(dt, readInput());
   else if (S.mode === 'talk' || S.mode === 'log') { S.fade = Math.max(0, S.fade - dt); updateCamera(dt); }
+  else if (S.mode === 'forge') { forgeTick(dt); updateCamera(dt); }
   else if (S.mode === 'title') {
     S.t += dt; P.a += dt * 0.1; S.time = 0.735; S.darkness = darkAt(S.time);
     manageChunks(3); updateCamera(dt);
@@ -788,12 +777,22 @@ function init() {
   $('btnQuit').addEventListener('click', () => { if (S.mode === 'paused') saveGame(); show('pause', false); resetWorld(); manageChunks(25); updateCamera(0, true); showTitle(); });
   { const bl = $('btnLog'); if (bl) bl.addEventListener('click', () => { show('pause', false); S.mode = 'play'; openLog(); }); }
   $('invPanel').addEventListener('click', invClick);
+  $('invPanel').addEventListener('pointerdown', invPointerDown);
+  window.addEventListener('pointermove', invPointerMove);
+  window.addEventListener('pointerup', invPointerUp);
+  window.addEventListener('pointercancel', () => { invDragEnd(); });
+  window.addEventListener('wheel', onWheel, { passive: false });
+  $('forgePanel').addEventListener('click', forgeClick);
+  $('forgePanel').addEventListener('pointerdown', e => { const b = e.target.closest && e.target.closest('button'); if ((b && b.dataset.a === 'strike') || e.target.id === 'mgcv') { e.preventDefault(); audioInit(); forgeStrike(); } });
+  bindHotbar();
+  try { thumbsInit(); } catch (err) { console.error(err); }
   $('shopPanel').addEventListener('click', shopClick);
   $('overPanel').addEventListener('click', overClick);
   $('talkPanel').addEventListener('click', talkClick);
   $('logPanel').addEventListener('click', logClick);
   bindTouch();
   if (IS_TOUCH) document.body.classList.add('touchdev');
+  layoutTouch();
   setMute(AU.muted);
   showTitle();
   requestAnimationFrame(frame);

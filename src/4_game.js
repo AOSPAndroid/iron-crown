@@ -79,7 +79,7 @@ function newState() {
     interact: null, saveT: 40, flakes: [], horse: { x: 18, y: 3, a: Math.PI * 0.75, state: 'idle', fleeT: 0 },
     slowT: 0, hitstop: 0, style: 0, styleT: 0, tok: new Set(), tokR: new Set(), fxLight: 0, cueT: 0, mouseAim: false,
     cut: { s: null, k: 0 }, curCastle: null, curStruct: null, cst: new Map(),
-    manors: {}, stats: { stolen: 0, recovered: 0, lost: 0 }, giggleT: 0, lastStrike: null, Q: null
+    manors: {}, stats: { stolen: 0, recovered: 0, lost: 0 }, giggleT: 0, lastStrike: null, Q: null, ore: {}, chop: new Map(), hotLbl: null, orders: {}
   };
   if (typeof questInit === 'function') questInit();
   P = {
@@ -87,7 +87,8 @@ function newState() {
     hands: [null, null], armor: 'tunic', inv: [], gold: 10, level: 1, xp: 0, hurtT: 0, invT: 0, step: 0, dead: false, slowT: 0,
     st: 100, stMax: 100, stDelay: 0, act: null, iframes: 0, parryT: 0, parryCd: 0, blockT: 0, blocking: false, counterT: 0, riposteT: 0,
     comboStep: 0, comboT: 0, lock: null, buf: { atk: 0, dash: 0, off: 0 }, atkHeld: false, atkHeldT: 0, offHeld: false, prevAtk: false, prevOff: false,
-    gunCd: [0, 0], burstT: 0, ghostT: 0, offStep: 0, inDir: null, drawing: false, draw: 0, chain: 0, chainT: 0
+    gunCd: [0, 0], burstT: 0, ghostT: 0, offStep: 0, inDir: null, drawing: false, draw: 0, chain: 0, chainT: 0,
+    mats: {}, hot: [null, null, null, null, null, null, null, null], hotSel: 0, hotAtkPrev: false
   };
 }
 
@@ -98,8 +99,8 @@ const xpNext = () => 40 + P.level * 35;
 function twoHanded() { const id = P.hands[1]; return !!(id && ITEMS[id].hands === 2); }
 function hasTorch() { return P.hands[0] === 'torch' || P.hands[1] === 'torch'; }
 function shieldItem() { for (const id of P.hands) if (id && ITEMS[id].type === 'shield') return ITEMS[id]; return null; }
-function msg(txt, col, dur) { S.msgs.unshift({ txt, col: col || '#e8dcc0', t: dur || 4.5 }); if (S.msgs.length > 3) S.msgs.length = 3; }
-function banner(title, sub, t, col) { S.banner = { title, sub: sub || '', t: t || 4, col: col || '#e8c050' }; }
+function msg(txt, col, dur, icon) { S.msgs.unshift({ txt, col: col || '#e8dcc0', t: dur || 4.5, icon: icon || null }); if (S.msgs.length > 3) S.msgs.length = 3; }
+function banner(title, sub, t, col, icons) { S.banner = { title, sub: sub || '', t: t || 4, col: col || '#e8c050', icons: icons || null }; }
 function addText(x, y, elev, s, col, big) { S.texts.push({ x, y, elev, s, col, t: 1.0, big: !!big }); if (S.texts.length > 40) S.texts.shift(); }
 function part(x, y, elev, vx, vy, vz, life, ch, col, g, em, sz) {
   if (S.parts.length > 420) S.parts.shift();
@@ -121,15 +122,21 @@ function styleHit() { const i = STYLE_RANKS.indexOf(styleRank()); S.style = Math
 
 // ---------- inventory ----------
 function invAdd(id, n) {
-  n = n || 1; const it = ITEMS[id];
+  n = n || 1; const it = ITEMS[id]; if (!it) return false;
+  if (it.type === 'mat') { P.mats[id] = (P.mats[id] || 0) + n; return true; }
   if (it.stack) { const s = P.inv.find(q => q.id === id); if (s) { s.n += n; return true; } }
   if (P.inv.length >= INV_MAX) return false;
   P.inv.push({ id, n: it.stack ? n : 1 }); return true;
 }
-function invCount(id) { const s = P.inv.find(q => q.id === id); return s ? s.n : 0; }
+function invCount(id) { if (ITEMS[id] && ITEMS[id].type === 'mat') return P.mats[id] || 0; let n = 0; for (const q of P.inv) if (q.id === id) n += q.n || 1; return n; }
 function invTake(id, n) {
-  n = n || 1; const i = P.inv.findIndex(q => q.id === id); if (i < 0) return false;
-  const s = P.inv[i]; if (ITEMS[id].stack) { if (s.n < n) return false; s.n -= n; if (s.n <= 0) P.inv.splice(i, 1); } else P.inv.splice(i, 1);
+  n = n || 1; const it = ITEMS[id]; if (!it) return false;
+  if (it.type === 'mat') { if ((P.mats[id] || 0) < n) return false; P.mats[id] -= n; if (P.mats[id] <= 0) delete P.mats[id]; return true; }
+  const i = P.inv.findIndex(q => q.id === id); if (i < 0) return false;
+  if (it.stack) {
+    if (invCount(id) < n) return false;
+    for (let k = P.inv.length - 1; k >= 0 && n > 0; k--) { const s = P.inv[k]; if (s.id !== id) continue; const t = Math.min(n, s.n); s.n -= t; n -= t; if (s.n <= 0) P.inv.splice(k, 1); }
+  } else P.inv.splice(i, 1);
   return true;
 }
 function giveOrDrop(id, n) { if (!invAdd(id, n)) { dropItem(P.x, P.y, id, n || 1, true); msg('Bag full — ' + ITEMS[id].name + ' dropped.', '#ff9a7a'); } }
@@ -141,8 +148,8 @@ function unequipHand(side) {
 function equipFromInv(idx, side) {
   const s = P.inv[idx]; if (!s) return; const it = ITEMS[s.id];
   if (it.type === 'armor') { P.inv.splice(idx, 1); const old = P.armor; P.armor = s.id; if (old) giveOrDrop(old); sfx('equip'); return; }
-  if (it.type === 'potion') { drinkPotion(); return; }
-  if (it.type === 'ammo') return;
+  if (it.type === 'potion') { useConsumable(s.id); return; }
+  if (it.type === 'ammo' || it.type === 'mat') return;
   P.inv.splice(idx, 1);
   if (it.hands === 2) { const a = P.hands[0], b = P.hands[1]; const was2 = twoHanded(); P.hands = [s.id, s.id]; if (was2) giveOrDrop(b); else { if (a) giveOrDrop(a); if (b) giveOrDrop(b); } }
   else { if (twoHanded()) { const b = P.hands[1]; P.hands = [null, null]; giveOrDrop(b); } else if (P.hands[side]) giveOrDrop(P.hands[side]); P.hands[side] = s.id; }
@@ -158,12 +165,15 @@ function autoEquip(id) {
   if (it.type === 'armor' && P.armor === 'tunic') { equipFromInv(idx, 0); return true; }
   return false;
 }
-function drinkPotion() {
-  if (invCount('potion') <= 0) { msg('No potions.', '#ff9a7a'); return; }
-  if (P.hp >= P.maxHp) { msg('You are already at full health.'); return; }
-  invTake('potion'); P.hp = Math.min(P.maxHp, P.hp + ITEMS.potion.heal);
-  sfx('potion'); addText(P.x, P.y, 2.2, '+' + ITEMS.potion.heal, '#6aff7a');
+function drinkPotion() { return useConsumable(invCount('potion') > 0 || invCount('bandage') <= 0 ? 'potion' : 'bandage'); }
+function useConsumable(id) {
+  const it = ITEMS[id];
+  if (!it || invCount(id) <= 0) { msg('No ' + (it ? it.name.toLowerCase() + 's' : 'potions') + '.', '#ff9a7a'); return false; }
+  if (P.hp >= P.maxHp) { msg('You are already at full health.'); return false; }
+  invTake(id); P.hp = Math.min(P.maxHp, P.hp + it.heal);
+  sfx('potion'); addText(P.x, P.y, 2.2, '+' + it.heal, '#6aff7a');
   for (let i = 0; i < 8; i++) part(P.x + rr(-0.5, 0.5), P.y + rr(-0.5, 0.5), rr(0.5, 2), 0, 0, rr(1, 3), 0.7, '+', '#6aff7a', 0, true);
+  return true;
 }
 function dropItem(x, y, id, n, lock) { S.drops.push({ kind: 'item', id, n: n || 1, x: x + rr(-0.8, 0.8), y: y + rr(-0.8, 0.8), t: 90, warn: 0, lock: !!lock }); }
 function dropGold(x, y, val, tag) {
@@ -272,6 +282,7 @@ function pickTarget(e) {
 const WHISK = [0.55, 1.05, 1.6, 2.2];
 function moveToward(e, tx, ty, spd, dt) {
   if (e.buffT > 0) spd *= 1.3;
+  if (e.chillT > 0) spd *= 0.6;
   if (e.k && e.k.phase) { const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1; e.x += dx / d * spd * dt; e.y += dy / d * spd * dt; e.a += clamp(angDiff(e.a, Math.atan2(dy, dx)), -5 * dt, 5 * dt); e.moving = true; return; }
   e.navT = (e.navT || 0) - dt;
   if (e.navT <= 0) { e.navT = 0.25; e.navWP = navPoint(e, tx, ty); }
@@ -649,7 +660,7 @@ function updateAlly(e, t, dt) {
 function updateEnt(e, dt) {
   const k = e.k, px0 = e.x, py0 = e.y;
   e.cd -= dt; e.hurtT -= dt; e.invT -= dt; e.tpCd -= dt; e.throwCd -= dt; e.trampleCd -= dt; e.tT -= dt; e.moving = false; e.poiseT -= dt;
-  if (e.buffT > 0) e.buffT -= dt; if (e.chantCd > 0) e.chantCd -= dt; if (e.spookCd > 0) e.spookCd -= dt; if (e.chargeCd > 0) e.chargeCd -= dt;
+  if (e.buffT > 0) e.buffT -= dt; if (e.chillT > 0) e.chillT -= dt; if (e.chantCd > 0) e.chantCd -= dt; if (e.spookCd > 0) e.spookCd -= dt; if (e.chargeCd > 0) e.chargeCd -= dt;
   if (e.poiseT <= 0 && e.poise < e.poiseMax) e.poise = Math.min(e.poiseMax, e.poise + e.poiseMax * 0.3 * dt);
   if (e.kx || e.ky) { e.x += e.kx * dt; e.y += e.ky * dt; const f = Math.pow(0.004, dt); e.kx *= f; e.ky *= f; if (Math.abs(e.kx) + Math.abs(e.ky) < 0.08) { e.kx = 0; e.ky = 0; } }
   if (e.burnT > 0) {
@@ -802,6 +813,8 @@ function attackHits(a) {
     const stg = e.state === 'stagger' || e.downT > 0;
     let dmg = base * mv.dmg * dmgMult() * (a.crit || 1) * (a.sharp ? 1.15 : 1) * (stg ? 1.3 : 1) * rr(0.95, 1.05);
     if (mv.burn || (it && it.fire)) { dmg *= e.k.unholy ? 2.3 : 1; e.burnT = 3; e.burnDps = e.k.unholy ? 7 : 3; }
+    if (it && it.silver && e.k.unholy) { dmg *= 1.5; burst(e.x, e.y, 1.3, '#f4f8ff', 6, ['*', '+'], 3, true); }
+    if (it && it.frost) { e.chillT = 2.5; burst(e.x, e.y, 1.1, '#a8e8ff', 4, ['*', '.'], 2, true); }
     const behind = !e.k.hover && Math.abs(angDiff(e.a, Math.atan2(P.y - e.y, P.x - e.x))) > 1.95;
     const bs = behind ? (P.rollStrikeT > 0 ? 2.2 : 1.6) : 1;
     dmg *= bs;
@@ -814,6 +827,7 @@ function attackHits(a) {
     styleAdd(mv.fin ? 15 : 6 + (a.sharp ? 4 : 0) + (a.crit ? 25 : 0));
     if (a.wk === 'fists' && mv.fin && !e.k.boss && !e.k.mounted && !e.k.hover && !e.dead) { e.downT = 1.6; addText(e.x, e.y, 2.6, 'TAKEDOWN!', '#ffd84a', true); styleAdd(15); }
   }
+  if (!any && !a.world && !P.mounted && typeof hitWorld === 'function') hitWorld(a, range, arc);
   if (any) {
     S.hitstop = Math.max(S.hitstop, mv.heavy ? 0.1 : mv.fin ? 0.08 : 0.05);
     S.shake = Math.max(S.shake, mv.heavy ? 0.35 : mv.fin ? 0.22 : 0.12);
@@ -1147,14 +1161,14 @@ function findInteract() {
   for (const e of S.ents) {
     if (e.team !== 2 || e.dead || !e.role) continue;
     const d = dist(e, P); if (d > bd + 0.6 || (e.struct && e.struct !== here) || losBlocked(P.x, P.y, e.x, e.y, 1.2) && d > 2.4) continue;
-    bd = d; best = e.role === 'inn' || e.role === 'quest' ? { type: 'talk', ref: e, label: 'TALK' } : { type: 'trade', ref: e, label: 'TRADE' };
+    bd = d; best = e.role === 'inn' || e.role === 'quest' ? { type: 'talk', ref: e, label: 'TALK' } : e.role === 'smith' ? { type: 'forge', ref: e, label: 'SMITH' } : { type: 'trade', ref: e, label: 'TRADE' };
   }
   if (best) return best;
   forStatics(P.x, P.y, 3, o => {
     const d = Math.hypot(o.x - P.x, o.y - P.y) - o.r;
     if (d > 2.4) return false;
     if (o.type === 'chest' && !S.looted.has(o.id) && structAt(o.x, o.y) === here) best = { type: 'loot', ref: o, label: 'LOOT' };
-    else if (o.type === 'fire' && !best) best = { type: 'rest', ref: o, label: 'REST' };
+    else if (o.type === 'fire' && !best) best = { type: 'camp', ref: o, label: 'CAMP' };
     return false;
   });
   if (best) return best;
@@ -1167,6 +1181,8 @@ function doInteract() {
   else if (it.type === 'talk') { if (typeof openTalk === 'function') openTalk(it.ref); else if (it.ref.role === 'inn') innRest(it.ref); }
   else if (it.type === 'loot') lootChest(it.ref);
   else if (it.type === 'rest') rest();
+  else if (it.type === 'forge') { if (typeof openForge === 'function') openForge(it.ref, 'smith'); else openShop(it.ref); }
+  else if (it.type === 'camp') { if (typeof openForge === 'function') openForge(it.ref, 'camp'); else rest(); }
   else if (it.type === 'inn') innRest(it.ref);
   else if (it.type === 'mount') mount();
 }
@@ -1177,7 +1193,10 @@ function lootChest(o) {
   for (let i = 0; i < n; i++) { const id = rollLoot('$any', o.tier + 0.4); got.push(ITEMS[id].name); giveOrDrop(id); }
   if (Math.random() < 0.6) { giveOrDrop('potion', 1); got.push('Healing Draught'); }
   if (Math.random() < 0.5) { const a = ri(6, 14); giveOrDrop('arrows', a); got.push(a + ' arrows'); }
-  banner('TREASURE!', '+' + g + ' gold · ' + got.join(', '), 4.5);
+  const icons = [];
+  for (let i = 0, nm = ri(1, 3); i < nm; i++) { const m = pick(o.tier >= 2 ? ['steel_ingot', 'silver', 'leather_hide', 'iron_ore', 'ghost_essence'] : ['iron_ore', 'wood', 'cloth', 'leather_hide', 'steel_ingot']), c = ri(1, 3); invAdd(m, c); got.push(c + ' ' + ITEMS[m].name); icons.push(m); }
+  for (const id of P.inv.map(q => q.id)) if (typeof hotAuto === 'function') hotAuto(id);
+  banner('TREASURE!', '+' + g + ' gold · ' + got.join(', '), 4.5, null, icons);
   burst(o.x, o.y, 1, '#ffd84a', 14, ['$', '*', '+'], 3, true);
 }
 function rest(title) {
@@ -1303,8 +1322,8 @@ function updateDrops(dt) {
       else {
         if (invAdd(d.id, d.n)) {
           d.t = 0; const it = ITEMS[d.id]; sfx('pickup');
-          const eq = autoEquip(d.id);
-          msg('Picked up ' + (d.n > 1 ? d.n + ' ' : '') + it.name + (eq ? ' (equipped)' : ''), '#ffe6a0');
+          const eq = autoEquip(d.id); if (typeof hotAuto === 'function') hotAuto(d.id);
+          msg('Picked up ' + (d.n > 1 ? d.n + ' ' : '') + it.name + (eq ? ' (equipped)' : ''), it.type === 'mat' ? '#d8e8b0' : '#ffe6a0', 4.5, d.id);
         } else if (d.warn <= 0) { msg('Your bag is full!', '#ff9a7a'); d.warn = 4; }
       }
     }
@@ -1471,7 +1490,8 @@ function saveGame() {
   try {
     const d = { v: 2, x: P.x, y: P.y, a: P.a, hp: P.hp, maxHp: P.maxHp, level: P.level, xp: P.xp, gold: P.gold, inv: P.inv, hands: P.hands, armor: P.armor, mounted: P.mounted,
       horse: { x: S.horse.x, y: S.horse.y }, day: S.day, time: S.time, looted: [...S.looted], lastVillage: S.lastVillage, kills: S.kills,
-      manors: S.manors, stats: S.stats, q: typeof questSave === 'function' ? questSave() : null };
+      manors: S.manors, stats: S.stats, q: typeof questSave === 'function' ? questSave() : null,
+      mats: P.mats, hot: P.hot, hotSel: P.hotSel, ore: S.ore, orders: S.orders };
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
   } catch (e) { }
 }
@@ -1484,6 +1504,11 @@ function applySave(d) {
   S.day = d.day || 1; S.time = d.time === undefined ? 0.3 : d.time; S.looted = new Set(d.looted || []); S.lastVillage = d.lastVillage || S.lastVillage; S.kills = d.kills || 0;
   S.manors = d.manors && typeof d.manors === 'object' ? d.manors : {}; S.stats = Object.assign({ stolen: 0, recovered: 0, lost: 0 }, d.stats || {});
   if (typeof questLoad === 'function') questLoad(d.q || null, !d.q);
+  // crafting pouch and hotbar (saves from before the forge have neither: build a hotbar from the gear)
+  P.mats = {}; if (d.mats && typeof d.mats === 'object') for (const k in d.mats) if (ITEMS[k] && ITEMS[k].type === 'mat' && d.mats[k] > 0) P.mats[k] = Math.floor(d.mats[k]);
+  S.ore = d.ore && typeof d.ore === 'object' ? d.ore : {}; S.orders = d.orders && typeof d.orders === 'object' ? d.orders : {};
+  if (Array.isArray(d.hot)) { P.hot = []; for (let i = 0; i < HOT_N; i++) { const h = d.hot[i]; P.hot.push(typeof h === 'string' && ITEMS[h] ? h : null); } P.hotSel = clamp(d.hotSel | 0, 0, HOT_N - 1); }
+  else if (typeof hotInit === 'function') hotInit();
 }
 
 // ---------- main update ----------
@@ -1495,6 +1520,7 @@ function updateCut(dt) {
 }
 function update(dt, inp) {
   const ux0 = P.x, uy0 = P.y;
+  if (typeof hotFilterInput === 'function') inp = hotFilterInput(inp);
   // real-time effects first
   for (const f of S.fx) f.t += dt; S.fx = S.fx.filter(f => f.t < f.dur);
   for (const g of S.ghosts) g.t -= dt; S.ghosts = S.ghosts.filter(g => g.t > 0);

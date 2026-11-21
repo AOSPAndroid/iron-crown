@@ -88,6 +88,105 @@ body:not(.touchdev) .tc{display:none}
 .quest .bt button:disabled{opacity:.5;cursor:default}
 .quest .bt button.dim2{color:#a89878;border-color:#4a3a28}
 #pause .keys{margin-top:16px}
+
+/* ---- shared panel look: dark translucent cards, serif headers, tier colours ---- */
+.card{background:linear-gradient(180deg,rgba(24,18,12,.94),rgba(12,9,6,.95));border:1px solid #6a5a40;box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 0 3px rgba(26,18,10,.85) inset;border-radius:3px}
+.hdr b{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:17px;letter-spacing:.14em;color:var(--gold);text-shadow:0 1px 0 #000}
+.hdr .hgold{margin-left:auto;margin-right:12px;color:var(--gold);font-weight:700}
+.sec{font-family:Georgia,"Times New Roman",serif;letter-spacing:.22em;color:#a8946c}
+.sec .hint{font-family:ui-monospace,Menlo,monospace;letter-spacing:0;color:#7a6c54;font-size:10px;margin-left:6px}
+.inm{font-weight:700}
+.up{color:#8ae07a}.dn{color:#ff7a6a}.eqd{color:#9ae0ff;font-size:11px}
+img.th,span.th{width:44px;height:44px;flex:none;image-rendering:auto;display:inline-block}
+span.th.gly{font-size:26px;font-weight:700;text-align:center;line-height:44px}
+img.th.sm,span.th.sm{width:22px;height:22px;vertical-align:middle;line-height:22px;font-size:14px}
+img.th.big{width:72px;height:72px}
+img.th.huge{width:120px;height:120px;display:block;margin:6px auto}
+.row img.th{background:radial-gradient(circle,rgba(255,240,200,.08),rgba(0,0,0,0) 70%)}
+.tabs button.alt{margin-left:auto;color:#c8e0a0;border-color:#5a7a40}
+.chips{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:3px;vertical-align:middle}
+.chip{display:inline-flex;align-items:center;gap:2px;background:rgba(0,0,0,.35);border:1px solid #3a2e20;padding:1px 6px 1px 2px;font-size:11px;border-radius:2px}
+.chip b{color:#e8dcc0}.chip.short{border-color:#7a2a20}.chip.short b{color:#ff7a6a}.chip.gain b{color:#8ae07a}.chip.own b{color:#e8dcc0}
+.gp{font-size:11px;color:var(--gold);font-weight:700}.gp.short{color:#ff7a6a}
+.row.rec.no{opacity:.5}
+.row.rec .bt.col{flex-direction:column}
+.rew{font-size:11px;margin-top:3px}
+.pouchbar{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 2px;padding:5px;background:rgba(0,0,0,.25);border:1px solid #2e2418}
+/* inventory grid */
+#inv .card{max-width:720px}
+.invtop{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.eqbox .lab{font-size:10px;letter-spacing:.2em;color:#8a7a60;margin-bottom:3px}
+.eqrow{display:flex;gap:6px}
+.eqrow .sl{width:58px}
+.invtop .stats{flex:1;min-width:200px}
+.grid{display:grid;gap:5px}
+.grid.g8{grid-template-columns:repeat(8,1fr)}
+.grid.g10{grid-template-columns:repeat(10,1fr)}
+.sl{position:relative;aspect-ratio:1;background:radial-gradient(circle at 50% 40%,rgba(60,48,32,.55),rgba(14,11,8,.85));border:1px solid #3a2e20;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;min-width:0;border-radius:2px}
+.sl img.th,.sl span.th{width:86%;height:86%;pointer-events:none;line-height:normal}
+.sl.empty{cursor:default;background:rgba(10,8,6,.55)}
+.sl.t1{border-color:#4a7a3a;box-shadow:inset 0 -2px 0 #7ad06a}.sl.t2{border-color:#3a5a8a;box-shadow:inset 0 -2px 0 #6ab0ff}.sl.t3{border-color:#6a4a8a;box-shadow:inset 0 -2px 0 #c88aff}.sl.t4{border-color:#8a6a2a;box-shadow:inset 0 -2px 0 #ffc848}
+.sl.t0{box-shadow:inset 0 -2px 0 #8a8070}
+.sl.sel{outline:2px solid #ffd84a;outline-offset:1px}
+.sl.hov{outline:2px dashed #9ae0ff;outline-offset:1px;background:rgba(80,120,150,.35)}
+.sl.lift{opacity:.35}
+.sl.cur{border-color:#ffd84a}
+.sl .lv{position:absolute;left:2px;top:1px;font-size:10px;color:#ffd84a;text-shadow:0 1px 0 #000}
+.sl .n{position:absolute;right:3px;bottom:1px;font-style:normal;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 1px #000,0 0 2px #000}
+.sl .hm{position:absolute;left:2px;bottom:1px;font-style:normal;font-size:9px;font-weight:700;color:#9ae0ff;text-shadow:0 1px 0 #000}
+.sl .tp{position:absolute;right:3px;top:3px;width:6px;height:6px;border:1px solid #000;text-decoration:none}
+.sl .key{position:absolute;right:3px;top:1px;font-size:9px;color:#7a6c54}
+.sl .cap{font-size:10px;color:#5a4e3c;letter-spacing:.1em}
+.pouch{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.detail{position:sticky;bottom:-14px;margin:12px -14px -12px;padding:10px 14px 12px;background:linear-gradient(180deg,rgba(20,15,10,.97),rgba(10,8,5,.99));border-top:1px solid #6a5a40;z-index:2}
+.dtl{display:flex;gap:12px;align-items:flex-start}
+.dtl.empty{display:block;font-size:11.5px}
+.dimg{position:relative;width:80px;height:80px;flex:none;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(70,56,36,.6),rgba(10,8,6,.9));border:1px solid #4a3a28}
+.dimg .lv{position:absolute;left:4px;top:2px;color:#ffd84a;font-size:12px}
+.dtx{flex:1;min-width:0;font-size:12px;line-height:1.45}
+.dtx .inm{font-family:Georgia,"Times New Roman",serif;font-size:15px}
+.dtx .sub{font-size:11px;color:#a89878;margin-bottom:3px}
+table.st{border-collapse:collapse;margin:2px 0}
+table.st td{padding:1px 10px 1px 0;font-size:12px}
+table.st td:first-child{color:#a89878}
+.tpx{font-size:11px;margin-top:2px}
+.acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.acts button{font:inherit;font-size:12px;font-weight:700;background:#1f160d;color:var(--gold);border:1px solid #8a6a30;padding:7px 10px;cursor:pointer}
+.acts button.dim2{color:#a89878;border-color:#4a3a28}
+.ghost{position:fixed;left:0;top:0;width:60px;height:60px;z-index:99;pointer-events:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.7));opacity:.95}
+.ghost img.th{width:60px;height:60px}
+/* forge */
+#forge .card{max-width:640px}
+.mg{text-align:center}
+.mgh{display:flex;gap:12px;align-items:center;text-align:left;margin-bottom:8px}
+.mgh .sub,.mg .sub{font-family:Georgia,serif;letter-spacing:.2em;color:#a8946c;font-size:12px}
+.mg.res .sub{font-size:18px;color:var(--gold);margin-top:6px}
+#mgcv{position:static;inset:auto;display:block;margin:6px auto 0;width:100%;height:auto;max-width:560px;background:rgba(0,0,0,.35);border:1px solid #3a2e20;touch-action:none;cursor:pointer}
+.pips{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.pip{width:16px;height:16px;border:1px solid #6a5a40;background:#1a120a;transform:rotate(45deg)}
+.pip.p{background:#ffe070}.pip.g{background:#8ae07a}.pip.f{background:#c8a070}.pip.m{background:#7a2a20}
+.foot .strike{font-size:18px;padding:16px 46px;letter-spacing:.2em;background:#3a1a0c;border-color:#ff9a4a;color:#ffd8a0;touch-action:none}
+.foot .dim2{font:inherit;font-size:11px;background:none;color:#a89878;border:1px solid #4a3a28;padding:6px 10px;margin-top:8px;cursor:pointer}
+/* hotbar hit area (drawn on the HUD canvas) */
+#hotbar{position:fixed;z-index:7;touch-action:none;cursor:pointer}
+@media (max-height:520px) and (min-width:600px){
+  #inv .card,#forge .card{max-width:600px}
+  .grid,.pouch{gap:4px}
+  .dimg{width:58px;height:58px} img.th.big{width:52px;height:52px}
+  .dtx{font-size:11px} .dtx .inm{font-size:13px}
+  .acts{margin-top:5px} .acts button{padding:5px 8px;font-size:11px}
+  .detail{padding:7px 14px 9px}
+}
+@media (max-width:560px){
+  .grid.g10,.pouch{grid-template-columns:repeat(5,1fr)}
+  .card{padding:10px 10px;font-size:12.5px}
+  .detail{margin:10px -10px -10px;padding:8px 10px 10px;bottom:-14px}
+  img.th{width:38px;height:38px}
+  .row{gap:6px}
+  .eqrow .sl{width:52px}
+  .tabs{flex-wrap:wrap}
+  .tabs button{padding:7px 8px}
+}
 </style>
 </head>
 <body>
@@ -105,6 +204,7 @@ body:not(.touchdev) .tc{display:none}
   <div class="tb" id="bPot">POT</div>
   <div class="tb" id="bBag">BAG</div>
 </div>
+<div id="hotbar" class="hidden"></div>
 <div id="bPause" class="hidden">II</div>
 <div id="bQuest" class="hidden">QUESTS</div>
 
@@ -120,7 +220,8 @@ body:not(.touchdev) .tc{display:none}
       <b>J / L-click</b> attack — tap in rhythm for combos, hold for a heavy<br>
       <b>K / R-click</b> block · parry (tap just before a hit) · off-hand<br>
       <b>L / Tab</b> lock-on (again = next) · <b>Z X</b> turn camera<br>
-      <b>E</b> use / talk · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
+      <b>1-8 / wheel</b> hotbar · <b>E</b> use / talk / forge · <b>Q</b> quests · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
+      Hit ore rocks and trees for materials · forge and upgrade gear at a blacksmith, craft at a campfire<br>
       <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it · <span class="gold">!</span> / <span class="gold">?</span> = quest giver</span>
     </div>
     <div class="keys tc">
@@ -128,6 +229,7 @@ body:not(.touchdev) .tc{display:none}
       <b>ATTACK</b>: tap in rhythm for combos, hold for a heavy<br>
       <b>BLOCK / PARRY</b>: tap just before a hit lands · <b>LOCK</b>: target<br>
       <b>HORSE</b> · <b>USE</b> (talk) · <b>BAG</b> · <b>POT</b> · <b>QUESTS</b> · <b>II</b> pause<br>
+      <b>Hotbar</b>: tap a slot or swipe the bar · hold it for the bag<br>
       <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it · <span class="gold">!</span> / <span class="gold">?</span> = quest giver</span>
     </div>
   </div>
@@ -139,6 +241,7 @@ body:not(.touchdev) .tc{display:none}
 <div id="talk" class="ov hidden"><div class="card" id="talkPanel"></div></div>
 <div id="qlog" class="ov hidden"><div class="card" id="logPanel"></div></div>
 <div id="shop" class="ov hidden"><div class="card" id="shopPanel"></div></div>
+<div id="forge" class="ov hidden"><div class="card" id="forgePanel"></div></div>
 
 <div id="pause" class="ov hidden">
   <div class="panel">
@@ -150,7 +253,7 @@ body:not(.touchdev) .tc{display:none}
     <div class="keys kb">
       <b>WASD</b> move · <b>Space</b> roll · <b>J / L-click</b> attack (hold = heavy)<br>
       <b>K / R-click</b> block · parry · <b>L / Tab</b> lock-on · <b>Z X</b> camera<br>
-      <b>E</b> use / talk · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag
+      <b>E</b> use / talk / forge · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>1-8 / wheel</b> hotbar
     </div>
     <div class="keys tc">
       Joystick moves · <b>ROLL</b> · <b>ATTACK</b> (hold = heavy) · <b>BLOCK / PARRY</b><br>
@@ -218,7 +321,7 @@ function mixRGB(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]
 const FLAME = "*^&'";
 
 // ---------- items ----------
-const ITEMS = {
+const ITEM_DEFS = {
   rusty_sword: { name: 'Rusty Sword', short: 'RustySwd', type: 'sword', hands: 1, dmg: 12, spd: 0.46, range: 2.3, col: '#a08a70', price: 18, glyph: '/', tier: 0 },
   iron_sword: { name: 'Iron Sword', short: 'IronSwd', type: 'sword', hands: 1, dmg: 17, spd: 0.44, range: 2.4, col: '#b8c0c8', price: 65, glyph: '/', tier: 1 },
   steel_sword: { name: 'Steel Arming Sword', short: 'SteelSwd', type: 'sword', hands: 1, dmg: 23, spd: 0.42, range: 2.5, col: '#dfe8f0', price: 160, glyph: '/', tier: 2 },
@@ -240,15 +343,67 @@ const ITEMS = {
   halfplate: { name: 'Half-Plate', short: 'HalfPlt', type: 'armor', def: 0.52, slow: 0.81, color: '#c8d2dc', dark: '#4f80e0', legs: '#8a929a', helm: true, price: 500, glyph: 'H', tier: 3 },
   fullplate: { name: 'Full Plate', short: 'FullPlt', type: 'armor', def: 0.65, slow: 0.74, color: '#eef4fa', dark: '#b0bcc8', legs: '#c8d2dc', helm: true, price: 880, glyph: 'H', tier: 4 },
   potion: { name: 'Healing Draught', short: 'Potion', type: 'potion', stack: true, heal: 55, price: 25, glyph: '+' },
-  arrows: { name: 'Arrows', short: 'Arrows', type: 'ammo', stack: true, price: 2, glyph: '>' }
+  arrows: { name: 'Arrows', short: 'Arrows', type: 'ammo', stack: true, price: 2, glyph: '>' },
+  bandage: { name: 'Linen Bandage', short: 'Bandage', type: 'potion', stack: true, heal: 25, price: 10, glyph: '+' },
+  // crafting materials: kept in a separate pouch (they never fill the bag)
+  iron_ore: { name: 'Iron Ore', short: 'IronOre', type: 'mat', stack: true, price: 6, glyph: '*', tier: 0, col: '#b0784a' },
+  steel_ingot: { name: 'Steel Ingot', short: 'Steel', type: 'mat', stack: true, price: 22, glyph: '=', tier: 1, col: '#c8d4e0' },
+  leather_hide: { name: 'Leather Hide', short: 'Hide', type: 'mat', stack: true, price: 8, glyph: '~', tier: 0, col: '#a8703e' },
+  wood: { name: 'Timber', short: 'Timber', type: 'mat', stack: true, price: 3, glyph: '#', tier: 0, col: '#b08a5a' },
+  cloth: { name: 'Linen Cloth', short: 'Cloth', type: 'mat', stack: true, price: 5, glyph: '%', tier: 0, col: '#e0d6bc' },
+  herb: { name: 'Healing Herb', short: 'Herb', type: 'mat', stack: true, price: 4, glyph: '"', tier: 0, col: '#6ab04a' },
+  silver: { name: 'Silver Nugget', short: 'Silver', type: 'mat', stack: true, price: 35, glyph: '*', tier: 2, col: '#e8f0ff' },
+  scrap: { name: 'Gremlin Scrap', short: 'Scrap', type: 'mat', stack: true, price: 7, glyph: '&', tier: 1, col: '#9aa040' },
+  frost_shard: { name: 'Frost Shard', short: 'Frost', type: 'mat', stack: true, price: 45, glyph: '^', tier: 3, col: '#8ae0ff' },
+  ghost_essence: { name: 'Ghost Essence', short: 'Essence', type: 'mat', stack: true, price: 40, glyph: 'o', tier: 3, col: '#c8b8ff' }
 };
-for (const k in ITEMS) ITEMS[k].id = k;
+for (const k in ITEM_DEFS) ITEM_DEFS[k].id = k;
+// Forged variants live in the id string: base[+level][!temper][#quality], e.g. 'iron_sword+2!s#1'
+// (level 1-5, temper s = silvered / f = frost-tempered, quality 1 = fine / 2 = masterwork). ITEMS resolves them on demand,
+// so every id stays a plain string in hands, bag, hotbar and saves.
+const UPG_TYPES = { sword: 1, sword2: 1, bow: 1, shield: 1, gun: 1, armor: 1, torch: 0 };
+const TEMPER = { s: { name: 'silvered', col: '#f4f8ff', desc: 'x1.5 vs undead, ghosts and witches' }, f: { name: 'frost-tempered', col: '#a8e8ff', desc: '+10% damage · chills foes' } };
+const QUAL = ['', 'Fine', 'Masterwork'];
+const VARC = new Map();
+function parseVid(id) {
+  const m = /^([a-z0-9_]+)(?:\+([1-5]))?(?:!([sf]))?(?:#([12]))?$/.exec(id || '');
+  if (!m || !ITEM_DEFS[m[1]]) return null;
+  return { base: m[1], lvl: m[2] ? +m[2] : 0, temper: m[3] || '', q: m[4] ? +m[4] : 0 };
+}
+function makeVid(base, lvl, temper, q) { return base + (lvl ? '+' + lvl : '') + (temper ? '!' + temper : '') + (q ? '#' + q : ''); }
+function variantItem(id) {
+  let v = VARC.get(id); if (v !== undefined) return v;
+  const p = parseVid(id), b = p && ITEM_DEFS[p.base];
+  v = null;
+  if (b && UPG_TYPES[b.type] && (p.lvl || p.temper || p.q) && id === makeVid(p.base, p.lvl, p.temper, p.q)) {
+    const L = p.lvl, q = p.q, qm = q === 2 ? 1.1 : q === 1 ? 1.05 : 1;
+    v = Object.assign({}, b, { id, base: p.base, lvl: L, temper: p.temper, q });
+    if (b.dmg) v.dmg = Math.round(b.dmg * (1 + 0.08 * L) * qm * (p.temper === 'f' ? 1.1 : 1)) + L;
+    if (b.block) v.block = Math.min(0.95, b.block + 0.03 * L + 0.02 * q);
+    if (b.type === 'armor') v.def = Math.min(0.82, b.def + 0.025 * L + 0.015 * q);
+    if (b.draw) v.draw = b.draw * (1 - 0.02 * L);
+    v.price = Math.round(b.price * (1 + 0.35 * L + 0.15 * q) + (p.temper ? 60 : 0));
+    if (p.temper === 's') { v.silver = true; v.col = TEMPER.s.col; }
+    if (p.temper === 'f') { v.frost = true; v.col = TEMPER.f.col; }
+    v.name = (q ? QUAL[q] + ' ' : '') + b.name + (p.temper ? ' (' + TEMPER[p.temper].name + ')' : '') + (L ? ' +' + L : '');
+    v.short = b.short + (L ? '+' + L : '');
+  }
+  VARC.set(id, v); return v;
+}
+const ITEMS = new Proxy(ITEM_DEFS, {
+  get(t, k) { if (k in t) return t[k]; return typeof k === 'string' ? (variantItem(k) || undefined) : undefined; },
+  has(t, k) { return k in t || (typeof k === 'string' && !!variantItem(k)); }
+});
+const baseId = id => { const it = ITEMS[id]; return it ? (it.base || it.id) : id; };
+const TIER_COL = ['#d8d0c0', '#7ad06a', '#6ab0ff', '#c88aff', '#ffc848'];
+function tierCol(it) { if (!it) return TIER_COL[0]; const t = it.tier === undefined ? 0 : it.tier; return TIER_COL[clamp(t + (it.q === 2 ? 1 : 0), 0, 4)]; }
 const TIER = {
   sword: ['rusty_sword', 'iron_sword', 'steel_sword', 'longsword', 'crown_blade'],
   armor: ['gambeson', 'leather', 'chainmail', 'halfplate', 'fullplate'],
   bow: ['short_bow', 'short_bow', 'long_bow', 'war_bow', 'war_bow'],
   shield: ['buckler', 'buckler', 'kite_shield', 'tower_shield', 'tower_shield']
 };
+const MAT_USE = { iron_ore: 'smelt into steel, arrows', steel_ingot: 'blades, plate, upgrades', leather_hide: 'grips, armour', wood: 'shields, bows, arrows, torches', cloth: 'gambesons, bandages', herb: 'healing draughts', silver: 'silvering, fine work', scrap: 'pistols, gadgets', frost_shard: 'frost tempering', ghost_essence: 'high upgrades, crown work' };
 function itemDesc(it) {
   switch (it.type) {
     case 'sword': return 'DMG ' + it.dmg + ' · one hand';
@@ -258,8 +413,9 @@ function itemDesc(it) {
     case 'torch': return 'Light at night · fire burns undead';
     case 'gun': return 'DMG ' + it.dmg + ' · reload ' + it.reload + 's';
     case 'armor': return 'ARMOR ' + Math.round(it.def * 100) + '% · speed ' + Math.round(it.slow * 100) + '%';
-    case 'potion': return 'Restores ' + it.heal + ' HP';
+    case 'potion': return 'Restores ' + it.heal + ' HP' + (it.id === 'bandage' ? ' · quick to apply' : '');
     case 'ammo': return 'For bows';
+    case 'mat': return 'Crafting material' + (MAT_USE[it.id] ? ' · ' + MAT_USE[it.id] : '');
   }
   return '';
 }
@@ -300,6 +456,16 @@ const KINDS = {
   captive: { name: 'captive', team: 2, hp: 9999, spd: 5.2, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.42, h: 1.8, spr: 'villager', ai: 'follow', role: 'quest' }
 };
 for (const k in KINDS) KINDS[k].id = k;
+// crafting materials dropped by foes: [id, chance, min, max]
+const MAT_LOOT = {
+  bandit: [['leather_hide', 0.3], ['cloth', 0.3]], soldier: [['cloth', 0.3], ['iron_ore', 0.2], ['steel_ingot', 0.06]], pikeman: [['wood', 0.3], ['steel_ingot', 0.08]],
+  musketeer: [['cloth', 0.3], ['scrap', 0.1]], archer: [['wood', 0.35, 1, 2]], dragoon: [['leather_hide', 0.5, 1, 2], ['steel_ingot', 0.2]],
+  vampire: [['ghost_essence', 0.15], ['silver', 0.1], ['cloth', 0.3]], witch: [['herb', 0.6, 1, 3], ['ghost_essence', 0.2]],
+  giant: [['leather_hide', 0.8, 2, 4], ['wood', 0.6, 2, 4]], frostgiant: [['frost_shard', 1, 2, 4], ['leather_hide', 0.6, 1, 3]],
+  gremlin: [['scrap', 0.45]], gremlin_bomber: [['scrap', 0.5]], gremlin_shaman: [['herb', 0.4], ['scrap', 0.4]], gremlin_brute: [['scrap', 1, 2, 5], ['iron_ore', 0.5, 1, 2]],
+  ghost: [['ghost_essence', 0.55]], vlord: [['ghost_essence', 1, 2, 3], ['silver', 0.6, 1, 2]], lord: [['silver', 1, 2, 3]]
+};
+for (const k in MAT_LOOT) KINDS[k].loot = (KINDS[k].loot || []).concat(MAT_LOOT[k]);
 
 // =====================================================================
 //  WORLD — infinite chunked terrain, biomes, villages, statics
@@ -407,7 +573,7 @@ const SDEF = {
   menhir: { r: 0.7, h: 3 }, palm: { r: 0.5, h: 5 }, bush: { r: 0.5, h: 1, block: false }, fire: { r: 0.6, h: 1.0 },
   well: { r: 0.9, h: 1.6 }, ruin: { r: 4.2, h: 7 }, chest: { r: 0.6, h: 0.8 },
   col: { r: 1, h: 3 }, bld: { r: 4, h: 5, block: false }, fence: { r: 1.6, h: 1.0 }, lamp: { r: 0.2, h: 2.7 }, barrel: { r: 0.38, h: 0.9 }, crate: { r: 0.38, h: 0.8 },
-  birch: { r: 0.45, h: 5 }, willow: { r: 0.8, h: 4.5 }, log: { r: 0.55, h: 0.6 }, stump: { r: 0.42, h: 0.6 }, bigrock: { r: 1.3, h: 1.6 }
+  birch: { r: 0.45, h: 5 }, ore: { r: 0.8, h: 1.1 }, willow: { r: 0.8, h: 4.5 }, log: { r: 0.55, h: 0.6 }, stump: { r: 0.42, h: 0.6 }, bigrock: { r: 1.3, h: 1.6 }
 };
 const GC = 8, MAXR = 4.6;
 let STAMP = 1;
@@ -502,6 +668,14 @@ function genChunk(cx, cy) {
     const t = tileL(x, y);
     if (isWet(t) || t === T_DIRT || nearVil(x, y, 31) || nearCas(x, y, 7) || nearMan(x, y, 3) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
     addStaticTo(c, i % 4 === 3 && B !== B_DESERT ? 'bigrock' : 'rock', x, y, (t === T_SNOW || t === T_DRIFT) ? { snow: 1 } : (t === T_SAND || t === T_DUNE) ? { sand: 1 } : null);
+  }
+  // ore outcrops (own random stream so the rest of the layout is unchanged): one just outside every village,
+  // and scattered veins in the wild, richer in the hills, heath and the frozen north (silver)
+  { const RO = mulberry((Math.imul(cx, 2654435761) ^ Math.imul(cy, 40503) ^ 0x0e0e) | 0); let n = 0;
+    const put = (x, y, silver) => { if (x < ox || y < oy || x >= ox + CS || y >= oy + CS) return false; const t = tileL(x, y); if (isWet(t) || t === T_DIRT || localNear(c, x, y, 1.4) || nearCas(x, y, 6) || nearMan(x, y, 3)) return false; addStaticTo(c, 'ore', x, y, { id: c.key + ':o' + (n++), silver: !!silver, snow: t === T_SNOW || t === T_DRIFT ? 1 : 0 }); return true; };
+    for (const v of vils) for (let k = 0; k < 6; k++) { const a = v.gap + Math.PI * 0.62 + k * 0.5, x = v.x + Math.cos(a) * 34, y = v.y + Math.sin(a) * 34; if (x >= ox && y >= oy && x < ox + CS && y < oy + CS) { if (put(x, y, false)) break; } else break; }
+    const ch = { [B_HEATH]: 0.5, [B_SNOW]: 0.45, [B_PLAINS]: 0.16, [B_FOREST]: 0.2, [B_DESERT]: 0.22, [B_SWAMP]: 0.05 }[B] || 0;
+    if (!own && RO() < ch) for (let k = 0; k < 4; k++) { const x = ox + 3 + RO() * (CS - 6), y = oy + 3 + RO() * (CS - 6); if (nearVil(x, y, 31)) continue; if (put(x, y, RO() < (B === B_SNOW || B === B_HEATH ? 0.4 : 0.18))) break; }
   }
   return c;
 }
@@ -2239,7 +2413,7 @@ const GIANTS = {
 };
 function itemSpec(id) {
   if (!id) return null; const it = ITEMS[id]; if (!it) return null;
-  return it.type === 'sword' ? { t: 'sword', col: it.col, tier: it.tier } : it.type === 'sword2' ? { t: 'claymore' } : it.type === 'bow' ? { t: 'bow' } : it.type === 'shield' ? { t: 'shield', id } : it.type === 'torch' ? { t: 'torch' } : it.type === 'gun' ? { t: 'pistol' } : null;
+  return it.type === 'sword' ? { t: 'sword', col: it.col, tier: it.tier } : it.type === 'sword2' ? { t: 'claymore', col: it.col } : it.type === 'bow' ? { t: 'bow' } : it.type === 'shield' ? { t: 'shield', id: it.base || id } : it.type === 'torch' ? { t: 'torch' } : it.type === 'gun' ? { t: 'pistol' } : null;
 }
 // a held item in the arm's rest frame (arm hangs along -y from the shoulder); hand at HAND
 function buildItem(mb, it, side) {
@@ -2634,10 +2808,59 @@ function mkLootM(id) {
   const mb = new MB(51); const it = ITEMS[id];
   if (!it) { mb.sph(0, 0.1, 0, 0.12, 0.08, 0.12, '#ffd84a', 0); return mb; }
   switch (it.type) {
-    case 'potion': mb.sph(0, 0.12, 0, 0.13, 0.13, 0.13, '#e8304a'); mb.cyl(0, 0.22, 0, 0.05, 0.05, 0.1, 6, '#f0e8d8'); break;
+    case 'potion':
+      if (id === 'bandage') { mb.push().tr(0, 0.1, 0).rz(Math.PI / 2).cyl(0, -0.14, 0, 0.1, 0.1, 0.28, 10, '#ece4d0', '#d8ccb0').pop(); mb.bc(0.05, 0.1, 0.1, 0.06, 0.18, 0.02, '#c84a3a'); mb.tri([0.14, 0.02, 0.08], [0.14, 0.18, 0.08], [0.3, 0.0, 0.1], '#ece4d0'); }
+      else { mb.sph(0, 0.12, 0, 0.13, 0.13, 0.13, '#e8304a'); mb.cyl(0, 0.22, 0, 0.05, 0.05, 0.1, 6, '#f0e8d8'); mb.cyl(0, 0.32, 0, 0.055, 0.055, 0.04, 6, '#8a5a2e'); }
+      break;
     case 'ammo': for (let k = -2; k <= 2; k++) mb.beam([k * 0.05, 0.05, -0.35], [k * 0.05, 0.05, 0.35], 0.03, '#c8945a'); mb.bc(0, 0.05, 0.3, 0.24, 0.07, 0.09, '#ffffff'); break;
-    case 'armor': mb.sph(0, 0.1, 0, 0.32, 0.12, 0.24, it.color); mb.sph(0, 0.18, 0.1, 0.24, 0.05, 0.12, it.dark); break;
+    case 'armor': mb.push().tr(0, 0.06, 0).rx(-Math.PI / 2).sc(0.55).tr(0, -0.55, 0); mkArmorIcon(mb, it); mb.pop(); break;
+    case 'mat': mkMatMesh(mb, it.id); break;
     default: { const s = itemSpec(id); if (s) { mb.push().tr(0, 0.14, 0).rz(Math.PI / 2).tr(-HAND.x, -HAND.y, 0); buildItem(mb, s, 1); mb.pop(); } }
+  }
+  return mb;
+}
+// a little cuirass on a stand: torso, shoulders, belt, helm for the heavier sets (rig units, feet at 0)
+function mkArmorIcon(mb, it) {
+  const c = it.color, d = it.dark, l = it.legs || d, plate = it.def >= 0.4;
+  mb.frus(0.5, 0.92, 0.2, 0.13, 0.27, 0.15, c);
+  mb.frus(0.36, 0.52, 0.22, 0.14, 0.2, 0.13, l);
+  mb.bc(0, 0.53, 0, 0.44, 0.06, 0.3, d);
+  mb.bc(0, 0.53, 0.152, 0.07, 0.07, 0.01, '#e8c050');
+  for (const sd of [-1, 1]) { mb.sph(sd * 0.29, 0.88, 0, 0.11, 0.08, 0.13, plate ? d : c, 0); }
+  if (plate) { mb.push().tr(0.32, 0, 0); mb.frus(0.58, 0.84, 0.06, 0.06, 0.07, 0.07, c); mb.pop(); mb.push().tr(-0.32, 0, 0); mb.frus(0.58, 0.84, 0.06, 0.06, 0.07, 0.07, c); mb.pop(); }
+  mb.bc(0, 0.72, 0.15, 0.03, 0.34, 0.01, d);
+  if (it.helm) { mb.sph(0, 1.06, 0, 0.13, 0.13, 0.14, c, 1); mb.bc(0, 1.03, 0.12, 0.2, 0.025, 0.04, '#2a2a30'); if (it.def >= 0.6) mb.cyl(0, 1.17, 0, 0.02, 0.0, 0.14, 5, '#d0453a'); }
+  else mb.cyl(0, 0.92, 0, 0.07, 0.06, 0.06, 7, '#e8c39e');
+}
+// crafting materials (rig-ish units, resting on y = 0)
+function mkMatMesh(mb, id) {
+  switch (id) {
+    case 'iron_ore': mb.ico(0, 0.16, 0, 0.22, 0.17, 0.2, '#6e6862', 0.25, 0, 31); for (let k = 0; k < 5; k++) { const a = k * 1.3, r = 0.15; mb.ico(Math.cos(a) * r, 0.18 + (k % 2) * 0.08, Math.sin(a) * r, 0.06, 0.05, 0.06, k % 2 ? '#c87a3a' : '#a85a2a', 0.2, 0, 40 + k); } break;
+    case 'silver': mb.ico(0, 0.12, 0, 0.16, 0.12, 0.15, '#7a7a82', 0.25, 0, 33); { const e = mb.em; mb.em = 0.35; for (let k = 0; k < 4; k++) { const a = k * 1.6 + 0.4; mb.ico(Math.cos(a) * 0.1, 0.17, Math.sin(a) * 0.1, 0.07, 0.06, 0.07, '#f0f6ff', 0.2, 0, 50 + k); } mb.em = e; } break;
+    case 'steel_ingot': for (const [x, y] of [[-0.12, 0], [0.12, 0], [0, 0.11]]) { mb.push().tr(x, y, 0); mb.frus(0, 0.1, 0.11, 0.2, 0.08, 0.16, '#c8d4e0'); mb.pop(); } break;
+    case 'leather_hide': { const pts = [[-0.3, -0.2], [0.05, -0.28], [0.3, -0.18], [0.26, 0.2], [-0.05, 0.3], [-0.3, 0.16]]; for (let i = 1; i < pts.length - 1; i++) mb.tri([pts[0][0], 0.05, pts[0][1]], [pts[i][0], 0.05 + i * 0.012, pts[i][1]], [pts[i + 1][0], 0.05 + i * 0.012, pts[i + 1][1]], '#a8703e'); mb.push().tr(-0.1, 0.08, 0).rz(Math.PI / 2).cyl(0, -0.2, 0, 0.07, 0.07, 0.42, 8, '#8a5830', '#c89060').pop(); break; }
+    case 'wood': for (const [x, y, z] of [[-0.1, 0.08, 0], [0.1, 0.08, 0], [0, 0.24, 0]]) { mb.push().tr(x, y, z).rx(Math.PI / 2).cyl(0, -0.3, 0, 0.09, 0.09, 0.6, 7, '#8a5a32', '#d0a870').pop(); } break;
+    case 'cloth': mb.push().tr(0, 0.1, 0).rz(Math.PI / 2).cyl(0, -0.26, 0, 0.12, 0.12, 0.52, 10, '#e0d6bc', '#c8bc9a').pop(); mb.box(-0.27, 0.0, 0.05, 0.27, 0.02, 0.3, '#d8ccb0'); mb.bc(0, 0.1, 0, 0.06, 0.25, 0.25, '#b8403a'); break;
+    case 'herb': for (let k = 0; k < 6; k++) { const a = k / 6 * TAU, c = Math.cos(a), sn = Math.sin(a); mb.tri([0, 0.02, 0], [c * 0.08 - sn * 0.06, 0.12, sn * 0.08 + c * 0.06], [c * 0.3, 0.2 + (k % 2) * 0.1, sn * 0.3], k % 2 ? '#5aa040' : '#78c050'); } mb.cyl(0, 0, 0, 0.025, 0.02, 0.18, 5, '#5a7a30'); mb.sph(0, 0.2, 0, 0.05, 0.05, 0.05, '#e8e070', 0); break;
+    case 'scrap': mb.cyl(-0.08, 0.02, 0, 0.13, 0.13, 0.05, 8, '#8a8a52'); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; mb.bc(-0.08 + Math.cos(a) * 0.15, 0.045, Math.sin(a) * 0.15, 0.05, 0.05, 0.05, '#7a7a46'); } mb.beam([0.02, 0.06, -0.1], [0.28, 0.14, 0.12], 0.05, '#6a5a3a'); mb.bc(0.18, 0.08, -0.12, 0.12, 0.06, 0.08, '#a8a060'); break;
+    case 'frost_shard': { const e = mb.em; mb.em = 0.45; mb.cyl(0, 0, 0, 0.09, 0, 0.5, 5, '#8ae0ff'); mb.push().tr(0.12, 0, 0.04).rz(-0.4).cyl(0, 0, 0, 0.06, 0, 0.32, 5, '#c8f4ff').pop(); mb.push().tr(-0.1, 0, -0.03).rz(0.5).cyl(0, 0, 0, 0.055, 0, 0.28, 5, '#6ac8f0').pop(); mb.em = e; break; }
+    case 'ghost_essence': mb.cyl(0, 0, 0, 0.11, 0.09, 0.22, 8, '#5a4a7a'); mb.cyl(0, 0.22, 0, 0.05, 0.05, 0.08, 6, '#5a4a7a'); { const e = mb.em; mb.em = 0.8; mb.sph(0, 0.11, 0, 0.085, 0.09, 0.085, '#d8c8ff', 0); mb.em = e; } mb.cyl(0, 0.3, 0, 0.055, 0.055, 0.04, 6, '#8a5a2e'); break;
+    default: mb.sph(0, 0.1, 0, 0.12, 0.08, 0.12, '#ffd84a', 0);
+  }
+}
+// an ore outcrop: a craggy grey rock studded with rusty iron (or bright silver) nuggets; spent veins show only scars
+function mkOreM(k, snow) {
+  const mb = new MB(120); mb.smooth = false;
+  const base = '#7e7872', top = snow ? (n => n[1] > 0.55 ? '#f0f4f8' : base) : (n => n[1] > 0.8 ? '#6e6e52' : base);
+  mb.ico(0, 0.45, 0, 0.85, 0.62, 0.78, top, 0.2, 1, 61); mb.ico(0.62, 0.22, 0.42, 0.45, 0.36, 0.42, top, 0.2, 1, 62); mb.ico(-0.55, 0.2, -0.32, 0.38, 0.3, 0.36, '#6e6964', 0.2, 0, 63);
+  const R = mulberry(64), sil = k === 'ore_silver', dep = k === 'ore_dep';
+  // veins: clusters of chunky nuggets standing proud of the surface
+  for (let i = 0; i < 16; i++) {
+    const a = R() * TAU, h = 0.25 + Math.sqrt(R()) * 0.78, f = Math.sqrt(Math.max(0.08, 1 - ((h - 0.45) / 0.62) ** 2)), x = Math.cos(a) * 0.85 * f, z = Math.sin(a) * 0.78 * f, s = 0.1 + R() * 0.08;
+    if (dep) { mb.ico(x * 0.97, h, z * 0.97, s * 0.9, s * 0.7, s * 0.9, '#45413d', 0.2, 0, 70 + i); continue; }
+    const e = mb.em; mb.em = sil ? 0.5 : 0.18;
+    mb.ico(x * 1.02, h, z * 1.02, s, s * 0.85, s, sil ? (i % 2 ? '#f4f8ff' : '#c8d8f0') : (i % 3 ? '#e0883a' : '#b85a22'), 0.3, 0, 70 + i);
+    mb.em = e;
   }
   return mb;
 }
@@ -2745,6 +2968,191 @@ Object.assign(STATIC_BUILD, { birch: () => mkBirchM(false), willow: mkWillowM, l
 Object.assign(STATIC_FAR, { birch: () => mkBirchM(true) });
 
 // =====================================================================
+//  ITEM THUMBNAILS — every item type rendered once from its real mesh (buildItem / loot meshes)
+//  into a small offscreen WebGL target, read back into a 2D canvas (faceted toon light, 3/4 view,
+//  dark outline). Used by the hotbar, inventory, shop, forge, pickup messages and quest rewards.
+//  Falls back to a drawn glyph when WebGL is unavailable.
+// =====================================================================
+const THUMB_PX = 96, THUMB_RS = 192;
+const THUMBS = new Map(), THUMB_URL = new Map();
+let THUMB_GL = null, THUMB_FAIL = false, thumbN = 0;
+const VS_ICON = `
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec3 aNrm;
+layout(location=2) in vec4 aCol;
+layout(location=3) in vec4 aExt;
+out vec3 vN; out vec4 vC; out float vE;
+void main() { vN = aNrm; vC = aCol; vE = aExt.y; gl_Position = vec4(aPos, 1.0); }`;
+const FS_ICON = `
+in vec3 vN; in vec4 vC; in float vE;
+out vec4 o;
+void main() {
+  vec3 n = normalize(vN); if (n.z < 0.0) n = -n;
+  vec3 L = normalize(vec3(-0.45, 0.72, 0.62));
+  float d = dot(n, L);
+  float k = d > 0.62 ? 1.0 : d > 0.18 ? 0.8 : d > -0.2 ? 0.62 : 0.5;
+  vec3 c = vC.rgb * (0.22 + 0.86 * k);
+  c += vec3(1.0, 0.96, 0.86) * pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 18.0) * 0.28;
+  c += vC.rgb * pow(1.0 - n.z, 3.0) * 0.22;
+  c = mix(c, vC.rgb * 1.3 + vec3(0.1, 0.05, 0.0), clamp(vE, 0.0, 1.0));
+  o = vec4(c, 1.0);
+}`;
+function thumbGL() {
+  if (THUMB_GL || THUMB_FAIL) return THUMB_GL;
+  if (!GLOK || !gl) { THUMB_FAIL = true; return null; }
+  try {
+    const pr = program(VS_ICON, FS_ICON);
+    const tex = tex2D(THUMB_RS, THUMB_RS, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, gl.NEAREST);
+    const dep = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, dep); gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, THUMB_RS, THUMB_RS);
+    const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, dep);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+    const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (!ok) { THUMB_FAIL = true; return null; }
+    THUMB_GL = { pr, tex, dep, fb, px: new Uint8Array(THUMB_RS * THUMB_RS * 4) };
+  } catch (e) { THUMB_FAIL = true; return null; }
+  return THUMB_GL;
+}
+// ---------- 3x3 rotations ----------
+function r3axis(ax, a) {
+  const [x, y, z] = ax, c = Math.cos(a), s = Math.sin(a), t = 1 - c;
+  return [t * x * x + c, t * x * y - s * z, t * x * z + s * y, t * x * y + s * z, t * y * y + c, t * y * z - s * x, t * x * z - s * y, t * y * z + s * x, t * z * z + c];
+}
+function r3mul(A, B) { const o = new Array(9); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) o[r * 3 + c] = A[r * 3] * B[c] + A[r * 3 + 1] * B[3 + c] + A[r * 3 + 2] * B[6 + c]; return o; }
+function r3v(M, v) { return [M[0] * v[0] + M[1] * v[1] + M[2] * v[2], M[3] * v[0] + M[4] * v[1] + M[5] * v[2], M[6] * v[0] + M[7] * v[1] + M[8] * v[2]]; }
+const r3x = a => r3axis([1, 0, 0], a), r3y = a => r3axis([0, 1, 0], a);
+// rotation taking unit vector a onto unit vector b
+function r3align(a, b) {
+  const c = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  let ax = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; const l = Math.hypot(...ax);
+  if (l < 1e-6) return c > 0 ? [1, 0, 0, 0, 1, 0, 0, 0, 1] : r3axis(Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0], Math.PI);
+  ax = ax.map(v => v / l); return r3axis(ax, Math.atan2(l, c));
+}
+// ---------- the mesh and its framing for one item ----------
+function iconSource(id) {
+  const it = ITEMS[id]; if (!it) return null;
+  const b = it.base || id, mb = new MB(77), sp = itemSpec(b);
+  if (sp) { mb.tr(-HAND.x, -HAND.y, -HAND.z); buildItem(mb, sp, 1); return { mb, kind: it.type === 'shield' ? 'shield' : it.type === 'torch' ? 'torch' : 'long' }; }
+  if (it.type === 'armor') { mkArmorIcon(mb, it); return { mb, kind: 'upright' }; }
+  if (b === 'arrows') { // three arrows fanned toward the upper right
+    for (let k = -1; k <= 1; k++) {
+      mb.push().rz(-Math.PI / 4 + k * 0.16).tr(k * 0.05, 0, k * 0.02);
+      mb.beam([0, -0.5, 0], [0, 0.42, 0], 0.035, '#c8945a');
+      mb.tri([-0.07, 0.42, 0], [0.07, 0.42, 0], [0, 0.62, 0], '#e8eef4'); mb.tri([0, 0.42, -0.07], [0, 0.42, 0.07], [0, 0.62, 0], '#b8c0c8');
+      mb.tri([0, -0.5, 0], [-0.09, -0.5, 0], [0, -0.3, 0], k ? '#f4f0e8' : '#ff6a4a'); mb.tri([0, -0.5, 0], [0.09, -0.5, 0], [0, -0.3, 0], k ? '#e8e0d0' : '#e85a3a');
+      mb.pop();
+    }
+    return { mb, kind: 'upright' };
+  }
+  return { mb: mkLootM(b), kind: it.type === 'potion' ? 'potion' : it.type === 'ammo' ? 'ammo' : 'flat' };
+}
+function iconOrient(src) {
+  const d = src.mb.d, n = d.length / 14;
+  let cx = 0, cy = 0, cz = 0;
+  for (let i = 0; i < n; i++) { cx += d[i * 14]; cy += d[i * 14 + 1]; cz += d[i * 14 + 2]; }
+  cx /= n; cy /= n; cz /= n;
+  let R;
+  if (src.kind === 'long' || src.kind === 'torch') {
+    // main axis -> screen diagonal (tip up-right), then roll to show the widest face
+    let ax = null;
+    if (src.kind === 'torch') { let ex = 0, ey = 0, ez = 0, ne = 0; for (let i = 0; i < n; i++) if (d[i * 14 + 11] > 0.5) { ex += d[i * 14]; ey += d[i * 14 + 1]; ez += d[i * 14 + 2]; ne++; } if (ne) ax = [ex / ne - cx, ey / ne - cy, ez / ne - cz]; }
+    if (!ax) { let bd = -1; for (let i = 0; i < n; i++) { const x = d[i * 14] - cx, y = d[i * 14 + 1] - cy, z = d[i * 14 + 2] - cz, q = x * x + y * y + z * z; if (q > bd) { bd = q; ax = [x, y, z]; } } }
+    const l = Math.hypot(...ax) || 1; ax = ax.map(v => v / l);
+    const t = [Math.SQRT1_2, Math.SQRT1_2, 0], A = r3align(ax, t);
+    let best = -1, bestR = A;
+    for (let k = 0; k < 16; k++) {
+      const M = r3mul(r3axis(t, k / 16 * Math.PI), A); let area = 0;
+      for (let i = 0; i < n; i += 3) {
+        const p0 = r3v(M, [d[i * 14], d[i * 14 + 1], d[i * 14 + 2]]), p1 = r3v(M, [d[i * 14 + 14], d[i * 14 + 15], d[i * 14 + 16]]), p2 = r3v(M, [d[i * 14 + 28], d[i * 14 + 29], d[i * 14 + 30]]);
+        area += Math.abs((p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]));
+      }
+      if (area > best * 1.02) { best = area; bestR = M; }
+    }
+    R = r3mul(r3axis(t, 0.42), bestR);
+    R = r3mul(r3x(0.18), R);
+  } else if (src.kind === 'shield') R = r3mul(r3x(0.16), r3mul(r3y(0.5), r3y(-Math.PI / 2)));
+  else if (src.kind === 'upright') R = r3mul(r3x(0.14), r3y(0.5));
+  else if (src.kind === 'potion') R = r3mul(r3x(0.32), r3y(0.6));
+  else if (src.kind === 'ammo') R = r3mul(r3x(0.7), r3y(0.85));
+  else R = r3mul(r3x(0.62), r3y(0.6));
+  // project, fit the square with a margin, map depth into clip space
+  const P2 = new Float32Array(n * 3);
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9;
+  for (let i = 0; i < n; i++) {
+    const p = r3v(R, [d[i * 14] - cx, d[i * 14 + 1] - cy, d[i * 14 + 2] - cz]);
+    P2[i * 3] = p[0]; P2[i * 3 + 1] = p[1]; P2[i * 3 + 2] = p[2];
+    x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); z0 = Math.min(z0, p[2]); z1 = Math.max(z1, p[2]);
+  }
+  const s = 1.68 / Math.max(x1 - x0, y1 - y0, 1e-3), mx = (x0 + x1) / 2, my = (y0 + y1) / 2, mz = (z0 + z1) / 2, zr = Math.max(1e-3, (z1 - z0) / 2) * 1.1;
+  const out = d.slice();
+  for (let i = 0; i < n; i++) {
+    const o = i * 14;
+    out[o] = (P2[i * 3] - mx) * s; out[o + 1] = (P2[i * 3 + 1] - my) * s; out[o + 2] = -(P2[i * 3 + 2] - mz) / zr * 0.9;
+    const nn = r3v(R, [d[o + 3], d[o + 4], d[o + 5]]); out[o + 3] = nn[0]; out[o + 4] = nn[1]; out[o + 5] = nn[2];
+    out[o + 9] = 0;
+  }
+  return out;
+}
+function renderThumbGL(id) {
+  const T = thumbGL(); if (!T) return null;
+  const src = iconSource(id); if (!src || !src.mb.d.length) return null;
+  const mesh = gpuMesh({ d: iconOrient(src) });
+  gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb); gl.viewport(0, 0, THUMB_RS, THUMB_RS);
+  gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+  gl.clearColor(0, 0, 0, 0); gl.clearDepth(1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(T.pr.p); gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
+  gl.readPixels(0, 0, THUMB_RS, THUMB_RS, gl.RGBA, gl.UNSIGNED_BYTE, T.px);
+  gl.bindVertexArray(null); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.deleteBuffer(mesh.vbo); gl.deleteVertexArray(mesh.vao);
+  const big = mkCanvas(THUMB_RS, THUMB_RS), bx = big.getContext('2d'), im = bx.createImageData(THUMB_RS, THUMB_RS);
+  for (let y = 0; y < THUMB_RS; y++) im.data.set(T.px.subarray((THUMB_RS - 1 - y) * THUMB_RS * 4, (THUMB_RS - y) * THUMB_RS * 4), y * THUMB_RS * 4);
+  bx.putImageData(im, 0, 0);
+  return big;
+}
+// fallback: the old pixel icon, or the item's glyph on a tinted disc
+function renderThumbGlyph(id) {
+  const it = ITEMS[id], c = mkCanvas(THUMB_RS, THUMB_RS), x = c.getContext('2d');
+  const nm = typeof itemIcon === 'function' ? itemIcon(it) : 'fist', rows = typeof ICONS !== 'undefined' ? ICONS[nm] : null;
+  if (rows && it && it.type !== 'mat' && it.type !== 'potion' && it.type !== 'ammo') {
+    const s = Math.floor(THUMB_RS * 0.8 / Math.max(rows.length, rows[0].length)), w = rows[0].length * s, h = rows.length * s;
+    for (let r = 0; r < rows.length; r++) for (let k = 0; k < rows[r].length; k++) { const ch = rows[r][k]; if (ch === '.') continue; x.fillStyle = (it.type === 'armor' && ch === 'A' ? it.color : ICOL[ch]) || '#ccc'; x.fillRect((THUMB_RS - w) / 2 + k * s, (THUMB_RS - h) / 2 + r * s, s, s); }
+  } else {
+    x.fillStyle = it ? (it.col || (it.type === 'potion' ? '#e8304a' : '#c8b898')).replace('!', '') : '#888';
+    x.beginPath(); x.arc(THUMB_RS / 2, THUMB_RS / 2, THUMB_RS * 0.34, 0, TAU); x.fill();
+    x.fillStyle = '#1a120a'; x.font = 'bold ' + Math.round(THUMB_RS * 0.42) + 'px ui-monospace,monospace'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(it ? it.glyph : '?', THUMB_RS / 2, THUMB_RS / 2 + 4);
+  }
+  return c;
+}
+function thumbFinish(big) {
+  const S2 = THUMB_PX, c = mkCanvas(S2, S2), x = c.getContext('2d');
+  if (!x || typeof x.drawImage !== 'function') return c;
+  const sil = mkCanvas(S2, S2), sx = sil.getContext('2d');
+  sx.imageSmoothingEnabled = true; sx.drawImage(big, 0, 0, S2, S2);
+  sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(14,9,5,0.92)'; sx.fillRect(0, 0, S2, S2);
+  for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2], [1.4, 1.4], [-1.4, 1.4], [1.4, -1.4], [-1.4, -1.4]]) x.drawImage(sil, dx, dy);
+  x.imageSmoothingEnabled = true; x.drawImage(big, 0, 0, S2, S2);
+  return c;
+}
+// the thumbnail canvas for any item id (variants share their base item's picture)
+function thumbCanvas(id) {
+  const b = baseId(id); let c = THUMBS.get(b); if (c) return c;
+  let big = null;
+  try { big = renderThumbGL(b); } catch (e) { big = null; THUMB_FAIL = true; }
+  if (!big) big = renderThumbGlyph(b);
+  c = thumbFinish(big); c.gl = !!(THUMB_GL && !THUMB_FAIL); THUMBS.set(b, c); thumbN++;
+  return c;
+}
+function thumbURL(id) {
+  const b = baseId(id); let u = THUMB_URL.get(b); if (u !== undefined) return u;
+  const c = thumbCanvas(b); u = ''; try { u = c.toDataURL ? c.toDataURL('image/png') : ''; } catch (e) { u = ''; }
+  THUMB_URL.set(b, u); return u;
+}
+function thumbsInit() { for (const k in ITEM_DEFS) thumbCanvas(k); }
+
+// =====================================================================
 //  SCENE — terrain chunks, instanced scenery, chibi actors, combat FX, frame
 // =====================================================================
 let frameNo = 0, lastRenderMs = 0;
@@ -2827,7 +3235,7 @@ function staticKey(o) {
   switch (o.type) {
     case 'rock': return o.snow ? 'rocksnow' : o.sand ? 'rocksand' : 'rock';
     case 'bigrock': return o.snow ? 'bigrocksnow' : 'bigrock';
-    case 'chest': case 'col': return null;
+    case 'chest': case 'col': case 'ore': return null;
     case 'bld': return o.mesh;
     default: return STATIC_BUILD[o.type] ? o.type : null;
   }
@@ -2888,10 +3296,11 @@ function buildChunkGPU(c) {
     if (any) water = gpuMesh(mb);
   }
   // scenery instances grouped by mesh
-  const groups = {}, chests = [], fires = [], houses = [];
+  const groups = {}, chests = [], fires = [], houses = [], ores = [];
   c.hg = hg;
   for (const o of c.statics) {
     if (o.type === 'chest') { chests.push(o); continue; }
+    if (o.type === 'ore') { ores.push(o); continue; }
     if (o.type === 'fire') fires.push(o); if (o.chim) houses.push(o);
     const k = staticKey(o); if (!k) continue;
     const h = hash2(Math.round(o.x * 7), Math.round(o.y * 7)), sr = SSCALE[k] || [1, 1];
@@ -2935,7 +3344,7 @@ function buildChunkGPU(c) {
     const fm = farMesh(k), deco = k.startsWith('pebble') || k === 'tuft' || k.startsWith('flower') || k === 'reed' || !!DECOR_BUILD[k];
     inst.push({ vao: instVAO(mesh, ibo), far: fm ? instVAO(fm, ibo) : null, fmesh: fm, ibo, n: data.length / 8, mesh, small: deco ? 34 : k === 'bush' || k.startsWith('rock') ? 80 : 999, ow: OWK[k] || 0 });
   }
-  const g = { vao, vbo, water, inst, chests, fires, houses, cx: c.cx, cy: c.cy, hmid: (hmin + hmax) / 2, hr: (hmax - hmin) / 2, c };
+  const g = { vao, vbo, water, inst, chests, fires, houses, ores, cx: c.cx, cy: c.cy, hmid: (hmin + hmax) / 2, hr: (hmax - hmin) / 2, c };
   GCH.set(c.key, g);
   return g;
 }
@@ -3898,6 +4307,13 @@ function drawStaticsAndTerrain(U) {
     setId(0.9);
     m4trs(TMPM, o.x, groundH(o.x, o.y), o.y, hash2(o.x | 0, o.y | 0) * TAU, 0, 0, 1); const mesh = staticMesh(S.looted.has(o.id) ? 'chestopen' : 'chest');
     gl.uniformMatrix4fv(U.uModel, false, TMPM); gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
+  }
+  for (const g of vis) for (const o of g.ores || []) {
+    setId(0.9);
+    const dep = oreDepleted(o), k = dep ? 'ore_dep' : o.silver ? 'ore_silver' : 'ore_iron';
+    m4trs(TMPM, o.x, groundH(o.x, o.y) - 0.05, o.y, hash2(o.x * 3 | 0, o.y * 3 | 0) * TAU, 0, 0, 1); const mesh = namedMesh(k + (o.snow ? 's' : ''), () => mkOreM(k, o.snow));
+    gl.uniformMatrix4fv(U.uModel, false, TMPM); gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
+    shadowAt(o.x, o.y, 1.1);
   }
   for (const g of vis) {
     if (Math.abs(g.cx * CS + 16 - CAM.x) > 40 || Math.abs(g.cy * CS + 16 - CAM.y) > 40) continue;
@@ -5006,7 +5422,7 @@ function newState() {
     interact: null, saveT: 40, flakes: [], horse: { x: 18, y: 3, a: Math.PI * 0.75, state: 'idle', fleeT: 0 },
     slowT: 0, hitstop: 0, style: 0, styleT: 0, tok: new Set(), tokR: new Set(), fxLight: 0, cueT: 0, mouseAim: false,
     cut: { s: null, k: 0 }, curCastle: null, curStruct: null, cst: new Map(),
-    manors: {}, stats: { stolen: 0, recovered: 0, lost: 0 }, giggleT: 0, lastStrike: null, Q: null
+    manors: {}, stats: { stolen: 0, recovered: 0, lost: 0 }, giggleT: 0, lastStrike: null, Q: null, ore: {}, chop: new Map(), hotLbl: null, orders: {}
   };
   if (typeof questInit === 'function') questInit();
   P = {
@@ -5014,7 +5430,8 @@ function newState() {
     hands: [null, null], armor: 'tunic', inv: [], gold: 10, level: 1, xp: 0, hurtT: 0, invT: 0, step: 0, dead: false, slowT: 0,
     st: 100, stMax: 100, stDelay: 0, act: null, iframes: 0, parryT: 0, parryCd: 0, blockT: 0, blocking: false, counterT: 0, riposteT: 0,
     comboStep: 0, comboT: 0, lock: null, buf: { atk: 0, dash: 0, off: 0 }, atkHeld: false, atkHeldT: 0, offHeld: false, prevAtk: false, prevOff: false,
-    gunCd: [0, 0], burstT: 0, ghostT: 0, offStep: 0, inDir: null, drawing: false, draw: 0, chain: 0, chainT: 0
+    gunCd: [0, 0], burstT: 0, ghostT: 0, offStep: 0, inDir: null, drawing: false, draw: 0, chain: 0, chainT: 0,
+    mats: {}, hot: [null, null, null, null, null, null, null, null], hotSel: 0, hotAtkPrev: false
   };
 }
 
@@ -5025,8 +5442,8 @@ const xpNext = () => 40 + P.level * 35;
 function twoHanded() { const id = P.hands[1]; return !!(id && ITEMS[id].hands === 2); }
 function hasTorch() { return P.hands[0] === 'torch' || P.hands[1] === 'torch'; }
 function shieldItem() { for (const id of P.hands) if (id && ITEMS[id].type === 'shield') return ITEMS[id]; return null; }
-function msg(txt, col, dur) { S.msgs.unshift({ txt, col: col || '#e8dcc0', t: dur || 4.5 }); if (S.msgs.length > 3) S.msgs.length = 3; }
-function banner(title, sub, t, col) { S.banner = { title, sub: sub || '', t: t || 4, col: col || '#e8c050' }; }
+function msg(txt, col, dur, icon) { S.msgs.unshift({ txt, col: col || '#e8dcc0', t: dur || 4.5, icon: icon || null }); if (S.msgs.length > 3) S.msgs.length = 3; }
+function banner(title, sub, t, col, icons) { S.banner = { title, sub: sub || '', t: t || 4, col: col || '#e8c050', icons: icons || null }; }
 function addText(x, y, elev, s, col, big) { S.texts.push({ x, y, elev, s, col, t: 1.0, big: !!big }); if (S.texts.length > 40) S.texts.shift(); }
 function part(x, y, elev, vx, vy, vz, life, ch, col, g, em, sz) {
   if (S.parts.length > 420) S.parts.shift();
@@ -5048,15 +5465,21 @@ function styleHit() { const i = STYLE_RANKS.indexOf(styleRank()); S.style = Math
 
 // ---------- inventory ----------
 function invAdd(id, n) {
-  n = n || 1; const it = ITEMS[id];
+  n = n || 1; const it = ITEMS[id]; if (!it) return false;
+  if (it.type === 'mat') { P.mats[id] = (P.mats[id] || 0) + n; return true; }
   if (it.stack) { const s = P.inv.find(q => q.id === id); if (s) { s.n += n; return true; } }
   if (P.inv.length >= INV_MAX) return false;
   P.inv.push({ id, n: it.stack ? n : 1 }); return true;
 }
-function invCount(id) { const s = P.inv.find(q => q.id === id); return s ? s.n : 0; }
+function invCount(id) { if (ITEMS[id] && ITEMS[id].type === 'mat') return P.mats[id] || 0; let n = 0; for (const q of P.inv) if (q.id === id) n += q.n || 1; return n; }
 function invTake(id, n) {
-  n = n || 1; const i = P.inv.findIndex(q => q.id === id); if (i < 0) return false;
-  const s = P.inv[i]; if (ITEMS[id].stack) { if (s.n < n) return false; s.n -= n; if (s.n <= 0) P.inv.splice(i, 1); } else P.inv.splice(i, 1);
+  n = n || 1; const it = ITEMS[id]; if (!it) return false;
+  if (it.type === 'mat') { if ((P.mats[id] || 0) < n) return false; P.mats[id] -= n; if (P.mats[id] <= 0) delete P.mats[id]; return true; }
+  const i = P.inv.findIndex(q => q.id === id); if (i < 0) return false;
+  if (it.stack) {
+    if (invCount(id) < n) return false;
+    for (let k = P.inv.length - 1; k >= 0 && n > 0; k--) { const s = P.inv[k]; if (s.id !== id) continue; const t = Math.min(n, s.n); s.n -= t; n -= t; if (s.n <= 0) P.inv.splice(k, 1); }
+  } else P.inv.splice(i, 1);
   return true;
 }
 function giveOrDrop(id, n) { if (!invAdd(id, n)) { dropItem(P.x, P.y, id, n || 1, true); msg('Bag full — ' + ITEMS[id].name + ' dropped.', '#ff9a7a'); } }
@@ -5068,8 +5491,8 @@ function unequipHand(side) {
 function equipFromInv(idx, side) {
   const s = P.inv[idx]; if (!s) return; const it = ITEMS[s.id];
   if (it.type === 'armor') { P.inv.splice(idx, 1); const old = P.armor; P.armor = s.id; if (old) giveOrDrop(old); sfx('equip'); return; }
-  if (it.type === 'potion') { drinkPotion(); return; }
-  if (it.type === 'ammo') return;
+  if (it.type === 'potion') { useConsumable(s.id); return; }
+  if (it.type === 'ammo' || it.type === 'mat') return;
   P.inv.splice(idx, 1);
   if (it.hands === 2) { const a = P.hands[0], b = P.hands[1]; const was2 = twoHanded(); P.hands = [s.id, s.id]; if (was2) giveOrDrop(b); else { if (a) giveOrDrop(a); if (b) giveOrDrop(b); } }
   else { if (twoHanded()) { const b = P.hands[1]; P.hands = [null, null]; giveOrDrop(b); } else if (P.hands[side]) giveOrDrop(P.hands[side]); P.hands[side] = s.id; }
@@ -5085,12 +5508,15 @@ function autoEquip(id) {
   if (it.type === 'armor' && P.armor === 'tunic') { equipFromInv(idx, 0); return true; }
   return false;
 }
-function drinkPotion() {
-  if (invCount('potion') <= 0) { msg('No potions.', '#ff9a7a'); return; }
-  if (P.hp >= P.maxHp) { msg('You are already at full health.'); return; }
-  invTake('potion'); P.hp = Math.min(P.maxHp, P.hp + ITEMS.potion.heal);
-  sfx('potion'); addText(P.x, P.y, 2.2, '+' + ITEMS.potion.heal, '#6aff7a');
+function drinkPotion() { return useConsumable(invCount('potion') > 0 || invCount('bandage') <= 0 ? 'potion' : 'bandage'); }
+function useConsumable(id) {
+  const it = ITEMS[id];
+  if (!it || invCount(id) <= 0) { msg('No ' + (it ? it.name.toLowerCase() + 's' : 'potions') + '.', '#ff9a7a'); return false; }
+  if (P.hp >= P.maxHp) { msg('You are already at full health.'); return false; }
+  invTake(id); P.hp = Math.min(P.maxHp, P.hp + it.heal);
+  sfx('potion'); addText(P.x, P.y, 2.2, '+' + it.heal, '#6aff7a');
   for (let i = 0; i < 8; i++) part(P.x + rr(-0.5, 0.5), P.y + rr(-0.5, 0.5), rr(0.5, 2), 0, 0, rr(1, 3), 0.7, '+', '#6aff7a', 0, true);
+  return true;
 }
 function dropItem(x, y, id, n, lock) { S.drops.push({ kind: 'item', id, n: n || 1, x: x + rr(-0.8, 0.8), y: y + rr(-0.8, 0.8), t: 90, warn: 0, lock: !!lock }); }
 function dropGold(x, y, val, tag) {
@@ -5199,6 +5625,7 @@ function pickTarget(e) {
 const WHISK = [0.55, 1.05, 1.6, 2.2];
 function moveToward(e, tx, ty, spd, dt) {
   if (e.buffT > 0) spd *= 1.3;
+  if (e.chillT > 0) spd *= 0.6;
   if (e.k && e.k.phase) { const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1; e.x += dx / d * spd * dt; e.y += dy / d * spd * dt; e.a += clamp(angDiff(e.a, Math.atan2(dy, dx)), -5 * dt, 5 * dt); e.moving = true; return; }
   e.navT = (e.navT || 0) - dt;
   if (e.navT <= 0) { e.navT = 0.25; e.navWP = navPoint(e, tx, ty); }
@@ -5576,7 +6003,7 @@ function updateAlly(e, t, dt) {
 function updateEnt(e, dt) {
   const k = e.k, px0 = e.x, py0 = e.y;
   e.cd -= dt; e.hurtT -= dt; e.invT -= dt; e.tpCd -= dt; e.throwCd -= dt; e.trampleCd -= dt; e.tT -= dt; e.moving = false; e.poiseT -= dt;
-  if (e.buffT > 0) e.buffT -= dt; if (e.chantCd > 0) e.chantCd -= dt; if (e.spookCd > 0) e.spookCd -= dt; if (e.chargeCd > 0) e.chargeCd -= dt;
+  if (e.buffT > 0) e.buffT -= dt; if (e.chillT > 0) e.chillT -= dt; if (e.chantCd > 0) e.chantCd -= dt; if (e.spookCd > 0) e.spookCd -= dt; if (e.chargeCd > 0) e.chargeCd -= dt;
   if (e.poiseT <= 0 && e.poise < e.poiseMax) e.poise = Math.min(e.poiseMax, e.poise + e.poiseMax * 0.3 * dt);
   if (e.kx || e.ky) { e.x += e.kx * dt; e.y += e.ky * dt; const f = Math.pow(0.004, dt); e.kx *= f; e.ky *= f; if (Math.abs(e.kx) + Math.abs(e.ky) < 0.08) { e.kx = 0; e.ky = 0; } }
   if (e.burnT > 0) {
@@ -5729,6 +6156,8 @@ function attackHits(a) {
     const stg = e.state === 'stagger' || e.downT > 0;
     let dmg = base * mv.dmg * dmgMult() * (a.crit || 1) * (a.sharp ? 1.15 : 1) * (stg ? 1.3 : 1) * rr(0.95, 1.05);
     if (mv.burn || (it && it.fire)) { dmg *= e.k.unholy ? 2.3 : 1; e.burnT = 3; e.burnDps = e.k.unholy ? 7 : 3; }
+    if (it && it.silver && e.k.unholy) { dmg *= 1.5; burst(e.x, e.y, 1.3, '#f4f8ff', 6, ['*', '+'], 3, true); }
+    if (it && it.frost) { e.chillT = 2.5; burst(e.x, e.y, 1.1, '#a8e8ff', 4, ['*', '.'], 2, true); }
     const behind = !e.k.hover && Math.abs(angDiff(e.a, Math.atan2(P.y - e.y, P.x - e.x))) > 1.95;
     const bs = behind ? (P.rollStrikeT > 0 ? 2.2 : 1.6) : 1;
     dmg *= bs;
@@ -5741,6 +6170,7 @@ function attackHits(a) {
     styleAdd(mv.fin ? 15 : 6 + (a.sharp ? 4 : 0) + (a.crit ? 25 : 0));
     if (a.wk === 'fists' && mv.fin && !e.k.boss && !e.k.mounted && !e.k.hover && !e.dead) { e.downT = 1.6; addText(e.x, e.y, 2.6, 'TAKEDOWN!', '#ffd84a', true); styleAdd(15); }
   }
+  if (!any && !a.world && !P.mounted && typeof hitWorld === 'function') hitWorld(a, range, arc);
   if (any) {
     S.hitstop = Math.max(S.hitstop, mv.heavy ? 0.1 : mv.fin ? 0.08 : 0.05);
     S.shake = Math.max(S.shake, mv.heavy ? 0.35 : mv.fin ? 0.22 : 0.12);
@@ -6074,14 +6504,14 @@ function findInteract() {
   for (const e of S.ents) {
     if (e.team !== 2 || e.dead || !e.role) continue;
     const d = dist(e, P); if (d > bd + 0.6 || (e.struct && e.struct !== here) || losBlocked(P.x, P.y, e.x, e.y, 1.2) && d > 2.4) continue;
-    bd = d; best = e.role === 'inn' || e.role === 'quest' ? { type: 'talk', ref: e, label: 'TALK' } : { type: 'trade', ref: e, label: 'TRADE' };
+    bd = d; best = e.role === 'inn' || e.role === 'quest' ? { type: 'talk', ref: e, label: 'TALK' } : e.role === 'smith' ? { type: 'forge', ref: e, label: 'SMITH' } : { type: 'trade', ref: e, label: 'TRADE' };
   }
   if (best) return best;
   forStatics(P.x, P.y, 3, o => {
     const d = Math.hypot(o.x - P.x, o.y - P.y) - o.r;
     if (d > 2.4) return false;
     if (o.type === 'chest' && !S.looted.has(o.id) && structAt(o.x, o.y) === here) best = { type: 'loot', ref: o, label: 'LOOT' };
-    else if (o.type === 'fire' && !best) best = { type: 'rest', ref: o, label: 'REST' };
+    else if (o.type === 'fire' && !best) best = { type: 'camp', ref: o, label: 'CAMP' };
     return false;
   });
   if (best) return best;
@@ -6094,6 +6524,8 @@ function doInteract() {
   else if (it.type === 'talk') { if (typeof openTalk === 'function') openTalk(it.ref); else if (it.ref.role === 'inn') innRest(it.ref); }
   else if (it.type === 'loot') lootChest(it.ref);
   else if (it.type === 'rest') rest();
+  else if (it.type === 'forge') { if (typeof openForge === 'function') openForge(it.ref, 'smith'); else openShop(it.ref); }
+  else if (it.type === 'camp') { if (typeof openForge === 'function') openForge(it.ref, 'camp'); else rest(); }
   else if (it.type === 'inn') innRest(it.ref);
   else if (it.type === 'mount') mount();
 }
@@ -6104,7 +6536,10 @@ function lootChest(o) {
   for (let i = 0; i < n; i++) { const id = rollLoot('$any', o.tier + 0.4); got.push(ITEMS[id].name); giveOrDrop(id); }
   if (Math.random() < 0.6) { giveOrDrop('potion', 1); got.push('Healing Draught'); }
   if (Math.random() < 0.5) { const a = ri(6, 14); giveOrDrop('arrows', a); got.push(a + ' arrows'); }
-  banner('TREASURE!', '+' + g + ' gold · ' + got.join(', '), 4.5);
+  const icons = [];
+  for (let i = 0, nm = ri(1, 3); i < nm; i++) { const m = pick(o.tier >= 2 ? ['steel_ingot', 'silver', 'leather_hide', 'iron_ore', 'ghost_essence'] : ['iron_ore', 'wood', 'cloth', 'leather_hide', 'steel_ingot']), c = ri(1, 3); invAdd(m, c); got.push(c + ' ' + ITEMS[m].name); icons.push(m); }
+  for (const id of P.inv.map(q => q.id)) if (typeof hotAuto === 'function') hotAuto(id);
+  banner('TREASURE!', '+' + g + ' gold · ' + got.join(', '), 4.5, null, icons);
   burst(o.x, o.y, 1, '#ffd84a', 14, ['$', '*', '+'], 3, true);
 }
 function rest(title) {
@@ -6230,8 +6665,8 @@ function updateDrops(dt) {
       else {
         if (invAdd(d.id, d.n)) {
           d.t = 0; const it = ITEMS[d.id]; sfx('pickup');
-          const eq = autoEquip(d.id);
-          msg('Picked up ' + (d.n > 1 ? d.n + ' ' : '') + it.name + (eq ? ' (equipped)' : ''), '#ffe6a0');
+          const eq = autoEquip(d.id); if (typeof hotAuto === 'function') hotAuto(d.id);
+          msg('Picked up ' + (d.n > 1 ? d.n + ' ' : '') + it.name + (eq ? ' (equipped)' : ''), it.type === 'mat' ? '#d8e8b0' : '#ffe6a0', 4.5, d.id);
         } else if (d.warn <= 0) { msg('Your bag is full!', '#ff9a7a'); d.warn = 4; }
       }
     }
@@ -6398,7 +6833,8 @@ function saveGame() {
   try {
     const d = { v: 2, x: P.x, y: P.y, a: P.a, hp: P.hp, maxHp: P.maxHp, level: P.level, xp: P.xp, gold: P.gold, inv: P.inv, hands: P.hands, armor: P.armor, mounted: P.mounted,
       horse: { x: S.horse.x, y: S.horse.y }, day: S.day, time: S.time, looted: [...S.looted], lastVillage: S.lastVillage, kills: S.kills,
-      manors: S.manors, stats: S.stats, q: typeof questSave === 'function' ? questSave() : null };
+      manors: S.manors, stats: S.stats, q: typeof questSave === 'function' ? questSave() : null,
+      mats: P.mats, hot: P.hot, hotSel: P.hotSel, ore: S.ore, orders: S.orders };
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
   } catch (e) { }
 }
@@ -6411,6 +6847,11 @@ function applySave(d) {
   S.day = d.day || 1; S.time = d.time === undefined ? 0.3 : d.time; S.looted = new Set(d.looted || []); S.lastVillage = d.lastVillage || S.lastVillage; S.kills = d.kills || 0;
   S.manors = d.manors && typeof d.manors === 'object' ? d.manors : {}; S.stats = Object.assign({ stolen: 0, recovered: 0, lost: 0 }, d.stats || {});
   if (typeof questLoad === 'function') questLoad(d.q || null, !d.q);
+  // crafting pouch and hotbar (saves from before the forge have neither: build a hotbar from the gear)
+  P.mats = {}; if (d.mats && typeof d.mats === 'object') for (const k in d.mats) if (ITEMS[k] && ITEMS[k].type === 'mat' && d.mats[k] > 0) P.mats[k] = Math.floor(d.mats[k]);
+  S.ore = d.ore && typeof d.ore === 'object' ? d.ore : {}; S.orders = d.orders && typeof d.orders === 'object' ? d.orders : {};
+  if (Array.isArray(d.hot)) { P.hot = []; for (let i = 0; i < HOT_N; i++) { const h = d.hot[i]; P.hot.push(typeof h === 'string' && ITEMS[h] ? h : null); } P.hotSel = clamp(d.hotSel | 0, 0, HOT_N - 1); }
+  else if (typeof hotInit === 'function') hotInit();
 }
 
 // ---------- main update ----------
@@ -6422,6 +6863,7 @@ function updateCut(dt) {
 }
 function update(dt, inp) {
   const ux0 = P.x, uy0 = P.y;
+  if (typeof hotFilterInput === 'function') inp = hotFilterInput(inp);
   // real-time effects first
   for (const f of S.fx) f.t += dt; S.fx = S.fx.filter(f => f.t < f.dur);
   for (const g of S.ghosts) g.t -= dt; S.ghosts = S.ghosts.filter(g => g.t > 0);
@@ -6584,12 +7026,12 @@ function startMain(i, quiet) {
 }
 
 // ---------- side quests: generated per village and giver ----------
-const ROLE_TYPES = { innkeeper: ['deliver', 'recover', 'bounty'], priest: ['manor', 'rescue', 'bounty'], captain: ['elite', 'bounty', 'rescue'] };
+const ROLE_TYPES = { innkeeper: ['deliver', 'recover', 'bounty'], priest: ['manor', 'rescue', 'bounty'], captain: ['elite', 'bounty', 'rescue'], smith: ['order'] };
 const CAPTIVES = ["Tom the miller's boy", 'Old Bess', 'Wat the tinker', 'Agnes Cole', 'young Hal', 'Martha the alewife', 'Brother Anselm', 'little Rowan'];
 const RELICS = ['a silver chalice', "the mill's ledger", "grandmother's locket", "the chapel's bell-clapper", 'the tithe purse', 'a box of seed corn', "the reeve's seal"];
 const ELITE_NAMES = { bandit: ['Black Wat', 'Gallows Jack', 'Sour Ned', 'Red Rowan'], soldier: ['Sergeant Crowle', 'Corporal Vane', 'Ensign Blight'], dragoon: ['Cornet Ashe', 'the Grey Dragoon'], vampire: ['Lady Morwen', 'the Pale Abbot'], gremlin_brute: ['Grimtooth', 'Old Scratch', 'Gnawbone'], witch: ['Mother Hobb', 'Mad Meg'] };
 function giverKey(e) { return e.qnpc ? e.qnpc : (e.village ? e.village.id : '?') + ':' + e.kind; }
-function giverName(e) { if (e.qnpc === 'hale') return 'Captain Hale'; if (e.cname) return e.cname; const v = e.village; return (e.kind === 'innkeeper' ? 'the innkeeper' : e.kind === 'priest' ? 'the priest' : e.kind) + (v && v.name ? ' of ' + v.name : ''); }
+function giverName(e) { if (e.qnpc === 'hale') return 'Captain Hale'; if (e.cname) return e.cname; const v = e.village; return (e.kind === 'innkeeper' ? 'the innkeeper' : e.kind === 'priest' ? 'the priest' : e.kind === 'smith' ? 'the blacksmith' : e.kind) + (v && v.name ? ' of ' + v.name : ''); }
 const OFFERC = new Map();
 function sideOffers(e) {
   const types = ROLE_TYPES[e.kind]; if (!types || !e.village || !e.village.id) return [];
@@ -6651,6 +7093,15 @@ function makeSide(type, e, v, gk, gen, n, R) {
       q.rew.gold = Math.round(q.rew.gold * 0.8); q.rew.vid = t.id;
       break;
     }
+    case 'order': {
+      const opts = [{ iron_ore: 4 + ((R() * 3) | 0), wood: 2 }, { leather_hide: 3, cloth: 2 }, { scrap: 4 }, { wood: 6, iron_ore: 1 }, { steel_ingot: 2, wood: 2 }, { frost_shard: 1, iron_ore: 3 }, { silver: 1, steel_ingot: 2 }];
+      const need = opts[(R() * (tier > 0 ? opts.length : 4)) | 0], kinds = ['sword', 'shield', 'armor'], k = kinds[(R() * 3) | 0];
+      q.title = 'An order for the forge'; q.sum = gname[0].toUpperCase() + gname.slice(1) + ' needs ' + matsLine(need) + ' to fill an order.';
+      q.lines = ['The Protector\'s quartermasters took every scrap of stock I had. I\'ve a lord\'s order to fill and nothing to fill it with.', 'Bring me ' + matsLine(need) + ' and I\'ll forge you something fine for your trouble.'];
+      q.steps = [{ t: 'mats', npc: gk, vid: v.id, need, txt: 'Bring ' + matsLine(need) + ' to ' + gname }];
+      q.rew.items = [makeVid(TIER[k][Math.min(4, tier + 1)], 0, '', 1)]; q.rew.gold = Math.round(q.rew.gold * 0.7);
+      break;
+    }
     case 'elite': {
       const kinds = tier >= 2 ? ['dragoon', 'gremlin_brute', 'vampire'] : ['bandit', 'soldier', 'gremlin_brute'], k = kinds[(R() * kinds.length) | 0], names = ELITE_NAMES[k] || ['the Butcher'];
       const nm = names[(R() * names.length) | 0], s = site(), pl = placeName(seed);
@@ -6691,12 +7142,13 @@ function completeQuest(q) {
   const r = q.rew || {}, got = [];
   if (r.gold) { P.gold += r.gold; got.push('+' + r.gold + ' gold'); }
   if (r.xp) { gainXP(r.xp); got.push('+' + r.xp + ' XP'); }
-  for (const it of r.items || []) { const id = it[0] === '$' ? rollLoot(it, (q.tier || 0) + 0.8 + (q.main ? q.ch * 0.25 : 0)) : it; giveOrDrop(id); autoEquip(id); got.push(ITEMS[id].name); }
+  const icons = [];
+  for (const it of r.items || []) { const id = it[0] === '$' ? rollLoot(it, (q.tier || 0) + 0.8 + (q.main ? q.ch * 0.25 : 0)) : it; giveOrDrop(id); autoEquip(id); if (typeof hotAuto === 'function') hotAuto(id); got.push(ITEMS[id].name); icons.push(id); }
   if (r.rep && r.vid) { S.Q.rep[r.vid] = (S.Q.rep[r.vid] || 0) + r.rep; const v = villageByKey(r.vid); got.push('+' + r.rep + ' reputation' + (v ? ' in ' + v.name : '')); }
   S.Q.act = S.Q.act.filter(x => x !== q); S.Q.done.push(q.id);
   if (!q.main && q.giver) S.Q.gen[q.giver.key] = (S.Q.gen[q.giver.key] || 0) + 1;
   for (const e of S.ents) if (e.qid === q.id && e.team === 2) e.dead = true;
-  banner('QUEST COMPLETE: ' + q.title.toUpperCase(), got.join(' · '), 5.5, '#8ae07a'); sfx('win');
+  banner('QUEST COMPLETE: ' + q.title.toUpperCase(), got.join(' · '), 5.5, '#8ae07a', icons.length ? icons : null); sfx('win');
   if (S.Q.track === q.id) S.Q.track = null;
   if (q.main) {
     const next = q.ch + 1;
@@ -6792,6 +7244,7 @@ function npcBusiness(e) {
   for (const q of S.Q.act) {
     const st = qStep(q); if (!st) continue;
     if (st.t === 'return' && npcIs(e, st)) out.turnin.push(q);
+    else if (st.t === 'mats' && npcIs(e, st) && haveMats(st.need)) out.turnin.push(q);
     else if (st.t === 'talk' && npcIs(e, st)) out.story.push(q);
     else if (st.t === 'free' && e.kind === 'captive' && e.qid === q.id && !e.freed) out.free.push(q);
   }
@@ -6827,7 +7280,7 @@ function questTarget(q) {
   if (st.t === 'reach' || st.t === 'escort') return { x: st.x, y: st.y };
   if (st.t === 'manor') { const m = [...MANC.values()].find(m => m && m.id === st.mid); if (m) { const p = l2w(m, 0, MAN_HZ - 2); return { x: p[0], y: p[1] }; } return null; }
   if (st.t === 'free') { const c = S.ents.find(e => e.qid === q.id && e.kind === 'captive'); return c ? { x: c.x, y: c.y } : null; }
-  if (st.t === 'talk' || st.t === 'return') {
+  if (st.t === 'talk' || st.t === 'return' || st.t === 'mats') {
     const e = S.ents.find(x => !x.dead && x.team === 2 && npcIs(x, st)); if (e) return { x: e.x, y: e.y };
     if (st.npc === 'stranger') { const L = villageLayout(ASHV()), n = L.npcs.find(n => n.kind === 'stranger'); if (n) return { x: n.x, y: n.y }; }
     if (st.x !== undefined) return { x: st.x, y: st.y };
@@ -6835,7 +7288,8 @@ function questTarget(q) {
   }
   return null;
 }
-function stepProgress(st) { return st && st.n > 1 && (st.t === 'kill') ? ' (' + (st.have || 0) + '/' + st.n + ')' : ''; }
+function stepProgress(st) { if (st && st.t === 'mats') return ' (' + Object.entries(st.need).map(([k, n]) => Math.min(invCount(k), n) + '/' + n).join(', ') + ')'; return st && st.n > 1 && (st.t === 'kill') ? ' (' + (st.have || 0) + '/' + st.n + ')' : ''; }
+function deliverOrder(q) { const st = qStep(q); if (!st || st.t !== 'mats' || !haveMats(st.need)) return false; takeMats(st.need); msg('You hand over ' + matsLine(st.need) + '.', '#e8dcc0'); advance(q); return true; }
 // ---------- save / load ----------
 function questSave() { return JSON.parse(JSON.stringify(S.Q)); }
 function questLoad(q, legacy) {
@@ -6845,6 +7299,730 @@ function questLoad(q, legacy) {
     for (const x of S.Q.act) for (const st of x.steps) st.spawned = false;
   } else startMain(0, true);
   if (!S.Q.act.some(q => q.main) && S.Q.main < MAIN_TITLES.length) startMain(S.Q.main, true);
+}
+
+// =====================================================================
+//  HOTBAR, FORGING & CRAFTING — the Minecraft-style hotbar (8 shortcuts to your gear), materials,
+//  blacksmith recipes, +1..+5 upgrades, tempering, salvage, campfire recipes, the hammer minigame,
+//  mining ore outcrops and chopping wood
+// =====================================================================
+const HOT_N = 8;
+const HOT_TYPES = { sword: 1, sword2: 1, bow: 1, shield: 1, torch: 1, gun: 1, potion: 1, armor: 0, ammo: 0, mat: 0 };
+
+// ---------- hotbar ----------
+function hotOwned(id) { return !!id && (P.hands[0] === id || P.hands[1] === id || P.armor === id || invCount(id) > 0); }
+function hotClean() { for (let i = 0; i < HOT_N; i++) if (P.hot[i] && !hotOwned(P.hot[i])) P.hot[i] = null; }
+// a newly gained item takes the first free slot (weapons, shields, torches, consumables)
+function hotAuto(id) {
+  const it = ITEMS[id]; if (!it || !HOT_TYPES[it.type] || !hotOwned(id) || P.hot.includes(id)) return false;
+  const i = P.hot.indexOf(null); if (i < 0) return false;
+  P.hot[i] = id; return true;
+}
+// saves from before the hotbar (and new games): fill it from the hands, then the bag
+function hotInit() {
+  P.hot = new Array(HOT_N).fill(null); P.hotSel = 0;
+  const main = mainItem();
+  if (main) { P.hot[0] = P.hands[mainHand()]; }
+  for (const h of P.hands) if (h) hotAuto(h);
+  for (const q of P.inv) hotAuto(q.id);
+  P.hotSel = main ? 0 : Math.max(0, P.hot.indexOf(null));
+}
+function hotLabel(txt, col) { S.hotLbl = { txt, col: col || '#f0e2c0', t: 1.8 }; }
+function hotConsumable() { const id = P.hot[P.hotSel]; return id && ITEMS[id] && ITEMS[id].type === 'potion' && invCount(id) > 0 ? id : null; }
+function stowHand(side) { const id = P.hands[side]; if (!id) return; if (ITEMS[id].hands === 2) { P.hands = [null, null]; giveOrDrop(id); } else { P.hands[side] = null; giveOrDrop(id); } }
+// put an item from the bag into the hands, following the two-hand rules
+function hotEquip(id) {
+  const it = ITEMS[id];
+  if (P.hands[0] === id || P.hands[1] === id) return true;
+  const idx = P.inv.findIndex(q => q.id === id); if (idx < 0) return false;
+  const main = P.hands[1] ? ITEMS[P.hands[1]] : null, oneHandMain = main && main.hands !== 2 && (main.type === 'sword' || main.type === 'gun' || main.type === 'torch');
+  if (it.hands === 2) equipFromInv(idx, 1);
+  else if (it.type === 'shield') { if (twoHanded()) stowHand(1); equipFromInv(P.inv.findIndex(q => q.id === id), 0); }
+  else if (it.type === 'torch') {
+    if (oneHandMain && main.type !== 'torch') equipFromInv(idx, 0);
+    else { if (twoHanded()) stowHand(1); equipFromInv(P.inv.findIndex(q => q.id === id), 1); }
+  } else equipFromInv(idx, 1);
+  return true;
+}
+// selecting a slot: weapons go to the main hand, shields / torches to the off hand beside a one-hand weapon,
+// a consumable gets ready (ATTACK or the same key again drinks it), an empty slot means bare fists
+function hotSelect(j, how) {
+  j = ((j % HOT_N) + HOT_N) % HOT_N; hotClean();
+  const again = P.hotSel === j; P.hotSel = j;
+  const id = P.hot[j], it = id ? ITEMS[id] : null;
+  if (!it) {
+    let stowed = false;
+    for (const s of [1, 0]) { const h = P.hands[s]; if (h && ITEMS[h].type !== 'shield') { stowHand(s); stowed = true; } }
+    if (stowed) { P.act = null; P.comboStep = 0; sfx('equip'); }
+    hotLabel('Bare fists', '#e8d8b8'); return 'fists';
+  }
+  if (it.type === 'potion') {
+    hotLabel(it.name + ' ×' + invCount(id) + (IS_TOUCH_G() ? ' · tap ATTACK to drink' : ' · attack to drink'), '#ff9aa8');
+    if (again && (how === 'key' || how === 'tap')) useConsumable(id);
+    return 'potion';
+  }
+  if (it.type === 'armor') { if (P.armor !== id) { const i = P.inv.findIndex(q => q.id === id); if (i >= 0) equipFromInv(i, 0); } hotLabel(it.name, tierCol(it)); return 'armor'; }
+  if (!HOT_TYPES[it.type]) { hotLabel(it.name + (it.stack ? ' ×' + invCount(id) : ''), tierCol(it)); return 'none'; }
+  if (P.act && (P.act.k === 'atk' || P.act.k === 'dash')) { /* swapping mid-swing simply cancels it */ }
+  hotEquip(id);
+  hotLabel(it.name, tierCol(it));
+  return 'equip';
+}
+const IS_TOUCH_G = () => typeof IS_TOUCH !== 'undefined' && IS_TOUCH;
+function hotWheel(dir) { if (S.mode !== 'play') return; hotSelect(P.hotSel + (dir > 0 ? 1 : -1), 'wheel'); }
+// keep the highlight on the slot holding your weapon when gear changes elsewhere (pickups, the bag)
+function hotSync() {
+  hotClean();
+  const id = P.hot[P.hotSel], it = id ? ITEMS[id] : null;
+  if (it && (it.type === 'potion' || it.type === 'armor' || !HOT_TYPES[it.type])) return;
+  const held = mainHand() >= 0 ? P.hands[mainHand()] : null;
+  if (it && (P.hands[0] === id || P.hands[1] === id)) return;
+  if (!it && !held) return;
+  const k = held ? P.hot.indexOf(held) : -1;
+  if (k >= 0) P.hotSel = k;
+}
+function hotFilterInput(inp) {
+  const c = hotConsumable();
+  if (!c) { P.hotAtkPrev = !!inp.atk; return inp; }
+  if (inp.atk && !P.hotAtkPrev && S.mode === 'play') useConsumable(c);
+  P.hotAtkPrev = !!inp.atk;
+  return Object.assign({}, inp, { atk: false });
+}
+
+// ---------- recipes ----------
+// st: 'smith' = the blacksmith's forge, 'camp' = a campfire workbench; mg = the hammer minigame decides quality
+const RECIPES = [
+  { id: 'steel_ingot', st: 'smith', cat: 'Smelting', mats: { iron_ore: 2, wood: 1 }, gold: 0 },
+  { id: 'iron_sword', st: 'smith', cat: 'Weapons', mats: { iron_ore: 3, wood: 1, leather_hide: 1 }, gold: 8, mg: true },
+  { id: 'steel_sword', st: 'smith', cat: 'Weapons', mats: { steel_ingot: 3, leather_hide: 1 }, gold: 20, mg: true },
+  { id: 'longsword', st: 'smith', cat: 'Weapons', mats: { steel_ingot: 5, silver: 1, leather_hide: 2 }, gold: 60, mg: true },
+  { id: 'claymore', st: 'smith', cat: 'Weapons', mats: { steel_ingot: 6, wood: 2, leather_hide: 1 }, gold: 45, mg: true },
+  { id: 'crown_blade', st: 'smith', cat: 'Weapons', mats: { steel_ingot: 6, silver: 3, frost_shard: 2, ghost_essence: 2 }, gold: 150, mg: true },
+  { id: 'pistol', st: 'smith', cat: 'Weapons', mats: { steel_ingot: 3, wood: 2, scrap: 3 }, gold: 40, mg: true },
+  { id: 'buckler', st: 'smith', cat: 'Shields', mats: { wood: 3, iron_ore: 1 }, gold: 0, mg: true },
+  { id: 'kite_shield', st: 'smith', cat: 'Shields', mats: { wood: 3, steel_ingot: 2, leather_hide: 1 }, gold: 15, mg: true },
+  { id: 'tower_shield', st: 'smith', cat: 'Shields', mats: { wood: 4, steel_ingot: 4, leather_hide: 2 }, gold: 40, mg: true },
+  { id: 'gambeson', st: 'smith', cat: 'Armour', mats: { cloth: 4 }, gold: 0, mg: true },
+  { id: 'leather', st: 'smith', cat: 'Armour', mats: { leather_hide: 4, cloth: 1 }, gold: 10, mg: true },
+  { id: 'chainmail', st: 'smith', cat: 'Armour', mats: { steel_ingot: 4, iron_ore: 2, cloth: 2 }, gold: 30, mg: true },
+  { id: 'halfplate', st: 'smith', cat: 'Armour', mats: { steel_ingot: 6, leather_hide: 2 }, gold: 60, mg: true },
+  { id: 'fullplate', st: 'smith', cat: 'Armour', mats: { steel_ingot: 9, silver: 2, leather_hide: 3 }, gold: 120, mg: true },
+  { id: 'arrows', n: 10, st: 'camp', cat: 'Supplies', mats: { wood: 1, iron_ore: 1 }, gold: 0 },
+  { id: 'torch', st: 'camp', cat: 'Supplies', mats: { wood: 1, cloth: 1 }, gold: 0 },
+  { id: 'bandage', n: 2, st: 'camp', cat: 'Supplies', mats: { cloth: 2 }, gold: 0 },
+  { id: 'potion', st: 'camp', cat: 'Supplies', mats: { herb: 3 }, gold: 0 },
+  { id: 'short_bow', st: 'camp', cat: 'Bows', mats: { wood: 3, cloth: 1 }, gold: 0, mg: true },
+  { id: 'long_bow', st: 'camp', cat: 'Bows', mats: { wood: 5, cloth: 2, leather_hide: 1 }, gold: 0, mg: true },
+  { id: 'war_bow', st: 'camp', cat: 'Bows', mats: { wood: 6, leather_hide: 2, steel_ingot: 1 }, gold: 0, mg: true }
+];
+for (const r of RECIPES) r.key = r.st + ':' + r.id;
+const recipeFor = (id, st) => RECIPES.find(r => r.id === id && (!st || r.st === st));
+function haveMats(mats, gold) { for (const k in mats) if (invCount(k) < mats[k]) return false; return P.gold >= (gold || 0); }
+function takeMats(mats, gold) { for (const k in mats) invTake(k, mats[k]); P.gold -= gold || 0; }
+function canCraft(r) { return haveMats(r.mats, r.gold); }
+// crafting consumes the materials and gives the item (equipment gets a quality grade from the minigame)
+function craftItem(r, grade) {
+  if (!canCraft(r)) return null;
+  const it = ITEMS[r.id];
+  if (!it.stack && P.inv.length >= INV_MAX) { msg('Your bag is full.', '#ff9a7a'); return null; }
+  takeMats(r.mats, r.gold);
+  const id = UPG_TYPES[it.type] && grade ? makeVid(r.id, 0, '', grade) : r.id;
+  giveOrDrop(id, r.n || 1); hotAuto(id);
+  if (typeof questOnCraft === 'function') questOnCraft(id);
+  return id;
+}
+// ---------- upgrades, tempering, salvage ----------
+function upgradable(id) { const it = ITEMS[id]; return !!(it && UPG_TYPES[it.type] && (it.lvl || 0) < 5); }
+function upgradeCost(id) {
+  const it = ITEMS[id], L = (it.lvl || 0) + 1, t = it.tier || 0, m = {};
+  const add = (k, n) => { if (n > 0) m[k] = (m[k] || 0) + n; };
+  if (it.type === 'bow') { add('wood', L < 3 ? 2 : L < 5 ? 3 : 4); if (L >= 2) add('leather_hide', 1); if (L >= 3) add('steel_ingot', 1); }
+  else { const T = [null, { iron_ore: 2 }, { steel_ingot: 1, iron_ore: 1 }, { steel_ingot: 2 }, { steel_ingot: 3 }, { steel_ingot: 4 }][L]; for (const k in T) add(k, T[k]); }
+  if (it.type === 'armor' || it.type === 'shield') add('leather_hide', Math.ceil(L / 2));
+  if (L >= 4) add('silver', 1);
+  if (L >= 5) add('ghost_essence', 1);
+  return { mats: m, gold: 10 * L * (1 + t), lvl: L };
+}
+function canTemper(id) { const it = ITEMS[id]; return !!(it && (it.type === 'sword' || it.type === 'sword2')); }
+const TEMPER_COST = { s: { mats: { silver: 2 }, gold: 25 }, f: { mats: { frost_shard: 2 }, gold: 25 } };
+// where an item is: a hand, the armour slot or a bag slot
+function locate(id) {
+  if (P.hands[1] === id) return { w: 'hand', s: 1 };
+  if (P.hands[0] === id) return { w: 'hand', s: 0 };
+  if (P.armor === id) return { w: 'armor' };
+  const i = P.inv.findIndex(q => q.id === id); if (i >= 0) return { w: 'bag', i };
+  return null;
+}
+function replaceItem(id, nid) {
+  const L = locate(id); if (!L) return false;
+  if (L.w === 'hand') { if (ITEMS[id].hands === 2) P.hands = [nid, nid]; else P.hands[L.s] = nid; }
+  else if (L.w === 'armor') P.armor = nid;
+  else P.inv[L.i] = { id: nid, n: 1 };
+  for (let i = 0; i < HOT_N; i++) if (P.hot[i] === id) P.hot[i] = nid;
+  return true;
+}
+function upgradeItem(id, grade) {
+  if (!upgradable(id)) return null;
+  const c = upgradeCost(id); if (!haveMats(c.mats, c.gold)) return null;
+  const v = parseVid(id), nid = makeVid(v.base, c.lvl, v.temper, Math.max(v.q, grade || 0));
+  takeMats(c.mats, c.gold); replaceItem(id, nid); return nid;
+}
+function temperItem(id, t, grade) {
+  if (!canTemper(id) || !TEMPER_COST[t]) return null;
+  const c = TEMPER_COST[t]; if (!haveMats(c.mats, c.gold)) return null;
+  const v = parseVid(id); if (v.temper === t) return null;
+  const nid = makeVid(v.base, v.lvl, t, Math.max(v.q, grade || 0));
+  takeMats(c.mats, c.gold); replaceItem(id, nid); return nid;
+}
+// salvage: about half the materials back, plus something for upgrade levels and tempering
+const SALV_EXTRA = { rusty_sword: { iron_ore: 1 }, tunic: { cloth: 1 }, war_bow: { wood: 3, leather_hide: 1 }, short_bow: { wood: 2 }, long_bow: { wood: 3, cloth: 1 } };
+function salvageYield(id) {
+  const it = ITEMS[id]; if (!it || it.type === 'mat' || it.type === 'potion' || it.type === 'ammo') return null;
+  const b = it.base || id, r = RECIPES.find(x => x.id === b), out = {};
+  if (r) { let first = true; for (const k in r.mats) { const n = Math.floor(r.mats[k] / 2); if (n > 0 || first) out[k] = Math.max(1, n); first = false; } }
+  else if (SALV_EXTRA[b]) Object.assign(out, SALV_EXTRA[b]);
+  else if (b === 'torch') out.wood = 1;
+  else return null;
+  if (it.lvl) { const k = it.type === 'bow' ? 'wood' : 'steel_ingot'; out[k] = (out[k] || 0) + Math.ceil(it.lvl / 2); }
+  if (it.temper) { const k = it.temper === 's' ? 'silver' : 'frost_shard'; out[k] = (out[k] || 0) + 1; }
+  return out;
+}
+function salvageBag(i) {
+  const s = P.inv[i]; if (!s) return null;
+  const y = salvageYield(s.id); if (!y) return null;
+  if (ITEMS[s.id].stack) { if (!invTake(s.id, 1)) return null; } else P.inv.splice(i, 1);
+  for (const k in y) invAdd(k, y[k]);
+  hotClean();
+  return y;
+}
+
+// ---------- the hammer minigame: three strikes on a marker sweeping across the bar ----------
+const MG = { strikes: 3, spd: [1.05, 1.35, 1.65], perfect: 0.045, good: 0.12, fair: 0.22 };
+function mgNew(job) { return { job, i: 0, pos: 0, dir: 1, zone: rr(0.32, 0.68), res: [], fb: null, fbT: 0, done: false, t: 0 }; }
+function mgTick(m, dt) {
+  if (!m || m.done) return;
+  m.t += dt; m.fbT -= dt;
+  const v = MG.spd[Math.min(m.i, MG.spd.length - 1)];
+  m.pos += m.dir * v * dt;
+  if (m.pos > 1) { m.pos = 2 - m.pos; m.dir = -1; } else if (m.pos < 0) { m.pos = -m.pos; m.dir = 1; }
+}
+function mgScore(d) { return d <= MG.perfect ? 1 : d <= MG.good ? 0.6 : d <= MG.fair ? 0.3 : 0; }
+function mgStrike(m) {
+  if (!m || m.done) return null;
+  const d = Math.abs(m.pos - m.zone), sc = mgScore(d);
+  m.res.push(sc); m.i++;
+  m.fb = sc >= 1 ? 'PERFECT!' : sc >= 0.6 ? 'GOOD' : sc > 0 ? 'FAIR' : 'MISS'; m.fbT = 0.7;
+  sfx(sc >= 1 ? 'anvil_perfect' : sc > 0 ? 'anvil' : 'anvil_bad');
+  if (m.i >= MG.strikes) m.done = true; else { m.zone = rr(0.28, 0.72); }
+  return sc;
+}
+// quality from the strikes: masterwork for a near-perfect rhythm, fine for a good one
+function forgeGrade(res) { const q = res.length ? res.reduce((a, b) => a + b, 0) / res.length : 0; return { q, grade: q >= 0.85 ? 2 : q >= 0.5 ? 1 : 0 }; }
+
+// ---------- mining ore outcrops and chopping wood (any swing that hits no foe) ----------
+const CHOP = { oak: 3, pine: 3, snowpine: 3, birch: 3, deadtree: 2, palm: 2, willow: 3, log: 2, stump: 1 };
+function oreState(o) { let st = S.ore[o.id]; if (st && st.day !== undefined && S.day >= st.day + 2 && st.left <= 0) { delete S.ore[o.id]; st = null; } if (!st) st = S.ore[o.id] = { left: o.silver ? 3 : 4, h: 0 }; return st; }
+function oreDepleted(o) { const st = S.ore[o.id]; return !!(st && st.left <= 0 && !(st.day !== undefined && S.day >= st.day + 2)); }
+function hitWorld(a, range, arc) {
+  a.world = true;
+  let best = null, bd = 1e9;
+  forStatics(P.x, P.y, range + 1.5, o => {
+    if (o.type !== 'ore' && !CHOP[o.type] && o.type !== 'bush') return false;
+    const dx = o.x - P.x, dy = o.y - P.y, d = Math.hypot(dx, dy) - o.r;
+    if (d > range + 0.2) return false;
+    if (Math.abs(angDiff(a.dir, Math.atan2(dy, dx))) > arc + 0.3 && d > 0.4) return false;
+    if (d < bd) { bd = d; best = o; }
+    return false;
+  });
+  if (!best) return null;
+  const o = best, it = a.it, hx = o.x - Math.cos(a.dir) * o.r * 0.7, hy = o.y - Math.sin(a.dir) * o.r * 0.7;
+  if (o.type === 'ore') {
+    if (oreDepleted(o)) { addText(o.x, o.y, 1.6, 'depleted', '#8a8a9a'); sfx('clang'); sparks(hx, hy, 0.7, '!#fff4c0', 3); return 'empty'; }
+    const st = oreState(o), pw = !it ? 0.55 : it.type === 'sword2' ? 1.4 : a.mv.heavy ? 1.3 : 1;
+    st.h += pw; sparks(hx, hy, 0.7, '!#ffd890', 7, true); sfx('mine'); S.shake = Math.max(S.shake, 0.08);
+    burst(hx, hy, 0.6, '#8a847a', 4, ['.', ','], 2);
+    if (st.h >= 2) {
+      st.h -= 2; st.left--;
+      const id = o.silver && Math.random() < 0.6 ? 'silver' : 'iron_ore';
+      invAdd(id, 1); addText(o.x, o.y, 1.9, '+1 ' + ITEMS[id].name, id === 'silver' ? '#e8f0ff' : '#ffc890', true); sfx('pickup');
+      msg('Mined ' + ITEMS[id].name + ' (' + invCount(id) + ')', '#d8e8b0', 3, id);
+      if (st.left <= 0) { st.day = S.day; msg('The vein is spent. It will show new ore in a couple of days.', '#a8a090', 4); }
+      return id;
+    }
+    return 'hit';
+  }
+  const key = Math.round(o.x * 10) + ',' + Math.round(o.y * 10), n = S.chop.get(key) || 0;
+  if (o.type === 'bush') {
+    burst(o.x, o.y, 0.6, '#5a8a3a', 5, ['*', ','], 2); sfx('scratch');
+    if (n < 1 && Math.random() < 0.4) { S.chop.set(key, n + 1); invAdd('herb', 1); addText(o.x, o.y, 1.4, '+1 Healing Herb', '#a8e080', true); msg('Found a Healing Herb (' + invCount('herb') + ')', '#d8e8b0', 3, 'herb'); return 'herb'; }
+    return 'hit';
+  }
+  burst(hx, hy, 1.0, '#c8a070', 5, ['/', '\\', '.'], 2.5); sfx('chop'); S.shake = Math.max(S.shake, 0.06);
+  if (o.type !== 'log' && o.type !== 'stump') burst(o.x, o.y, 3, o.type === 'snowpine' ? '#f0f4ff' : '#4e7a3a', 5, ['*', ','], 2);
+  if (n < CHOP[o.type] && Math.random() < (it && (it.type === 'sword2' || it.type === 'sword') ? 0.6 : 0.35)) {
+    S.chop.set(key, n + 1); invAdd('wood', 1); addText(o.x, o.y, 1.8, '+1 Timber', '#e8c890', true); msg('Chopped Timber (' + invCount('wood') + ')', '#d8e8b0', 3, 'wood'); return 'wood';
+  }
+  return 'hit';
+}
+
+// ---------- smith orders (side quests: bring the blacksmith materials) ----------
+function matsLine(mats) { return Object.entries(mats).map(([k, n]) => n + ' ' + ITEMS[k].name.toLowerCase()).join(', '); }
+function questOnCraft(id) { }
+
+// =====================================================================
+//  INVENTORY UI — HUD hotbar (wheel / 1-8 / tap / swipe), the bag grid with drag and drop,
+//  item details with compare, the forge and campfire screens with the hammer minigame
+// =====================================================================
+// ---------- HUD hotbar ----------
+function hotLayout() {
+  const touch = typeof IS_TOUCH !== 'undefined' && IS_TOUCH, port = VH >= VW;
+  const gap = touch ? 3 : 4;
+  let s = touch ? (port ? 44 : 40) : 46;
+  s = Math.max(30, Math.min(s, Math.floor((VW - 16 - gap * (HOT_N - 1)) / HOT_N)));
+  const w = s * HOT_N + gap * (HOT_N - 1), x = Math.round((VW - w) / 2), y = Math.round(VH - s - (touch ? 8 : 10));
+  return { x, y, s, gap, w };
+}
+function hudThumb(id, x, y, s) {
+  const c = thumbCanvas(id); const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(c, Math.round(x), Math.round(y), Math.round(s), Math.round(s)); ctx.imageSmoothingEnabled = sm;
+}
+function handMark(id) { if (!id) return ''; if (P.hands[0] === id && P.hands[1] === id) return '2H'; if (P.hands[1] === id) return 'R'; if (P.hands[0] === id) return 'L'; if (P.armor === id) return 'B'; return ''; }
+function drawHotbar() {
+  if (S.mode !== 'play' && S.mode !== 'dying') return;
+  hotSync();
+  const L = hotLayout(), touch = typeof IS_TOUCH !== 'undefined' && IS_TOUCH;
+  ctx.fillStyle = 'rgba(6,5,4,0.42)'; ctx.fillRect(L.x - 4, L.y - 4, L.w + 8, L.s + 8);
+  for (let j = 0; j < HOT_N; j++) {
+    const x = L.x + j * (L.s + L.gap), sel = j === P.hotSel, y = L.y - (sel ? 3 : 0), id = P.hot[j], it = id ? ITEMS[id] : null;
+    ctx.fillStyle = sel ? 'rgba(40,30,16,0.82)' : 'rgba(12,10,8,0.66)'; ctx.fillRect(x, y, L.s, L.s);
+    if (it) { ctx.fillStyle = tierCol(it); ctx.globalAlpha = 0.85; ctx.fillRect(x + 2, y + L.s - 3, L.s - 4, 2); ctx.globalAlpha = 1; }
+    ctx.lineWidth = sel ? 2 : 1; ctx.strokeStyle = sel ? '#ffd84a' : 'rgba(200,180,140,0.3)';
+    ctx.strokeRect(x + (sel ? 1 : 0.5), y + (sel ? 1 : 0.5), L.s - (sel ? 2 : 1), L.s - (sel ? 2 : 1));
+    if (sel) { ctx.strokeStyle = 'rgba(255,216,74,0.28)'; ctx.lineWidth = 3; ctx.strokeRect(x - 2.5, y - 2.5, L.s + 5, L.s + 5); }
+    ctx.lineWidth = 1;
+    if (it) {
+      const pad = Math.round(L.s * 0.08); hudThumb(id, x + pad, y + pad - 1, L.s - pad * 2);
+      ctx.font = 'bold 10px ui-monospace,Menlo,monospace'; ctx.textBaseline = 'top';
+      if (it.lvl) hudText('+' + it.lvl, x + 3, y + 2, '#ffd84a');
+      if (it.temper) { ctx.fillStyle = '#000'; ctx.fillRect(x + L.s - 9, y + 3, 6, 6); ctx.fillStyle = TEMPER[it.temper].col; ctx.fillRect(x + L.s - 8, y + 4, 4, 4); }
+      if (it.stack) { ctx.font = 'bold 11px ui-monospace,Menlo,monospace'; hudText(String(invCount(id)), x + L.s - 3, y + L.s - 15, '#ffffff', 'right'); }
+      const hm = handMark(id); if (hm) { ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; hudText(hm, x + 3, y + L.s - 12, '#9ae0ff'); }
+    }
+    if (!touch) { ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; ctx.textBaseline = 'top'; hudText(String(j + 1), x + L.s - 3, y + 2, sel ? '#ffd84a' : 'rgba(220,210,190,0.55)', 'right'); }
+  }
+  // the fading name of what you just picked
+  const lb = S.hotLbl;
+  if (lb && lb.t > 0) {
+    lb.t -= (typeof RDT !== 'undefined' ? RDT : 0.016);
+    const a = clamp(lb.t / 0.5, 0, 1); ctx.globalAlpha = a;
+    ctx.font = 'bold 13px Georgia,"Times New Roman",serif'; ctx.textBaseline = 'top';
+    const w = ctx.measureText(lb.txt).width + 22, yy = L.y - 30;
+    ctx.fillStyle = 'rgba(10,8,6,0.72)'; ctx.fillRect(Math.round(VW / 2 - w / 2), yy, Math.round(w), 21);
+    hudText(lb.txt, VW / 2, yy + 4, lb.col, 'center');
+    ctx.globalAlpha = 1;
+  }
+  ctx.font = HUD_FONT; ctx.textAlign = 'left';
+}
+function layoutHotbarDOM() {
+  if (typeof document === 'undefined') return;
+  const el = $('hotbar'); if (!el || !el.style) return;
+  const L = hotLayout();
+  el.style.left = (L.x - 4) + 'px'; el.style.top = (L.y - 6) + 'px'; el.style.width = (L.w + 8) + 'px'; el.style.height = (L.s + 12) + 'px';
+}
+function bindHotbar() {
+  const el = $('hotbar'); if (!el) return;
+  let pid = null, x0 = 0, moved = false, lp = null;
+  const slotAt = cx => { const L = hotLayout(), j = Math.floor((cx - L.x + L.gap / 2) / (L.s + L.gap)); return j >= 0 && j < HOT_N ? j : -1; };
+  el.addEventListener('pointerdown', e => {
+    audioInit(); e.preventDefault(); e.stopPropagation(); if (S.mode !== 'play') return;
+    pid = e.pointerId; x0 = e.clientX; moved = false; try { el.setPointerCapture(pid); } catch (_) { }
+    clearTimeout(lp); lp = setTimeout(() => { if (pid !== null && !moved) { pid = null; openInv(); } }, 550);
+  });
+  el.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    const dx = e.clientX - x0, step = Math.max(24, hotLayout().s * 0.75);
+    if (Math.abs(dx) > step) { hotWheel(dx > 0 ? 1 : -1); x0 = e.clientX; moved = true; clearTimeout(lp); }
+  });
+  const up = e => { if (e.pointerId !== pid) return; pid = null; clearTimeout(lp); if (!moved && S.mode === 'play') { const j = slotAt(e.clientX); if (j >= 0) hotSelect(j, 'tap'); } };
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', () => { pid = null; clearTimeout(lp); });
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+let wheelAcc = 0, wheelT = 0;
+function onWheel(e) {
+  if (!S || S.mode !== 'play') return;
+  if (e.preventDefault) e.preventDefault();
+  const d = (e.deltaY || 0) * (e.deltaMode === 1 ? 40 : 1), t = performance.now();
+  if (Math.abs(d) >= 50) { wheelAcc = 0; wheelT = t; hotWheel(d > 0 ? 1 : -1); return; }
+  wheelAcc += d; if (Math.abs(wheelAcc) >= 50 && t - wheelT > 70) { hotWheel(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; wheelT = t; }
+}
+
+// ---------- shared HTML bits ----------
+const TIER_NAME = ['Common', 'Sturdy', 'Superior', 'Rare', 'Legendary'];
+function thumbImg(id, cls) {
+  const u = thumbURL(id), it = ITEMS[id];
+  return u ? '<img class="th ' + (cls || '') + '" src="' + u + '" alt="" draggable="false">' : '<span class="th gly ' + (cls || '') + '" style="color:' + tierCol(it) + '">' + esc(it ? it.glyph : '?') + '</span>';
+}
+function matChips(mats, owned) {
+  return '<span class="chips">' + Object.entries(mats).map(([k, n]) => { const have = invCount(k), ok = have >= n; return '<span class="chip' + (ok ? '' : ' short') + '" title="' + esc(ITEMS[k].name) + '">' + thumbImg(k, 'sm') + '<b>' + (owned === false ? n : have + '/' + n) + '</b></span>'; }).join('') + '</span>';
+}
+function yieldChips(mats) { return '<span class="chips">' + Object.entries(mats).map(([k, n]) => '<span class="chip gain" title="' + esc(ITEMS[k].name) + '">' + thumbImg(k, 'sm') + '<b>+' + n + '</b></span>').join('') + '</span>'; }
+function nameHTML(it) { return '<b class="inm" style="color:' + tierCol(it) + '">' + esc(it.name) + '</b>'; }
+function pouchHTML() {
+  const ks = Object.keys(P.mats).filter(k => P.mats[k] > 0);
+  if (!ks.length) return '<div class="dim pad">No materials yet. Mine ore outcrops and chop trees (hit them), loot foes and chests, salvage gear, or buy from merchants.</div>';
+  return '<div class="pouch">' + ks.map((k, i) => '<div class="sl mat t' + (ITEMS[k].tier || 0) + (INV.sel && INV.sel.k === 'mat' && INV.sel.i === i ? ' sel' : '') + '" data-k="mat" data-i="' + i + '" title="' + esc(ITEMS[k].name) + '">' + thumbImg(k) + '<i class="n">' + P.mats[k] + '</i></div>').join('') + '</div>';
+}
+
+// ---------- inventory ----------
+const INV = { sel: null, drag: null };
+function itemAt(k, i) {
+  if (k === 'bag') { const s = P.inv[i]; return s ? { id: s.id, n: s.n } : null; }
+  if (k === 'hot') { const id = P.hot[i]; return id && hotOwned(id) ? { id, n: ITEMS[id].stack ? invCount(id) : 1 } : null; }
+  if (k === 'eq') { const id = i === 2 ? P.armor : (i === 0 && twoHanded() ? P.hands[1] : P.hands[i]); return id ? { id, n: 1 } : null; }
+  if (k === 'mat') { const ks = Object.keys(P.mats).filter(x => P.mats[x] > 0), id = ks[i]; return id ? { id, n: P.mats[id] } : null; }
+  return null;
+}
+function slotHTML(k, i, cap) {
+  const o = itemAt(k, i), it = o && ITEMS[o.id], sel = INV.sel && INV.sel.k === k && INV.sel.i === i;
+  let h = '<div class="sl ' + k + (sel ? ' sel' : '') + (it ? ' t' + clamp((it.tier || 0) + (it.q === 2 ? 1 : 0), 0, 4) : ' empty') + (k === 'hot' && i === P.hotSel ? ' cur' : '') + '" data-k="' + k + '" data-i="' + i + '">';
+  if (it) {
+    h += thumbImg(o.id);
+    if (it.lvl) h += '<b class="lv">+' + it.lvl + '</b>';
+    if (it.temper) h += '<u class="tp" style="background:' + TEMPER[it.temper].col + '"></u>';
+    if (o.n > 1 || (it.stack && k !== 'eq')) h += '<i class="n">' + o.n + '</i>';
+    if (k !== 'eq') { const hm = handMark(o.id); if (hm) h += '<em class="hm">' + hm + '</em>'; }
+    if (k === 'eq' && i === 0 && twoHanded()) h += '<em class="hm">2H</em>';
+  } else if (cap) h += '<span class="cap">' + cap + '</span>';
+  if (k === 'hot') h += '<span class="key">' + (i + 1) + '</span>';
+  return h + '</div>';
+}
+function statRows(it) {
+  const r = [], pct = v => Math.round(v * 100);
+  if (!it) return r;
+  if (it.dmg !== undefined && it.type !== 'potion') r.push(['Damage', it.dmg, '']);
+  if (it.type === 'bow') r.push(['Draw', it.draw, 's', true]);
+  if (it.range) r.push(['Reach', it.range, 'm']);
+  if (it.type === 'gun') r.push(['Reload', it.reload, 's', true]);
+  if (it.block !== undefined) { r.push(['Block', pct(it.block), '%']); r.push(['Guard speed', pct(it.slow), '%']); }
+  if (it.type === 'armor') { r.push(['Armour', pct(it.def), '%']); r.push(['Speed', pct(it.slow), '%']); }
+  if (it.heal) r.push(['Heals', it.heal, ' HP']);
+  return r;
+}
+function cmpTarget(it, id) {
+  if (!it) return null;
+  let o = null;
+  if (it.type === 'armor') o = P.armor;
+  else if (it.type === 'shield') o = (shieldItem() || {}).id || null;
+  else if (it.type === 'bow') o = twoHanded() && ITEMS[P.hands[1]].type === 'bow' ? P.hands[1] : null;
+  else if (it.type === 'sword' || it.type === 'sword2' || it.type === 'gun' || it.type === 'torch') { const m = mainItem(); o = m && m.type !== 'bow' ? m.id : null; }
+  if (!o || o === id || P.hands[0] === id || P.hands[1] === id || P.armor === id) return null;
+  return o;
+}
+function detailHTML() {
+  const s = INV.sel; if (!s) return '<div class="dtl empty dim">Select an item to see its details. Drag items between the bag, the hotbar and your hands. On touch: tap an item, then tap where it should go.</div>';
+  const o = itemAt(s.k, s.i); if (!o) return '<div class="dtl empty dim">Empty slot.</div>';
+  const id = o.id, it = ITEMS[id], cid = cmpTarget(it, id), ci = cid ? ITEMS[cid] : null;
+  let h = '<div class="dtl"><div class="dimg t' + clamp((it.tier || 0) + (it.q === 2 ? 1 : 0), 0, 4) + '">' + thumbImg(id, 'big') + (it.lvl ? '<b class="lv">+' + it.lvl + '</b>' : '') + '</div><div class="dtx">';
+  h += nameHTML(it) + (o.n > 1 ? ' <span class="dim">×' + o.n + '</span>' : '');
+  h += '<div class="sub">' + (it.type === 'mat' ? 'Material' : TIER_NAME[clamp(it.tier || 0, 0, 4)] + ' ' + ({ sword: 'sword', sword2: 'two-handed sword', bow: 'bow', shield: 'shield', torch: 'torch', gun: 'firearm', armor: 'armour', potion: 'consumable', ammo: 'ammunition' }[it.type] || '')) + (handMark(id) ? ' · <span class="eqd">equipped</span>' : '') + '</div>';
+  const rows = statRows(it), crow = ci ? statRows(ci) : null;
+  if (rows.length) {
+    h += '<table class="st">';
+    for (const [lab, v, u, lowBetter] of rows) {
+      let d = '';
+      if (crow) { const c = crow.find(x => x[0] === lab); if (c) { const dv = Math.round((v - c[1]) * 100) / 100; if (dv) d = '<span class="' + ((dv > 0) !== !!lowBetter ? 'up' : 'dn') + '">' + (dv > 0 ? '▲ +' : '▼ ') + dv + '</span>'; } }
+      h += '<tr><td>' + lab + '</td><td><b>' + v + u + '</b> ' + d + '</td></tr>';
+    }
+    h += '</table>';
+    if (ci) h += '<div class="dim">compared with ' + esc(ci.name) + '</div>';
+  }
+  if (it.temper) h += '<div class="tpx" style="color:' + TEMPER[it.temper].col + '">' + esc(TEMPER[it.temper].name) + ': ' + TEMPER[it.temper].desc + '</div>';
+  if (it.q) h += '<div class="dim">' + QUAL[it.q] + ' craftsmanship</div>';
+  if (it.type === 'mat') h += '<div class="dim">' + esc(itemDesc(it)) + '</div>';
+  else if (!rows.length) h += '<div class="dim">' + esc(itemDesc(it)) + '</div>';
+  h += '</div></div><div class="acts">';
+  const inBag = s.k === 'bag' || (s.k === 'hot' && P.inv.some(q => q.id === id)), bi = s.k === 'bag' ? s.i : P.inv.findIndex(q => q.id === id), hm = handMark(id);
+  if (hm === 'L' || hm === 'R' || hm === '2H') h += '<button data-a="uneq" data-s="' + (hm === 'L' ? 0 : 1) + '">Unequip</button>';
+  if (hm === 'B' && id !== 'tunic') h += '<button data-a="unarm">Take off</button>';
+  if (inBag && bi >= 0) {
+    if (it.type === 'sword' || it.type === 'torch' || it.type === 'gun' || it.type === 'shield') h += '<button data-a="eq" data-i="' + bi + '" data-s="0">Equip L</button><button data-a="eq" data-i="' + bi + '" data-s="1">Equip R</button>';
+    else if (it.hands === 2) h += '<button data-a="eq" data-i="' + bi + '" data-s="1">Equip</button>';
+    else if (it.type === 'armor') h += '<button data-a="eq" data-i="' + bi + '" data-s="0">Wear</button>';
+    else if (it.type === 'potion') h += '<button data-a="use" data-id="' + esc(id) + '">Use</button>';
+    if (it.stack && P.inv[bi] && P.inv[bi].n > 1 && s.k === 'bag') h += '<button data-a="split" data-i="' + bi + '">Split</button>';
+  }
+  if (s.k === 'hot') h += '<button class="dim2" data-a="unhot" data-i="' + s.i + '">Off hotbar</button>';
+  else if (HOT_TYPES[it.type] && !P.hot.includes(id)) h += '<button data-a="tohot" data-id="' + esc(id) + '">To hotbar</button>';
+  if (s.k === 'bag') h += '<button class="dim2" data-a="drop" data-i="' + s.i + '">Drop</button>';
+  if (s.k === 'mat') h += '<button class="dim2" data-a="dropmat" data-id="' + esc(id) + '">Drop 1</button>';
+  return h + '</div>';
+}
+function invHTML() {
+  hotClean();
+  const arm = ITEMS[P.armor];
+  let h = '<div class="hdr"><b>INVENTORY</b><span class="hgold">$' + P.gold + '</span><button class="x" data-a="close">✕</button></div>';
+  h += '<div class="invtop"><div class="eqbox"><div class="lab">EQUIPPED</div><div class="eqrow">' + slotHTML('eq', 0, 'L') + slotHTML('eq', 1, 'R') + slotHTML('eq', 2, 'Body') + '</div></div>';
+  h += '<div class="stats">HP <b>' + Math.ceil(P.hp) + '/' + P.maxHp + '</b> · LV <b>' + P.level + '</b> <span class="dim">(XP ' + P.xp + '/' + xpNext() + ')</span><br>Armour <b>' + Math.round(arm.def * 100) + '%</b> · Speed <b>' + Math.round(arm.slow * 100) + '%</b> · Damage <b>×' + dmgMult().toFixed(2) + '</b>' + (mainItem() ? '<br>Weapon: ' + nameHTML(mainItem()) : '<br><span class="dim">Bare fists · 3-hit takedown</span>') + '</div></div>';
+  h += '<div class="sec">HOTBAR <span class="hint">' + (IS_TOUCH ? 'tap a slot in play · swipe the bar' : 'keys 1-8 · mouse wheel') + '</span></div><div class="grid g8">';
+  for (let i = 0; i < HOT_N; i++) h += slotHTML('hot', i);
+  h += '</div><div class="sec">BAG <span class="hint">' + P.inv.length + '/' + INV_MAX + '</span></div><div class="grid g10">';
+  for (let i = 0; i < INV_MAX; i++) h += slotHTML('bag', i);
+  h += '</div><div class="sec">MATERIALS</div>' + pouchHTML();
+  h += '<div class="detail">' + detailHTML() + '</div>';
+  h += '<div class="foot"><button data-a="close" class="big">Back to the field</button></div>';
+  return h;
+}
+function invRender() { if (typeof document !== 'undefined' && $('invPanel')) $('invPanel').innerHTML = invHTML(); }
+function openInv() { S.mode = 'inv'; clearInputs(); INV.sel = null; invRender(); show('inv', true); }
+function closeInv() { S.mode = 'play'; show('inv', false); invDragEnd(); }
+// moving an item from one slot to another (drag and drop, or tap-to-select then tap-to-place)
+function invDrop(src, dst) {
+  if (!src || !dst || (src.k === dst.k && src.i === dst.i)) return false;
+  const so = itemAt(src.k, src.i); if (!so) return false;
+  const id = so.id, it = ITEMS[id];
+  const nope = t => { sfx('nope'); if (t) msg(t, '#ff9a7a', 2.5); return false; };
+  if (src.k === 'mat') return dst.k === 'hot' ? nope('Materials live in the pouch.') : false;
+  if (dst.k === 'hot') {
+    if (src.k === 'hot') { const t = P.hot[dst.i]; P.hot[dst.i] = P.hot[src.i]; P.hot[src.i] = t; if (P.hotSel === src.i) P.hotSel = dst.i; else if (P.hotSel === dst.i) P.hotSel = src.i; }
+    else { if (!HOT_TYPES[it.type] && it.type !== 'armor') return nope(it.name + " can't go on the hotbar."); const k = P.hot.indexOf(id); if (k >= 0) P.hot[k] = P.hot[dst.i]; P.hot[dst.i] = id; }
+    sfx('equip'); return true;
+  }
+  if (dst.k === 'bag') {
+    if (src.k === 'bag') {
+      if (dst.i >= P.inv.length) { const [q] = P.inv.splice(src.i, 1); P.inv.push(q); }
+      else { const a = P.inv[src.i], b = P.inv[dst.i]; if (a.id === b.id && ITEMS[a.id].stack) { b.n += a.n; P.inv.splice(src.i, 1); } else { P.inv[src.i] = b; P.inv[dst.i] = a; } }
+      sfx('equip'); return true;
+    }
+    if (src.k === 'hot') { P.hot[src.i] = null; sfx('equip'); return true; }
+    if (src.k === 'eq') {
+      if (src.i === 2) { if (P.armor === 'tunic') return nope(); if (P.inv.length >= INV_MAX) return nope('Your bag is full.'); giveOrDrop(P.armor); P.armor = 'tunic'; sfx('equip'); return true; }
+      if (P.inv.length >= INV_MAX) return nope('Your bag is full.');
+      unequipHand(twoHanded() ? 1 : src.i); P.act = null; sfx('equip');
+      if (dst.i < P.inv.length - 1) { const q = P.inv.pop(); P.inv.splice(dst.i, 0, q); }
+      return true;
+    }
+    return false;
+  }
+  if (dst.k === 'eq') {
+    if (src.k === 'eq') {
+      if (src.i === 2 || dst.i === 2 || twoHanded()) return nope();
+      const t = P.hands[0]; P.hands[0] = P.hands[1]; P.hands[1] = t; P.act = null; sfx('equip'); return true;
+    }
+    if (dst.i === 2) { if (it.type !== 'armor') return nope('Only armour goes on the body.'); }
+    else if (!(it.type === 'sword' || it.type === 'sword2' || it.type === 'bow' || it.type === 'shield' || it.type === 'torch' || it.type === 'gun')) return nope(it.name + ' is not held in the hand.');
+    let idx = src.k === 'bag' ? src.i : P.inv.findIndex(q => q.id === id);
+    if (idx < 0) { // a hotbar item already in the other hand: swap hands
+      if (dst.i < 2 && !twoHanded() && P.hands[1 - dst.i] === id) { const t = P.hands[0]; P.hands[0] = P.hands[1]; P.hands[1] = t; sfx('equip'); return true; }
+      return false;
+    }
+    equipFromInv(idx, dst.i === 2 ? 0 : it.hands === 2 ? 1 : dst.i);
+    return true;
+  }
+  return false;
+}
+function invTap(k, i) {
+  const o = itemAt(k, i), s = INV.sel;
+  if (!s) { if (o) INV.sel = { k, i }; return; }
+  if (s.k === k && s.i === i) { INV.sel = null; return; }
+  const placeable = !o || k === 'eq' || (k === 'hot' && s.k !== 'hot') || (k === 'bag' && s.k !== 'bag' && s.k !== 'mat');
+  if (placeable && s.k !== 'mat' && invDrop(s, { k, i })) { INV.sel = null; return; }
+  INV.sel = o ? { k, i } : null;
+}
+function invAct(a, d) {
+  if (a === 'eq') { equipFromInv(+d.i, +d.s); INV.sel = null; }
+  else if (a === 'uneq') { unequipHand(+d.s); INV.sel = null; }
+  else if (a === 'unarm') { if (P.armor !== 'tunic') { giveOrDrop(P.armor); P.armor = 'tunic'; sfx('equip'); } INV.sel = null; }
+  else if (a === 'use') useConsumable(d.id);
+  else if (a === 'drink') drinkPotion();
+  else if (a === 'split') { const q = P.inv[+d.i]; if (q && q.n > 1 && P.inv.length < INV_MAX) { const h = Math.floor(q.n / 2); q.n -= h; P.inv.push({ id: q.id, n: h }); sfx('equip'); } else sfx('nope'); }
+  else if (a === 'tohot') { if (!hotAuto(d.id)) { P.hot[P.hotSel] = d.id; } sfx('equip'); }
+  else if (a === 'unhot') { P.hot[+d.i] = null; INV.sel = null; }
+  else if (a === 'drop') { const q = P.inv[+d.i]; if (q) { P.inv.splice(+d.i, 1); dropItem(P.x + Math.cos(P.a) * 1.5, P.y + Math.sin(P.a) * 1.5, q.id, q.n, true); sfx('equip'); hotClean(); } INV.sel = null; }
+  else if (a === 'dropmat') { if (invTake(d.id, 1)) dropItem(P.x + Math.cos(P.a) * 1.5, P.y + Math.sin(P.a) * 1.5, d.id, 1, true); if (!invCount(d.id)) INV.sel = null; }
+}
+function invClick(e) {
+  const b = e.target.closest('button'); if (!b) return;
+  const a = b.dataset.a;
+  if (a === 'close') { closeInv(); return; }
+  invAct(a, b.dataset);
+  invRender();
+}
+// pointer drag and drop (mouse and touch); a press without movement is a tap
+function invDragEnd() { const g = typeof document !== 'undefined' && document.getElementById ? document.getElementById('dragGhost') : null; if (g && g.remove) g.remove(); INV.drag = null; }
+function invPointerDown(e) {
+  const sl = e.target.closest && e.target.closest('.sl'); if (!sl) return;
+  INV.drag = { k: sl.dataset.k, i: +sl.dataset.i, x0: e.clientX, y0: e.clientY, pid: e.pointerId, on: false, el: sl, hov: null };
+  e.preventDefault();
+}
+function invPointerMove(e) {
+  const D = INV.drag; if (!D || e.pointerId !== D.pid) return;
+  if (!D.on) {
+    if (Math.hypot(e.clientX - D.x0, e.clientY - D.y0) < 7 || !itemAt(D.k, D.i) || D.k === 'mat') return;
+    D.on = true; D.el.classList.add('lift');
+    const g = document.createElement('div'); g.id = 'dragGhost'; g.className = 'ghost'; g.innerHTML = thumbImg(itemAt(D.k, D.i).id); document.body.appendChild(g);
+  }
+  const g = document.getElementById('dragGhost'); if (g) g.style.transform = 'translate(' + (e.clientX - 30) + 'px,' + (e.clientY - 30) + 'px)';
+  const t = document.elementFromPoint(e.clientX, e.clientY), sl = t && t.closest ? t.closest('.sl') : null;
+  if (D.hov && D.hov !== sl) D.hov.classList.remove('hov');
+  if (sl && sl !== D.el) sl.classList.add('hov'); D.hov = sl;
+}
+function invPointerUp(e) {
+  const D = INV.drag; if (!D || e.pointerId !== D.pid) return;
+  if (D.on) {
+    const t = document.elementFromPoint(e.clientX, e.clientY), sl = t && t.closest ? t.closest('.sl') : null;
+    invDragEnd();
+    if (sl) { if (invDrop({ k: D.k, i: D.i }, { k: sl.dataset.k, i: +sl.dataset.i })) INV.sel = null; }
+  } else { invDragEnd(); invTap(D.k, D.i); }
+  invRender();
+}
+
+// ---------- forge (blacksmith) and workbench (campfire) ----------
+const FORGE = { ref: null, st: 'smith', tab: 'craft', mg: null, res: null, cat: null };
+function forgeTitle() { const v = FORGE.ref && FORGE.ref.village; return FORGE.st === 'camp' ? 'CAMPFIRE WORKBENCH' : (v && v.name ? 'THE ' + v.name.toUpperCase() + ' FORGE' : 'THE FORGE'); }
+function openForge(ref, st) { FORGE.ref = ref; FORGE.st = st || 'smith'; FORGE.tab = 'craft'; FORGE.mg = null; FORGE.res = null; S.mode = 'forge'; clearInputs(); forgeRender(); show('forge', true); }
+function closeForge() { if (FORGE.mg && !FORGE.mg.m.done) FORGE.mg = null; S.mode = 'play'; show('forge', false); saveGame(); }
+function forgeRender() { if (typeof document !== 'undefined' && $('forgePanel')) $('forgePanel').innerHTML = forgeHTML(); }
+function shortStat(it) { const r = statRows(it); return r.length ? r.slice(0, 2).map(x => x[0] + ' ' + x[1] + x[2]).join(' · ') : itemDesc(it); }
+function forgeHTML() {
+  const F = FORGE, smith = F.st === 'smith';
+  let h = '<div class="hdr"><b>' + esc(forgeTitle()) + '</b><span class="hgold">$' + P.gold + '</span><button class="x" data-a="close">✕</button></div>';
+  if (F.mg) return h + mgHTML();
+  if (F.res) return h + resHTML();
+  const tabs = smith ? [['craft', 'Craft'], ['upgrade', 'Upgrade'], ['temper', 'Temper'], ['salvage', 'Salvage'], ['orders', 'Orders']] : [['craft', 'Craft']];
+  h += '<div class="tabs">' + tabs.map(t => '<button data-a="tab" data-t="' + t[0] + '" class="' + (F.tab === t[0] ? 'on' : '') + '">' + t[1] + (t[0] === 'orders' && smithBiz().turnin.length ? ' <span class="gold">?</span>' : '') + '</button>').join('') + (smith ? '<button data-a="trade" class="alt">Trade</button>' : '<button data-a="rest" class="alt">Rest</button>') + '</div>';
+  h += '<div class="pouchbar">' + (Object.keys(P.mats).length ? Object.keys(P.mats).map(k => '<span class="chip own" title="' + esc(ITEMS[k].name) + '">' + thumbImg(k, 'sm') + '<b>' + P.mats[k] + '</b></span>').join('') : '<span class="dim">Your material pouch is empty.</span>') + '</div>';
+  if (F.tab === 'craft') {
+    let cat = '';
+    for (const r of RECIPES) {
+      if (r.st !== F.st) continue;
+      if (r.cat !== cat) { cat = r.cat; h += '<div class="sec">' + esc(cat.toUpperCase()) + '</div>'; }
+      const it = ITEMS[r.id], ok = canCraft(r);
+      h += '<div class="row rec' + (ok ? '' : ' no') + '">' + thumbImg(r.id) + '<span class="nm">' + nameHTML(it) + (r.n > 1 ? ' ×' + r.n : '') + '<br><span class="dim">' + esc(shortStat(it)) + '</span><br>' + matChips(r.mats) + (r.gold ? ' <span class="gp' + (P.gold >= r.gold ? '' : ' short') + '">$' + r.gold + '</span>' : '') + '</span><span class="bt"><button data-a="craft" data-r="' + r.key + '"' + (ok ? '' : ' disabled') + '>' + (r.mg ? 'Forge' : 'Make') + '</button></span></div>';
+    }
+  } else if (F.tab === 'upgrade') {
+    const own = forgeOwned(id => UPG_TYPES[ITEMS[id].type]);
+    h += '<div class="dim pad">Each level adds damage, block or armour. +4 and +5 need silver and ghost essence. A clean hammer rhythm can raise the quality too.</div>';
+    if (!own.length) h += '<div class="dim pad">Nothing to upgrade.</div>';
+    for (const id of own) {
+      const it = ITEMS[id];
+      if (!upgradable(id)) { h += '<div class="row rec no">' + thumbImg(id) + '<span class="nm">' + nameHTML(it) + '<br><span class="dim">At its finest: +5.</span></span></div>'; continue; }
+      const c = upgradeCost(id), v = parseVid(id), nx = ITEMS[makeVid(v.base, c.lvl, v.temper, v.q)], ok = haveMats(c.mats, c.gold);
+      const a = statRows(it)[0], b = statRows(nx)[0];
+      h += '<div class="row rec' + (ok ? '' : ' no') + '">' + thumbImg(id) + '<span class="nm">' + nameHTML(it) + (handMark(id) ? ' <span class="eqd">' + handMark(id) + '</span>' : '') + '<br><span class="dim">' + (a ? a[0] + ' ' + a[1] + a[2] + ' → </span><b class="up">' + b[1] + b[2] + '</b>' : '</span>') + '<br>' + matChips(c.mats) + ' <span class="gp' + (P.gold >= c.gold ? '' : ' short') + '">$' + c.gold + '</span></span><span class="bt"><button data-a="upg" data-id="' + esc(id) + '"' + (ok ? '' : ' disabled') + '>+' + c.lvl + '</button></span></div>';
+    }
+  } else if (F.tab === 'temper') {
+    h += '<div class="dim pad">Temper a blade with special materials. <span style="color:' + TEMPER.s.col + '">Silvered</span>: ' + TEMPER.s.desc + '. <span style="color:' + TEMPER.f.col + '">Frost-tempered</span>: ' + TEMPER.f.desc + '.</div>';
+    const own = forgeOwned(id => canTemper(id));
+    if (!own.length) h += '<div class="dim pad">You carry no sword to temper.</div>';
+    for (const id of own) {
+      const it = ITEMS[id], v = parseVid(id);
+      h += '<div class="row rec">' + thumbImg(id) + '<span class="nm">' + nameHTML(it) + '<br>' + ['s', 'f'].map(t => '<span class="tline">' + matChips(TEMPER_COST[t].mats) + ' <span class="gp">$' + TEMPER_COST[t].gold + '</span></span>').join(' ') + '</span><span class="bt col">' +
+        ['s', 'f'].map(t => '<button data-a="temper" data-id="' + esc(id) + '" data-t="' + t + '"' + (v.temper !== t && haveMats(TEMPER_COST[t].mats, TEMPER_COST[t].gold) ? '' : ' disabled') + '>' + (t === 's' ? 'Silver' : 'Frost') + '</button>').join('') + '</span></div>';
+    }
+  } else if (F.tab === 'salvage') {
+    h += '<div class="dim pad">Break down gear from your bag into materials (equipped items must be unequipped first).</div>';
+    let any = false;
+    P.inv.forEach((q, i) => { const y = salvageYield(q.id); if (!y) return; any = true; const it = ITEMS[q.id]; h += '<div class="row rec">' + thumbImg(q.id) + '<span class="nm">' + nameHTML(it) + '<br>' + yieldChips(y) + '</span><span class="bt"><button class="dim2" data-a="salv" data-i="' + i + '">Salvage</button></span></div>'; });
+    if (!any) h += '<div class="dim pad">Nothing in your bag can be salvaged.</div>';
+  } else if (F.tab === 'orders') {
+    const b = smithBiz(), act = S.Q.act.filter(q => q.type === 'order' && q.giver && FORGE.ref && q.giver.key === giverKey(FORGE.ref));
+    if (!act.length && !b.offers.length) h += '<div class="dim pad">"No orders today. Come back after you\'ve done me a good turn elsewhere."</div>';
+    for (const q of act) { const st = qStep(q), ok = st && haveMats(st.need); h += '<div class="row rec' + (ok ? '' : ' no') + '"><span class="nm"><b class="inm">' + esc(q.title) + '</b><br><span class="dim">' + esc(q.sum || '') + '</span><br>' + matChips(st.need) + rewHTML(q) + '</span><span class="bt"><button data-a="deliver" data-q="' + esc(q.id) + '"' + (ok ? '' : ' disabled') + '>Deliver</button></span></div>'; }
+    b.offers.forEach((q, i) => { h += '<div class="row rec"><span class="nm"><b class="inm">' + esc(q.title) + '</b><br><span class="dim">' + esc((q.lines || []).join(' ')) + '</span><br>' + matChips(q.steps[0].need) + rewHTML(q) + '</span><span class="bt"><button data-a="accept" data-i="' + i + '">Accept</button></span></div>'; });
+  }
+  h += '<div class="foot"><button data-a="close" class="big">Leave</button></div>';
+  return h;
+}
+function rewHTML(q) { const r = q.rew || {}; return '<div class="rew">Reward: <span class="gold">' + (r.gold || 0) + ' gold</span> · ' + (r.xp || 0) + ' XP' + (r.items || []).filter(id => id[0] !== '$').map(id => ' · ' + thumbImg(id, 'sm') + '<span style="color:' + tierCol(ITEMS[id]) + '">' + esc(ITEMS[id].name) + '</span>').join('') + '</div>'; }
+function smithBiz() { return FORGE.ref && FORGE.ref.kind === 'smith' && S.Q ? npcBusiness(FORGE.ref) : { turnin: [], offers: [] }; }
+function forgeOwned(f) { const out = []; for (const id of [P.hands[1], P.hands[0], P.armor].concat(P.inv.map(q => q.id))) if (id && ITEMS[id] && f(id) && !out.includes(id)) out.push(id); return out; }
+// the hammer minigame
+function forgeJob(job) {
+  if (job.mg) { FORGE.mg = { job, m: mgNew(job) }; forgeRender(); sfx('anvil'); return; }
+  forgeFinish(job, 0);
+}
+function forgeFinish(job, grade) {
+  let id = null;
+  if (job.k === 'craft') id = craftItem(job.r, grade);
+  else if (job.k === 'upg') id = upgradeItem(job.id, grade);
+  else if (job.k === 'temper') id = temperItem(job.id, job.t, grade);
+  FORGE.mg = null;
+  if (!id) { msg('You lack the materials for that.', '#ff9a7a'); forgeRender(); return null; }
+  const it = ITEMS[id];
+  if (job.mg) { FORGE.res = { id, grade }; sfx(grade === 2 ? 'win' : 'pickup'); }
+  else { msg('Made ' + ((job.r && job.r.n) > 1 ? job.r.n + ' ' : '') + it.name + '.', '#d8e8b0', 3, id); sfx('anvil'); }
+  forgeRender(); return id;
+}
+function mgHTML() {
+  const { job, m } = FORGE.mg, id = job.k === 'craft' ? job.r.id : job.id, it = ITEMS[id];
+  let h = '<div class="mg"><div class="mgh">' + thumbImg(id, 'big') + '<div><div class="sub">' + (job.k === 'craft' ? 'Forging' : job.k === 'upg' ? 'Upgrading' : 'Tempering') + '</div>' + nameHTML(it) + '<div class="dim">Strike when the glowing marker crosses the bright mark. Three strikes; a clean rhythm makes finer work.</div></div></div>';
+  h += '<canvas id="mgcv" width="560" height="128"></canvas>';
+  h += '<div class="pips">' + [0, 1, 2].map(i => '<span class="pip' + (i < m.res.length ? (m.res[i] >= 1 ? ' p' : m.res[i] >= 0.6 ? ' g' : m.res[i] > 0 ? ' f' : ' m') : '') + '"></span>').join('') + '</div>';
+  h += '<div class="foot"><button data-a="strike" class="big strike">STRIKE</button><div class="dim">' + (IS_TOUCH ? 'tap STRIKE or the bar' : 'Space / J / click') + '</div><button data-a="mgcancel" class="dim2">Stop</button></div></div>';
+  return h;
+}
+function resHTML() {
+  const r = FORGE.res, it = ITEMS[r.id];
+  return '<div class="mg res"><div class="sub">' + (r.grade === 2 ? 'A MASTERWORK!' : r.grade === 1 ? 'Fine work' : 'Done') + '</div>' + thumbImg(r.id, 'huge') + '<div>' + nameHTML(it) + '</div><div class="dim">' + esc(shortStat(it)) + '</div><div class="foot"><button data-a="resok" class="big">Continue</button></div></div>';
+}
+function drawMG() {
+  if (typeof document === 'undefined' || !FORGE.mg) return;
+  const cv = $('mgcv'); if (!cv || !cv.getContext) return;
+  const x = cv.getContext('2d'), m = FORGE.mg.m, W = cv.width, H = cv.height, bx = 20, bw = W - 40, by = 46, bh = 30;
+  if (!x || typeof x.fillRect !== 'function') return;
+  x.clearRect(0, 0, W, H);
+  // the hot iron bar
+  const g = x.createLinearGradient ? x.createLinearGradient(bx, 0, bx + bw, 0) : null;
+  if (g) { g.addColorStop(0, '#3a1608'); g.addColorStop(0.5, '#a8401a'); g.addColorStop(1, '#3a1608'); x.fillStyle = g; } else x.fillStyle = '#7a3010';
+  x.fillRect(bx, by, bw, bh);
+  // good / perfect zones
+  const zx = bx + m.zone * bw;
+  x.fillStyle = 'rgba(255,200,90,0.32)'; x.fillRect(zx - MG.good * bw, by, MG.good * 2 * bw, bh);
+  x.fillStyle = 'rgba(255,240,170,0.85)'; x.fillRect(zx - MG.perfect * bw, by - 4, MG.perfect * 2 * bw, bh + 8);
+  x.strokeStyle = '#1a0e06'; x.lineWidth = 2; x.strokeRect(bx, by, bw, bh);
+  // the hammer marker
+  const mx = bx + m.pos * bw;
+  x.fillStyle = '#fff8e0'; x.beginPath(); x.moveTo(mx, by - 2); x.lineTo(mx - 9, by - 18); x.lineTo(mx + 9, by - 18); x.closePath(); x.fill();
+  x.fillRect(mx - 2, by - 2, 4, bh + 4);
+  x.fillStyle = '#e8dcc0'; x.font = 'bold 17px ui-monospace,monospace'; x.textAlign = 'center';
+  x.fillText('Strike ' + Math.min(m.i + 1, MG.strikes) + ' of ' + MG.strikes, W / 2, 20);
+  if (m.fb && m.fbT > 0) { x.globalAlpha = clamp(m.fbT / 0.4, 0, 1); x.font = 'bold 26px Georgia,serif'; x.fillStyle = m.fb === 'PERFECT!' ? '#ffe070' : m.fb === 'GOOD' ? '#a8f080' : m.fb === 'FAIR' ? '#e8c8a0' : '#ff7a5a'; x.fillText(m.fb, W / 2, by + bh + 38); x.globalAlpha = 1; }
+}
+function forgeTick(dt) {
+  const F = FORGE; if (!F.mg) return;
+  mgTick(F.mg.m, dt);
+  if (F.mg.m.done) { F.mg.m.doneT = (F.mg.m.doneT || 0) + dt; if (F.mg.m.doneT > 0.45) { const g = forgeGrade(F.mg.m.res).grade; forgeFinish(F.mg.job, g); return; } }
+  drawMG();
+}
+function forgeStrike() {
+  const F = FORGE; if (!F.mg || F.mg.m.done) return;
+  mgStrike(F.mg.m); S.shake = 0;
+  forgeRender(); drawMG();
+}
+function forgeAct(a, d) {
+  const F = FORGE;
+  if (a === 'tab') { F.tab = d.t; }
+  else if (a === 'trade') { const r = F.ref; closeForge(); openShop(r); return; }
+  else if (a === 'rest') { closeForge(); rest(); return; }
+  else if (a === 'craft') { const r = RECIPES.find(x => x.key === d.r); if (r && canCraft(r)) forgeJob({ k: 'craft', r, mg: !!r.mg }); return; }
+  else if (a === 'upg') { forgeJob({ k: 'upg', id: d.id, mg: true }); return; }
+  else if (a === 'temper') { forgeJob({ k: 'temper', id: d.id, t: d.t, mg: true }); return; }
+  else if (a === 'salv') { const y = salvageBag(+d.i); if (y) { sfx('anvil_bad'); msg('Salvaged: ' + matsLine(y), '#d8e8b0', 3, Object.keys(y)[0]); } }
+  else if (a === 'strike') { forgeStrike(); return; }
+  else if (a === 'mgcancel') { F.mg = null; }
+  else if (a === 'resok') { F.res = null; }
+  else if (a === 'accept') { const q = smithBiz().offers[+d.i]; if (q) acceptQuest(q); }
+  else if (a === 'deliver') { const q = qById(d.q); if (q) deliverOrder(q); }
+  forgeRender();
+}
+function forgeClick(e) {
+  const b = e.target.closest('button');
+  if (!b) { if (e.target.id === 'mgcv') forgeStrike(); return; }
+  if (b.disabled) return;
+  const a = b.dataset.a;
+  if (a === 'close') { closeForge(); return; }
+  forgeAct(a, b.dataset);
 }
 
 // =====================================================================
@@ -6883,8 +8061,8 @@ function hudBar(x, y, w, h, f, col, bg) { ctx.fillStyle = '#000'; ctx.fillRect(x
 function slot(x, y, it, label, active) {
   hudPanel(x, y, 24, 24);
   if (active) { ctx.strokeStyle = '#ffd84a'; ctx.strokeRect(x + 0.5, y + 0.5, 23, 23); }
-  const name = itemIcon(it), rows = ICONS[name], s = 2, w = rows[0].length * s, h = rows.length * s;
-  icon(name, x + 12 - w / 2, y + 12 - h / 2, s, it && it.type === 'armor' ? { A: it.color } : null);
+  if (it && typeof thumbCanvas === 'function') { hudThumb(it.id, x + 1, y + 1, 22); if (it.lvl) { ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; hudText('+' + it.lvl, x + 23, y + 15, '#ffd84a', 'right'); ctx.font = HUD_FONT; } }
+  else { const name = itemIcon(it), rows = ICONS[name], s = 2, w = rows[0].length * s, h = rows.length * s; icon(name, x + 12 - w / 2, y + 12 - h / 2, s, it && it.type === 'armor' ? { A: it.color } : null); }
   if (label) { ctx.font = 'bold 8px ui-monospace,Menlo,monospace'; hudText(label, x + 2, y + 1, '#c8b898'); ctx.font = HUD_FONT; }
 }
 let MM = null, mmT = 0;
@@ -7071,13 +8249,15 @@ function drawHUD() {
     }
   }
   for (const m of S.msgs) {
-    const col = m.t < 1 ? shadeMsg(m.col, m.t) : m.col;
-    for (const l of wrapText(m.txt, maxCh).slice(0, 2)) { hudText(l, 8, ty, col); ty += 15; }
+    const col = m.t < 1 ? shadeMsg(m.col, m.t) : m.col, ix = m.icon ? 26 : 0;
+    if (m.icon) { ctx.globalAlpha = clamp(m.t, 0.2, 1); ctx.fillStyle = 'rgba(10,8,6,0.55)'; ctx.fillRect(6, ty - 3, 21, 21); hudThumb(m.icon, 7, ty - 2, 19); ctx.globalAlpha = 1; }
+    for (const l of wrapText(m.txt, maxCh - (ix ? 4 : 0)).slice(0, 2)) { hudText(l, 8 + ix, ty, col); ty += 15; }
+    if (m.icon) ty += 4;
   }
   // --- banner
   if (S.banner) {
     const b = S.banner, w = Math.min(460, VW - 24), inner = Math.floor((w - 24) / 7.3);
-    const lines = wrapText(b.sub, inner), h = 30 + lines.length * 15;
+    const lines = wrapText(b.sub, inner), ic = b.icons && b.icons.length ? Math.min(b.icons.length, 6) : 0, h = 30 + lines.length * 15 + (ic ? 40 : 0);
     const bx = Math.round((VW - w) / 2);
     // below the stats panels when it would overlap them (narrow or short landscape screens)
     const by = narrow ? Math.round(Math.max(ty + 6, VH * 0.24)) : bx < pw + 16 ? Math.max(hy + 30, boss ? 64 : 36) : (boss ? 64 : 36);
@@ -7087,12 +8267,15 @@ function drawHUD() {
     ctx.strokeStyle = '#8a6a30'; ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1); ctx.strokeStyle = '#3a2a14'; ctx.strokeRect(bx + 3.5, by + 3.5, w - 7, h - 7);
     ctx.font = 'bold 14px ui-monospace,Menlo,Consolas,monospace'; hudText(b.title, VW / 2, by + 8, b.col, 'center');
     ctx.font = HUD_FONT; lines.forEach((l, i) => hudText(l, VW / 2, by + 28 + i * 15, '#e8dcc0', 'center'));
+    for (let i = 0; i < ic; i++) { const ix = VW / 2 - ic * 19 + i * 38, iy = by + 30 + lines.length * 15; ctx.fillStyle = 'rgba(40,30,16,0.8)'; ctx.fillRect(ix, iy, 34, 34); ctx.strokeStyle = tierCol(ITEMS[b.icons[i]]); ctx.strokeRect(ix + 0.5, iy + 0.5, 33, 33); hudThumb(b.icons[i], ix + 2, iy + 2, 30); }
     ctx.globalAlpha = 1;
   }
+  // --- hotbar
+  drawHotbar();
   // --- interaction hint (keyboard)
   if (S.interact && !IS_TOUCH) {
-    const s = '[E] ' + S.interact.label[0] + S.interact.label.slice(1).toLowerCase(), w = s.length * 7.3 + 20;
-    hudPanel(Math.round(VW / 2 - w / 2), VH - 44, Math.round(w), 24); hudText(s, VW / 2, VH - 38, '#ffd84a', 'center');
+    const s = '[E] ' + S.interact.label[0] + S.interact.label.slice(1).toLowerCase(), w = s.length * 7.3 + 20, hy2 = hotLayout().y - 62;
+    ctx.font = HUD_FONT; hudPanel(Math.round(VW / 2 - w / 2), hy2, Math.round(w), 24); hudText(s, VW / 2, hy2 + 6, '#ffd84a', 'center');
   }
   ctx.textAlign = 'left';
 }
@@ -7173,6 +8356,11 @@ function sfx(n) {
       case 'wail': tn(420, 300, 1.2, 'sine', 0.07); tn(560, 380, 1.1, 'sine', 0.04, 0.2); break;
       case 'chant': tn(160, 150, 0.5, 'sawtooth', 0.05); tn(240, 230, 0.5, 'triangle', 0.04, 0.1); break;
       case 'boom': nz(0.45, 'lowpass', 1400, 60, 0.6); tn(90, 40, 0.3, 'sine', 0.35); break;
+      case 'anvil': tn(1650, 1600, 0.35, 'triangle', 0.09); tn(2480, 2400, 0.25, 'sine', 0.05); nz(0.05, 'highpass', 3500, 3500, 0.2); break;
+      case 'anvil_perfect': tn(1760, 1740, 0.6, 'triangle', 0.11); tn(2640, 2620, 0.5, 'sine', 0.07); tn(3520, 3500, 0.35, 'sine', 0.04, 0.02); nz(0.05, 'highpass', 4000, 4000, 0.22); break;
+      case 'anvil_bad': nz(0.12, 'lowpass', 1200, 300, 0.4); tn(320, 220, 0.12, 'square', 0.05); break;
+      case 'mine': tn(1300, 1100, 0.12, 'triangle', 0.07); nz(0.12, 'bandpass', 2200, 900, 0.3, 2); break;
+      case 'chop': nz(0.1, 'lowpass', 900, 250, 0.45); tn(180, 110, 0.08, 'triangle', 0.12); break;
     }
   } catch (e) { }
 }
@@ -7209,7 +8397,9 @@ function onKeyDown(e) {
   if (!keys[e.code]) edge[e.code] = true;
   keys[e.code] = true;
   const c = e.code;
-  if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); else if (S.mode === 'log') closeLog(); else if (S.mode === 'talk') closeTalk(); }
+  if (S.mode === 'forge' && FORGE.mg && (c === 'Space' || c === 'KeyJ' || c === 'Enter')) { if (e.preventDefault) e.preventDefault(); forgeStrike(); return; }
+  if (/^Digit[1-8]$/.test(c) && S.mode === 'play') { hotSelect(+c.slice(5) - 1, 'key'); return; }
+  if (c === 'KeyP' || c === 'Escape') { if (S.mode === 'play') openPause(); else if (S.mode === 'paused') closePause(); else if (S.mode === 'inv') closeInv(); else if (S.mode === 'shop') closeShop(); else if (S.mode === 'log') closeLog(); else if (S.mode === 'talk') closeTalk(); else if (S.mode === 'forge') { if (FORGE.mg) { FORGE.mg = null; forgeRender(); } else closeForge(); } }
   else if (c === 'KeyQ') { if (S.mode === 'play') openLog(); else if (S.mode === 'log') closeLog(); }
   else if (c === 'KeyM') setMute(!AU.muted);
   else if (c === 'KeyI' || c === 'KeyB') { if (S.mode === 'play') openInv(); else if (S.mode === 'inv') closeInv(); }
@@ -7265,9 +8455,16 @@ function bindTouch() {
 function layoutTouch() {
   const pb = typeof document !== 'undefined' ? $('bPause') : null;
   if (pb) { pb.style.top = '6px'; pb.style.height = '26px'; }
+  if (typeof document === 'undefined') return;
+  // the hotbar owns the bottom strip: in portrait the thumb controls sit above it; in landscape it fits between them
+  const L = hotLayout(), t = $('touch'), u = $('bUse');
+  if (t && t.style) t.style.bottom = (VH >= VW ? L.s + 40 : 0) + 'px'; // room for the bar and its item-name label
+  if (u && u.style) { u.style.bottom = VH >= VW ? '' : '104px'; u.style.right = VH >= VW ? '' : '196px'; }
+  layoutHotbarDOM();
 }
 let uiKey = '';
 function atkBtn() {
+  if (typeof hotConsumable === 'function' && hotConsumable()) return 'DRINK';
   const it = mainItem();
   if (!it) return P.mounted ? 'SWEEP' : 'ATTACK';
   return it.type === 'bow' ? 'DRAW' : it.type === 'gun' ? 'FIRE' : P.mounted ? 'SWEEP' : 'ATTACK';
@@ -7280,14 +8477,16 @@ function syncUI() {
   if (typeof document === 'undefined') return;
   const showTouch = IS_TOUCH && S.mode === 'play';
   if (S.mode === 'play' && S.Q && S.Q.story.length) { const b = S.Q.story.shift(); openStory(b.title, b.lines); }
-  const k = [showTouch, S.mode, S.interact ? S.interact.label : '', atkBtn(), offBtn(), invCount('potion'), P.mounted, S.horse.state, !!P.lock].join('|');
+  const k = [showTouch, S.mode, S.interact ? S.interact.label : '', atkBtn(), offBtn(), invCount('potion'), P.mounted, S.horse.state, !!P.lock, P.hotSel].join('|');
   if (k === uiKey) return; uiKey = k;
+  { const hb = $('hotbar'); if (hb) hb.classList.toggle('hidden', S.mode !== 'play'); }
   $('touch').classList.toggle('on', showTouch);
   $('bPause').classList.toggle('hidden', S.mode !== 'play');
   { const bq = $('bQuest'); if (bq) bq.classList.toggle('hidden', S.mode !== 'play'); }
   const u = $('bUse'); u.style.display = S.interact && showTouch && S.interact.type !== 'mount' ? 'flex' : 'none'; if (S.interact) u.textContent = S.interact.label;
   const mi = mainItem();
-  $('bAtk').innerHTML = atkBtn() + '<small>' + (mi ? mi.short : 'fists') + (mi && (mi.type === 'bow' || mi.type === 'gun') ? '' : ' · hold') + '</small>';
+  const hc = hotConsumable();
+  $('bAtk').innerHTML = atkBtn() + '<small>' + (hc ? ITEMS[hc].short + ' ×' + invCount(hc) : (mi ? mi.short : 'fists') + (mi && (mi.type === 'bow' || mi.type === 'gun') ? '' : ' · hold')) + '</small>';
   $('bOff').innerHTML = offBtn() + (offKind() === 'grab' ? '<small>grab</small>' : '');
   $('bLock').innerHTML = P.lock ? 'NEXT' : 'LOCK';
   $('bLock').classList.toggle('lit', !!P.lock);
@@ -7361,46 +8560,7 @@ function continueGame() {
 function openPause() { S.mode = 'paused'; clearInputs(); setMute(AU.muted); show('pause', true); }
 function closePause() { S.mode = 'play'; show('pause', false); }
 
-// inventory
-function invHTML() {
-  const arm = ITEMS[P.armor];
-  const spd = Math.round(arm.slow * 100);
-  let h = '<div class="hdr"><b>INVENTORY</b><button class="x" data-a="close">✕</button></div>';
-  h += '<div class="stats">HP ' + Math.ceil(P.hp) + '/' + P.maxHp + ' · LV ' + P.level + ' <span class="dim">(XP ' + P.xp + '/' + xpNext() + ')</span> · <span class="gold">$' + P.gold + '</span><br>Armor ' + Math.round(arm.def * 100) + '% · Speed ' + spd + '% · Damage ×' + dmgMult().toFixed(2) + '</div>';
-  h += '<div class="sec">EQUIPPED</div>';
-  const row = (label, it, btn) => '<div class="row"><span class="slot">' + label + '</span><span class="nm">' + (it ? '<b>' + esc(it.name) + '</b><br><span class="dim">' + itemDesc(it) + '</span>' : '<span class="dim">Bare fist · punch, 3-hit takedown</span>') + '</span>' + (btn || '') + '</div>';
-  if (twoHanded()) { const it = ITEMS[P.hands[1]]; h += row('Both hands', it, '<button data-a="uneq" data-s="1">Unequip</button>'); }
-  else {
-    for (const s of [0, 1]) { const it = P.hands[s] ? ITEMS[P.hands[s]] : null; h += row(s ? 'Right hand' : 'Left hand', it, it ? '<button data-a="uneq" data-s="' + s + '">Unequip</button>' : ''); }
-  }
-  h += row('Body', arm, '');
-  h += '<div class="sec">BAG (' + P.inv.length + '/' + INV_MAX + ')</div>';
-  if (!P.inv.length) h += '<div class="dim pad">Empty. Loot fallen foes, chests in ruins, or trade with merchants.</div>';
-  P.inv.forEach((s, i) => {
-    const it = ITEMS[s.id]; let b = '';
-    if (it.type === 'sword' || it.type === 'torch' || it.type === 'gun' || it.type === 'shield') b += '<button data-a="eq" data-i="' + i + '" data-s="0">L</button><button data-a="eq" data-i="' + i + '" data-s="1">R</button>';
-    else if (it.hands === 2) b += '<button data-a="eq" data-i="' + i + '" data-s="1">Equip</button>';
-    else if (it.type === 'armor') b += '<button data-a="eq" data-i="' + i + '" data-s="0">Wear</button>';
-    else if (it.type === 'potion') b += '<button data-a="drink">Drink</button>';
-    b += '<button class="dim2" data-a="drop" data-i="' + i + '">Drop</button>';
-    h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt">' + b + '</span></div>';
-  });
-  h += '<div class="foot"><button data-a="close" class="big">Back to the field</button></div>';
-  return h;
-}
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-function openInv() { S.mode = 'inv'; clearInputs(); $('invPanel').innerHTML = invHTML(); show('inv', true); }
-function closeInv() { S.mode = 'play'; show('inv', false); }
-function invClick(e) {
-  const b = e.target.closest('button'); if (!b) return;
-  const a = b.dataset.a, i = +b.dataset.i, s = +b.dataset.s;
-  if (a === 'close') { closeInv(); return; }
-  if (a === 'eq') equipFromInv(i, s);
-  else if (a === 'uneq') unequipHand(s);
-  else if (a === 'drink') drinkPotion();
-  else if (a === 'drop') { const q = P.inv[i]; if (q) { P.inv.splice(i, 1); dropItem(P.x + Math.cos(P.a) * 1.5, P.y + Math.sin(P.a) * 1.5, q.id, q.n, true); sfx('equip'); } }
-  $('invPanel').innerHTML = invHTML();
-}
 
 // shop
 let shopRef = null, shopTab = 'buy';
@@ -7420,7 +8580,8 @@ function genStock(m) {
     const q = Math.min(4, t), q0 = Math.max(0, q - 1);
     ids = new Set(['potion', 'arrows', TIER.sword[q0], TIER.sword[q], TIER.armor[q0], TIER.armor[q], 'tower_shield', 'war_bow', 'pistol', 'claymore']);
   } else {
-    ids = new Set(['potion', 'arrows', 'torch', TIER.bow[t], TIER.bow[up], 'buckler', TIER.armor[t]]);
+    ids = new Set(['potion', 'arrows', 'torch', 'bandage', TIER.bow[t], TIER.bow[up], 'buckler', TIER.armor[t], 'wood', 'cloth', 'leather_hide', 'iron_ore', 'herb']);
+    if (t >= 1) ids.add('steel_ingot');
     if (t === 0) { ids.add('short_bow'); ids.add('gambeson'); ids.add('iron_sword'); }
     if (t >= 1 && R() < 0.6) ids.add('pistol');
     if (R() < 0.35) ids.add('kite_shield');
@@ -7429,13 +8590,15 @@ function genStock(m) {
   for (const id of ids) {
     const it = ITEMS[id];
     if (id === 'arrows') out.push({ id, n: 10, price: 18 });
+    else if (it.type === 'mat') out.push({ id, n: 3, price: Math.round(it.price * 3 * (1 + R() * 0.25)) });
     else out.push({ id, n: 1, price: Math.round(it.price * (0.95 + R() * 0.2)) });
   }
-  const order = ['potion', 'arrows', 'torch'];
-  out.sort((a, b) => (order.indexOf(b.id) + 1 ? 1 : 0) - (order.indexOf(a.id) + 1 ? 1 : 0) || a.price - b.price);
+  const order = ['potion', 'arrows', 'torch'], rank = s => order.includes(s.id) ? 0 : ITEMS[s.id].type === 'mat' ? 2 : 1;
+  out.sort((a, b) => rank(a) - rank(b) || a.price - b.price);
   return out;
 }
-function sellPrice(id) { return id === 'arrows' ? 8 : Math.max(1, Math.floor(ITEMS[id].price * 0.4)); }
+function sellPrice(id) { return id === 'arrows' ? 8 : Math.max(1, Math.floor(ITEMS[id].price * (ITEMS[id].type === 'mat' ? 0.5 : 0.4))); }
+function shopRow(id, n, desc, btn) { const it = ITEMS[id]; return '<div class="row">' + thumbImg(id) + '<span class="nm">' + nameHTML(it) + (n > 1 ? ' <span class="dim">×' + n + '</span>' : '') + (it.lvl ? '' : '') + '<br><span class="dim">' + esc(desc) + '</span></span><span class="bt">' + btn + '</span></div>'; }
 function repDisc(m) { const v = m && m.village; return v && v.id && S.Q ? Math.min(0.15, 0.03 * (S.Q.rep[v.id] || 0)) : 0; }
 function buyPrice(m, s) { return Math.max(1, Math.round(s.price * (1 - repDisc(m)))); }
 function shopHTML() {
@@ -7443,18 +8606,19 @@ function shopHTML() {
   const title = m.role === 'smith' ? 'BLACKSMITH' : m.role === 'qm' ? 'QUARTERMASTER' : 'MERCHANT';
   let h = '<div class="hdr"><b>' + title + (v ? ' OF ' + esc(v.name.toUpperCase()) : '') + '</b><button class="x" data-a="close">✕</button></div>';
   h += '<div class="stats">Your purse: <span class="gold">$' + P.gold + '</span> · Bag ' + P.inv.length + '/' + INV_MAX + (repDisc(m) ? ' · <span class="gold">friend of ' + esc(v.name) + ': -' + Math.round(repDisc(m) * 100) + '%</span>' : '') + '</div>';
-  h += '<div class="tabs"><button data-a="tab" data-t="buy" class="' + (shopTab === 'buy' ? 'on' : '') + '">Buy</button><button data-a="tab" data-t="sell" class="' + (shopTab === 'sell' ? 'on' : '') + '">Sell</button></div>';
+  h += '<div class="tabs"><button data-a="tab" data-t="buy" class="' + (shopTab === 'buy' ? 'on' : '') + '">Buy</button><button data-a="tab" data-t="sell" class="' + (shopTab === 'sell' ? 'on' : '') + '">Sell</button>' + (m.role === 'smith' ? '<button data-a="forge" class="alt">Forge</button>' : '') + '</div>';
   if (shopTab === 'buy') {
     m.stock.forEach((s, i) => {
       const it = ITEMS[s.id], pr = buyPrice(m, s), can = P.gold >= pr;
-      h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt"><button data-a="buy" data-i="' + i + '"' + (can ? '' : ' disabled') + '>$' + pr + '</button></span></div>';
+      h += shopRow(s.id, s.n, itemDesc(it), '<button data-a="buy" data-i="' + i + '"' + (can ? '' : ' disabled') + '>$' + pr + '</button>');
     });
   } else {
-    if (!P.inv.length) h += '<div class="dim pad">Nothing to sell. (Equipped items must be unequipped first.)</div>';
+    if (!P.inv.length && !Object.keys(P.mats).length) h += '<div class="dim pad">Nothing to sell. (Equipped items must be unequipped first.)</div>';
     P.inv.forEach((s, i) => {
       const it = ITEMS[s.id];
-      h += '<div class="row"><span class="gl">' + esc(it.glyph) + '</span><span class="nm"><b>' + esc(it.name) + '</b>' + (s.n > 1 ? ' ×' + s.n : '') + '<br><span class="dim">' + itemDesc(it) + '</span></span><span class="bt"><button data-a="sell" data-i="' + i + '">+$' + sellPrice(s.id) + (s.id === 'arrows' ? ' /10' : '') + '</button></span></div>';
+      h += shopRow(s.id, s.n, itemDesc(it), '<button data-a="sell" data-i="' + i + '">+$' + sellPrice(s.id) + (s.id === 'arrows' ? ' /10' : '') + '</button>');
     });
+    for (const k of Object.keys(P.mats)) h += shopRow(k, P.mats[k], itemDesc(ITEMS[k]), '<button data-a="sellmat" data-id="' + k + '">+$' + sellPrice(k) + '</button>');
   }
   h += '<div class="foot"><button data-a="close" class="big">Leave</button></div>';
   return h;
@@ -7470,10 +8634,12 @@ function shopClick(e) {
   const a = b.dataset.a, i = +b.dataset.i;
   if (a === 'close') { closeShop(); return; }
   if (a === 'tab') shopTab = b.dataset.t;
+  else if (a === 'forge') { const r = shopRef; closeShop(); openForge(r, 'smith'); return; }
+  else if (a === 'sellmat') { if (invTake(b.dataset.id, 1)) { P.gold += sellPrice(b.dataset.id); sfx('coin'); } }
   else if (a === 'buy') {
     const s = shopRef.stock[i];
     const pr = s ? buyPrice(shopRef, s) : 0;
-    if (s && P.gold >= pr) { if (invAdd(s.id, s.n)) { P.gold -= pr; sfx('coin'); autoEquip(s.id); } else { sfx('hurt'); } }
+    if (s && P.gold >= pr) { if (invAdd(s.id, s.n)) { P.gold -= pr; sfx('coin'); autoEquip(s.id); hotAuto(s.id); } else { sfx('hurt'); } }
   } else if (a === 'sell') {
     const s = P.inv[i];
     if (s) {
@@ -7516,7 +8682,7 @@ function talkRender() {
   else if (T.view === 'free') { lines = ['"Bless you! I thought I\'d die out here."', '"Lead the way. I\'ll stay close."']; btns.push(['free', 'Follow me']); }
   else if (T.view === 'offer') {
     const q = T.offer; who = npcTitle(e) + ' · ' + q.title;
-    lines = (q.lines || []).concat(['<span class="dim">Objective: ' + esc(q.steps[0].txt) + (q.steps.length > 1 ? ', then ' + esc(q.steps[q.steps.length - 1].txt.charAt(0).toLowerCase() + q.steps[q.steps.length - 1].txt.slice(1)) : '') + '</span>', '<span class="gold">Reward: ' + q.rew.gold + ' gold · ' + q.rew.xp + ' XP' + (q.rew.items && q.rew.items.length ? ' · gear' : '') + (q.rew.rep ? ' · reputation' : '') + '</span>']);
+    lines = (q.lines || []).concat(['<span class="dim">Objective: ' + esc(q.steps[0].txt) + (q.steps.length > 1 ? ', then ' + esc(q.steps[q.steps.length - 1].txt.charAt(0).toLowerCase() + q.steps[q.steps.length - 1].txt.slice(1)) : '') + '</span>', '<span class="gold">Reward: ' + q.rew.gold + ' gold · ' + q.rew.xp + ' XP' + (q.rew.items || []).map(id => id[0] === '$' ? ' · gear' : ' · ' + thumbImg(id, 'sm') + esc(ITEMS[id].name)).join('') + (q.rew.rep ? ' · reputation' : '') + '</span>']);
     btns.push(['accept', 'Accept'], ['decline', 'Decline']);
   } else {
     const greet = (ROLE_GREET[e.kind] || ['"Good day."']).map(l => l.replace('%COST%', e.role === 'inn' ? innCost(e) : ''));
@@ -7596,6 +8762,7 @@ function step(dt) {
   if (typeof window !== 'undefined' && window.__FREEZE) { render(dt); syncUI(); return; } // test hook: hold a staged frame
   if (S.mode === 'play' || S.mode === 'dying') update(dt, readInput());
   else if (S.mode === 'talk' || S.mode === 'log') { S.fade = Math.max(0, S.fade - dt); updateCamera(dt); }
+  else if (S.mode === 'forge') { forgeTick(dt); updateCamera(dt); }
   else if (S.mode === 'title') {
     S.t += dt; P.a += dt * 0.1; S.time = 0.735; S.darkness = darkAt(S.time);
     manageChunks(3); updateCamera(dt);
@@ -7637,12 +8804,22 @@ function init() {
   $('btnQuit').addEventListener('click', () => { if (S.mode === 'paused') saveGame(); show('pause', false); resetWorld(); manageChunks(25); updateCamera(0, true); showTitle(); });
   { const bl = $('btnLog'); if (bl) bl.addEventListener('click', () => { show('pause', false); S.mode = 'play'; openLog(); }); }
   $('invPanel').addEventListener('click', invClick);
+  $('invPanel').addEventListener('pointerdown', invPointerDown);
+  window.addEventListener('pointermove', invPointerMove);
+  window.addEventListener('pointerup', invPointerUp);
+  window.addEventListener('pointercancel', () => { invDragEnd(); });
+  window.addEventListener('wheel', onWheel, { passive: false });
+  $('forgePanel').addEventListener('click', forgeClick);
+  $('forgePanel').addEventListener('pointerdown', e => { const b = e.target.closest && e.target.closest('button'); if ((b && b.dataset.a === 'strike') || e.target.id === 'mgcv') { e.preventDefault(); audioInit(); forgeStrike(); } });
+  bindHotbar();
+  try { thumbsInit(); } catch (err) { console.error(err); }
   $('shopPanel').addEventListener('click', shopClick);
   $('overPanel').addEventListener('click', overClick);
   $('talkPanel').addEventListener('click', talkClick);
   $('logPanel').addEventListener('click', logClick);
   bindTouch();
   if (IS_TOUCH) document.body.classList.add('touchdev');
+  layoutTouch();
   setMute(AU.muted);
   showTitle();
   requestAnimationFrame(frame);

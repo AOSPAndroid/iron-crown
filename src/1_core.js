@@ -54,7 +54,7 @@ function mixRGB(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]
 const FLAME = "*^&'";
 
 // ---------- items ----------
-const ITEMS = {
+const ITEM_DEFS = {
   rusty_sword: { name: 'Rusty Sword', short: 'RustySwd', type: 'sword', hands: 1, dmg: 12, spd: 0.46, range: 2.3, col: '#a08a70', price: 18, glyph: '/', tier: 0 },
   iron_sword: { name: 'Iron Sword', short: 'IronSwd', type: 'sword', hands: 1, dmg: 17, spd: 0.44, range: 2.4, col: '#b8c0c8', price: 65, glyph: '/', tier: 1 },
   steel_sword: { name: 'Steel Arming Sword', short: 'SteelSwd', type: 'sword', hands: 1, dmg: 23, spd: 0.42, range: 2.5, col: '#dfe8f0', price: 160, glyph: '/', tier: 2 },
@@ -76,15 +76,67 @@ const ITEMS = {
   halfplate: { name: 'Half-Plate', short: 'HalfPlt', type: 'armor', def: 0.52, slow: 0.81, color: '#c8d2dc', dark: '#4f80e0', legs: '#8a929a', helm: true, price: 500, glyph: 'H', tier: 3 },
   fullplate: { name: 'Full Plate', short: 'FullPlt', type: 'armor', def: 0.65, slow: 0.74, color: '#eef4fa', dark: '#b0bcc8', legs: '#c8d2dc', helm: true, price: 880, glyph: 'H', tier: 4 },
   potion: { name: 'Healing Draught', short: 'Potion', type: 'potion', stack: true, heal: 55, price: 25, glyph: '+' },
-  arrows: { name: 'Arrows', short: 'Arrows', type: 'ammo', stack: true, price: 2, glyph: '>' }
+  arrows: { name: 'Arrows', short: 'Arrows', type: 'ammo', stack: true, price: 2, glyph: '>' },
+  bandage: { name: 'Linen Bandage', short: 'Bandage', type: 'potion', stack: true, heal: 25, price: 10, glyph: '+' },
+  // crafting materials: kept in a separate pouch (they never fill the bag)
+  iron_ore: { name: 'Iron Ore', short: 'IronOre', type: 'mat', stack: true, price: 6, glyph: '*', tier: 0, col: '#b0784a' },
+  steel_ingot: { name: 'Steel Ingot', short: 'Steel', type: 'mat', stack: true, price: 22, glyph: '=', tier: 1, col: '#c8d4e0' },
+  leather_hide: { name: 'Leather Hide', short: 'Hide', type: 'mat', stack: true, price: 8, glyph: '~', tier: 0, col: '#a8703e' },
+  wood: { name: 'Timber', short: 'Timber', type: 'mat', stack: true, price: 3, glyph: '#', tier: 0, col: '#b08a5a' },
+  cloth: { name: 'Linen Cloth', short: 'Cloth', type: 'mat', stack: true, price: 5, glyph: '%', tier: 0, col: '#e0d6bc' },
+  herb: { name: 'Healing Herb', short: 'Herb', type: 'mat', stack: true, price: 4, glyph: '"', tier: 0, col: '#6ab04a' },
+  silver: { name: 'Silver Nugget', short: 'Silver', type: 'mat', stack: true, price: 35, glyph: '*', tier: 2, col: '#e8f0ff' },
+  scrap: { name: 'Gremlin Scrap', short: 'Scrap', type: 'mat', stack: true, price: 7, glyph: '&', tier: 1, col: '#9aa040' },
+  frost_shard: { name: 'Frost Shard', short: 'Frost', type: 'mat', stack: true, price: 45, glyph: '^', tier: 3, col: '#8ae0ff' },
+  ghost_essence: { name: 'Ghost Essence', short: 'Essence', type: 'mat', stack: true, price: 40, glyph: 'o', tier: 3, col: '#c8b8ff' }
 };
-for (const k in ITEMS) ITEMS[k].id = k;
+for (const k in ITEM_DEFS) ITEM_DEFS[k].id = k;
+// Forged variants live in the id string: base[+level][!temper][#quality], e.g. 'iron_sword+2!s#1'
+// (level 1-5, temper s = silvered / f = frost-tempered, quality 1 = fine / 2 = masterwork). ITEMS resolves them on demand,
+// so every id stays a plain string in hands, bag, hotbar and saves.
+const UPG_TYPES = { sword: 1, sword2: 1, bow: 1, shield: 1, gun: 1, armor: 1, torch: 0 };
+const TEMPER = { s: { name: 'silvered', col: '#f4f8ff', desc: 'x1.5 vs undead, ghosts and witches' }, f: { name: 'frost-tempered', col: '#a8e8ff', desc: '+10% damage · chills foes' } };
+const QUAL = ['', 'Fine', 'Masterwork'];
+const VARC = new Map();
+function parseVid(id) {
+  const m = /^([a-z0-9_]+)(?:\+([1-5]))?(?:!([sf]))?(?:#([12]))?$/.exec(id || '');
+  if (!m || !ITEM_DEFS[m[1]]) return null;
+  return { base: m[1], lvl: m[2] ? +m[2] : 0, temper: m[3] || '', q: m[4] ? +m[4] : 0 };
+}
+function makeVid(base, lvl, temper, q) { return base + (lvl ? '+' + lvl : '') + (temper ? '!' + temper : '') + (q ? '#' + q : ''); }
+function variantItem(id) {
+  let v = VARC.get(id); if (v !== undefined) return v;
+  const p = parseVid(id), b = p && ITEM_DEFS[p.base];
+  v = null;
+  if (b && UPG_TYPES[b.type] && (p.lvl || p.temper || p.q) && id === makeVid(p.base, p.lvl, p.temper, p.q)) {
+    const L = p.lvl, q = p.q, qm = q === 2 ? 1.1 : q === 1 ? 1.05 : 1;
+    v = Object.assign({}, b, { id, base: p.base, lvl: L, temper: p.temper, q });
+    if (b.dmg) v.dmg = Math.round(b.dmg * (1 + 0.08 * L) * qm * (p.temper === 'f' ? 1.1 : 1)) + L;
+    if (b.block) v.block = Math.min(0.95, b.block + 0.03 * L + 0.02 * q);
+    if (b.type === 'armor') v.def = Math.min(0.82, b.def + 0.025 * L + 0.015 * q);
+    if (b.draw) v.draw = b.draw * (1 - 0.02 * L);
+    v.price = Math.round(b.price * (1 + 0.35 * L + 0.15 * q) + (p.temper ? 60 : 0));
+    if (p.temper === 's') { v.silver = true; v.col = TEMPER.s.col; }
+    if (p.temper === 'f') { v.frost = true; v.col = TEMPER.f.col; }
+    v.name = (q ? QUAL[q] + ' ' : '') + b.name + (p.temper ? ' (' + TEMPER[p.temper].name + ')' : '') + (L ? ' +' + L : '');
+    v.short = b.short + (L ? '+' + L : '');
+  }
+  VARC.set(id, v); return v;
+}
+const ITEMS = new Proxy(ITEM_DEFS, {
+  get(t, k) { if (k in t) return t[k]; return typeof k === 'string' ? (variantItem(k) || undefined) : undefined; },
+  has(t, k) { return k in t || (typeof k === 'string' && !!variantItem(k)); }
+});
+const baseId = id => { const it = ITEMS[id]; return it ? (it.base || it.id) : id; };
+const TIER_COL = ['#d8d0c0', '#7ad06a', '#6ab0ff', '#c88aff', '#ffc848'];
+function tierCol(it) { if (!it) return TIER_COL[0]; const t = it.tier === undefined ? 0 : it.tier; return TIER_COL[clamp(t + (it.q === 2 ? 1 : 0), 0, 4)]; }
 const TIER = {
   sword: ['rusty_sword', 'iron_sword', 'steel_sword', 'longsword', 'crown_blade'],
   armor: ['gambeson', 'leather', 'chainmail', 'halfplate', 'fullplate'],
   bow: ['short_bow', 'short_bow', 'long_bow', 'war_bow', 'war_bow'],
   shield: ['buckler', 'buckler', 'kite_shield', 'tower_shield', 'tower_shield']
 };
+const MAT_USE = { iron_ore: 'smelt into steel, arrows', steel_ingot: 'blades, plate, upgrades', leather_hide: 'grips, armour', wood: 'shields, bows, arrows, torches', cloth: 'gambesons, bandages', herb: 'healing draughts', silver: 'silvering, fine work', scrap: 'pistols, gadgets', frost_shard: 'frost tempering', ghost_essence: 'high upgrades, crown work' };
 function itemDesc(it) {
   switch (it.type) {
     case 'sword': return 'DMG ' + it.dmg + ' · one hand';
@@ -94,8 +146,9 @@ function itemDesc(it) {
     case 'torch': return 'Light at night · fire burns undead';
     case 'gun': return 'DMG ' + it.dmg + ' · reload ' + it.reload + 's';
     case 'armor': return 'ARMOR ' + Math.round(it.def * 100) + '% · speed ' + Math.round(it.slow * 100) + '%';
-    case 'potion': return 'Restores ' + it.heal + ' HP';
+    case 'potion': return 'Restores ' + it.heal + ' HP' + (it.id === 'bandage' ? ' · quick to apply' : '');
     case 'ammo': return 'For bows';
+    case 'mat': return 'Crafting material' + (MAT_USE[it.id] ? ' · ' + MAT_USE[it.id] : '');
   }
   return '';
 }
@@ -136,3 +189,13 @@ const KINDS = {
   captive: { name: 'captive', team: 2, hp: 9999, spd: 5.2, dmg: 0, range: 0, cd: 9, wind: 0, r: 0.42, h: 1.8, spr: 'villager', ai: 'follow', role: 'quest' }
 };
 for (const k in KINDS) KINDS[k].id = k;
+// crafting materials dropped by foes: [id, chance, min, max]
+const MAT_LOOT = {
+  bandit: [['leather_hide', 0.3], ['cloth', 0.3]], soldier: [['cloth', 0.3], ['iron_ore', 0.2], ['steel_ingot', 0.06]], pikeman: [['wood', 0.3], ['steel_ingot', 0.08]],
+  musketeer: [['cloth', 0.3], ['scrap', 0.1]], archer: [['wood', 0.35, 1, 2]], dragoon: [['leather_hide', 0.5, 1, 2], ['steel_ingot', 0.2]],
+  vampire: [['ghost_essence', 0.15], ['silver', 0.1], ['cloth', 0.3]], witch: [['herb', 0.6, 1, 3], ['ghost_essence', 0.2]],
+  giant: [['leather_hide', 0.8, 2, 4], ['wood', 0.6, 2, 4]], frostgiant: [['frost_shard', 1, 2, 4], ['leather_hide', 0.6, 1, 3]],
+  gremlin: [['scrap', 0.45]], gremlin_bomber: [['scrap', 0.5]], gremlin_shaman: [['herb', 0.4], ['scrap', 0.4]], gremlin_brute: [['scrap', 1, 2, 5], ['iron_ore', 0.5, 1, 2]],
+  ghost: [['ghost_essence', 0.55]], vlord: [['ghost_essence', 1, 2, 3], ['silver', 0.6, 1, 2]], lord: [['silver', 1, 2, 3]]
+};
+for (const k in MAT_LOOT) KINDS[k].loot = (KINDS[k].loot || []).concat(MAT_LOOT[k]);

@@ -88,6 +88,105 @@ body:not(.touchdev) .tc{display:none}
 .quest .bt button:disabled{opacity:.5;cursor:default}
 .quest .bt button.dim2{color:#a89878;border-color:#4a3a28}
 #pause .keys{margin-top:16px}
+
+/* ---- shared panel look: dark translucent cards, serif headers, tier colours ---- */
+.card{background:linear-gradient(180deg,rgba(24,18,12,.94),rgba(12,9,6,.95));border:1px solid #6a5a40;box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 0 3px rgba(26,18,10,.85) inset;border-radius:3px}
+.hdr b{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:17px;letter-spacing:.14em;color:var(--gold);text-shadow:0 1px 0 #000}
+.hdr .hgold{margin-left:auto;margin-right:12px;color:var(--gold);font-weight:700}
+.sec{font-family:Georgia,"Times New Roman",serif;letter-spacing:.22em;color:#a8946c}
+.sec .hint{font-family:ui-monospace,Menlo,monospace;letter-spacing:0;color:#7a6c54;font-size:10px;margin-left:6px}
+.inm{font-weight:700}
+.up{color:#8ae07a}.dn{color:#ff7a6a}.eqd{color:#9ae0ff;font-size:11px}
+img.th,span.th{width:44px;height:44px;flex:none;image-rendering:auto;display:inline-block}
+span.th.gly{font-size:26px;font-weight:700;text-align:center;line-height:44px}
+img.th.sm,span.th.sm{width:22px;height:22px;vertical-align:middle;line-height:22px;font-size:14px}
+img.th.big{width:72px;height:72px}
+img.th.huge{width:120px;height:120px;display:block;margin:6px auto}
+.row img.th{background:radial-gradient(circle,rgba(255,240,200,.08),rgba(0,0,0,0) 70%)}
+.tabs button.alt{margin-left:auto;color:#c8e0a0;border-color:#5a7a40}
+.chips{display:inline-flex;flex-wrap:wrap;gap:4px;margin-top:3px;vertical-align:middle}
+.chip{display:inline-flex;align-items:center;gap:2px;background:rgba(0,0,0,.35);border:1px solid #3a2e20;padding:1px 6px 1px 2px;font-size:11px;border-radius:2px}
+.chip b{color:#e8dcc0}.chip.short{border-color:#7a2a20}.chip.short b{color:#ff7a6a}.chip.gain b{color:#8ae07a}.chip.own b{color:#e8dcc0}
+.gp{font-size:11px;color:var(--gold);font-weight:700}.gp.short{color:#ff7a6a}
+.row.rec.no{opacity:.5}
+.row.rec .bt.col{flex-direction:column}
+.rew{font-size:11px;margin-top:3px}
+.pouchbar{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 2px;padding:5px;background:rgba(0,0,0,.25);border:1px solid #2e2418}
+/* inventory grid */
+#inv .card{max-width:720px}
+.invtop{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.eqbox .lab{font-size:10px;letter-spacing:.2em;color:#8a7a60;margin-bottom:3px}
+.eqrow{display:flex;gap:6px}
+.eqrow .sl{width:58px}
+.invtop .stats{flex:1;min-width:200px}
+.grid{display:grid;gap:5px}
+.grid.g8{grid-template-columns:repeat(8,1fr)}
+.grid.g10{grid-template-columns:repeat(10,1fr)}
+.sl{position:relative;aspect-ratio:1;background:radial-gradient(circle at 50% 40%,rgba(60,48,32,.55),rgba(14,11,8,.85));border:1px solid #3a2e20;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;min-width:0;border-radius:2px}
+.sl img.th,.sl span.th{width:86%;height:86%;pointer-events:none;line-height:normal}
+.sl.empty{cursor:default;background:rgba(10,8,6,.55)}
+.sl.t1{border-color:#4a7a3a;box-shadow:inset 0 -2px 0 #7ad06a}.sl.t2{border-color:#3a5a8a;box-shadow:inset 0 -2px 0 #6ab0ff}.sl.t3{border-color:#6a4a8a;box-shadow:inset 0 -2px 0 #c88aff}.sl.t4{border-color:#8a6a2a;box-shadow:inset 0 -2px 0 #ffc848}
+.sl.t0{box-shadow:inset 0 -2px 0 #8a8070}
+.sl.sel{outline:2px solid #ffd84a;outline-offset:1px}
+.sl.hov{outline:2px dashed #9ae0ff;outline-offset:1px;background:rgba(80,120,150,.35)}
+.sl.lift{opacity:.35}
+.sl.cur{border-color:#ffd84a}
+.sl .lv{position:absolute;left:2px;top:1px;font-size:10px;color:#ffd84a;text-shadow:0 1px 0 #000}
+.sl .n{position:absolute;right:3px;bottom:1px;font-style:normal;font-weight:700;font-size:11px;color:#fff;text-shadow:0 1px 1px #000,0 0 2px #000}
+.sl .hm{position:absolute;left:2px;bottom:1px;font-style:normal;font-size:9px;font-weight:700;color:#9ae0ff;text-shadow:0 1px 0 #000}
+.sl .tp{position:absolute;right:3px;top:3px;width:6px;height:6px;border:1px solid #000;text-decoration:none}
+.sl .key{position:absolute;right:3px;top:1px;font-size:9px;color:#7a6c54}
+.sl .cap{font-size:10px;color:#5a4e3c;letter-spacing:.1em}
+.pouch{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.detail{position:sticky;bottom:-14px;margin:12px -14px -12px;padding:10px 14px 12px;background:linear-gradient(180deg,rgba(20,15,10,.97),rgba(10,8,5,.99));border-top:1px solid #6a5a40;z-index:2}
+.dtl{display:flex;gap:12px;align-items:flex-start}
+.dtl.empty{display:block;font-size:11.5px}
+.dimg{position:relative;width:80px;height:80px;flex:none;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(70,56,36,.6),rgba(10,8,6,.9));border:1px solid #4a3a28}
+.dimg .lv{position:absolute;left:4px;top:2px;color:#ffd84a;font-size:12px}
+.dtx{flex:1;min-width:0;font-size:12px;line-height:1.45}
+.dtx .inm{font-family:Georgia,"Times New Roman",serif;font-size:15px}
+.dtx .sub{font-size:11px;color:#a89878;margin-bottom:3px}
+table.st{border-collapse:collapse;margin:2px 0}
+table.st td{padding:1px 10px 1px 0;font-size:12px}
+table.st td:first-child{color:#a89878}
+.tpx{font-size:11px;margin-top:2px}
+.acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.acts button{font:inherit;font-size:12px;font-weight:700;background:#1f160d;color:var(--gold);border:1px solid #8a6a30;padding:7px 10px;cursor:pointer}
+.acts button.dim2{color:#a89878;border-color:#4a3a28}
+.ghost{position:fixed;left:0;top:0;width:60px;height:60px;z-index:99;pointer-events:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.7));opacity:.95}
+.ghost img.th{width:60px;height:60px}
+/* forge */
+#forge .card{max-width:640px}
+.mg{text-align:center}
+.mgh{display:flex;gap:12px;align-items:center;text-align:left;margin-bottom:8px}
+.mgh .sub,.mg .sub{font-family:Georgia,serif;letter-spacing:.2em;color:#a8946c;font-size:12px}
+.mg.res .sub{font-size:18px;color:var(--gold);margin-top:6px}
+#mgcv{position:static;inset:auto;display:block;margin:6px auto 0;width:100%;height:auto;max-width:560px;background:rgba(0,0,0,.35);border:1px solid #3a2e20;touch-action:none;cursor:pointer}
+.pips{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.pip{width:16px;height:16px;border:1px solid #6a5a40;background:#1a120a;transform:rotate(45deg)}
+.pip.p{background:#ffe070}.pip.g{background:#8ae07a}.pip.f{background:#c8a070}.pip.m{background:#7a2a20}
+.foot .strike{font-size:18px;padding:16px 46px;letter-spacing:.2em;background:#3a1a0c;border-color:#ff9a4a;color:#ffd8a0;touch-action:none}
+.foot .dim2{font:inherit;font-size:11px;background:none;color:#a89878;border:1px solid #4a3a28;padding:6px 10px;margin-top:8px;cursor:pointer}
+/* hotbar hit area (drawn on the HUD canvas) */
+#hotbar{position:fixed;z-index:7;touch-action:none;cursor:pointer}
+@media (max-height:520px) and (min-width:600px){
+  #inv .card,#forge .card{max-width:600px}
+  .grid,.pouch{gap:4px}
+  .dimg{width:58px;height:58px} img.th.big{width:52px;height:52px}
+  .dtx{font-size:11px} .dtx .inm{font-size:13px}
+  .acts{margin-top:5px} .acts button{padding:5px 8px;font-size:11px}
+  .detail{padding:7px 14px 9px}
+}
+@media (max-width:560px){
+  .grid.g10,.pouch{grid-template-columns:repeat(5,1fr)}
+  .card{padding:10px 10px;font-size:12.5px}
+  .detail{margin:10px -10px -10px;padding:8px 10px 10px;bottom:-14px}
+  img.th{width:38px;height:38px}
+  .row{gap:6px}
+  .eqrow .sl{width:52px}
+  .tabs{flex-wrap:wrap}
+  .tabs button{padding:7px 8px}
+}
 </style>
 </head>
 <body>
@@ -105,6 +204,7 @@ body:not(.touchdev) .tc{display:none}
   <div class="tb" id="bPot">POT</div>
   <div class="tb" id="bBag">BAG</div>
 </div>
+<div id="hotbar" class="hidden"></div>
 <div id="bPause" class="hidden">II</div>
 <div id="bQuest" class="hidden">QUESTS</div>
 
@@ -120,7 +220,8 @@ body:not(.touchdev) .tc{display:none}
       <b>J / L-click</b> attack — tap in rhythm for combos, hold for a heavy<br>
       <b>K / R-click</b> block · parry (tap just before a hit) · off-hand<br>
       <b>L / Tab</b> lock-on (again = next) · <b>Z X</b> turn camera<br>
-      <b>E</b> use / talk · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
+      <b>1-8 / wheel</b> hotbar · <b>E</b> use / talk / forge · <b>Q</b> quests · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>P</b> pause · <b>M</b> mute<br>
+      Hit ore rocks and trees for materials · forge and upgrade gear at a blacksmith, craft at a campfire<br>
       <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it · <span class="gold">!</span> / <span class="gold">?</span> = quest giver</span>
     </div>
     <div class="keys tc">
@@ -128,6 +229,7 @@ body:not(.touchdev) .tc{display:none}
       <b>ATTACK</b>: tap in rhythm for combos, hold for a heavy<br>
       <b>BLOCK / PARRY</b>: tap just before a hit lands · <b>LOCK</b>: target<br>
       <b>HORSE</b> · <b>USE</b> (talk) · <b>BAG</b> · <b>POT</b> · <b>QUESTS</b> · <b>II</b> pause<br>
+      <b>Hotbar</b>: tap a slot or swipe the bar · hold it for the bag<br>
       <span style="opacity:.8">Yellow flash = parry it · red flash = dodge it · <span class="gold">!</span> / <span class="gold">?</span> = quest giver</span>
     </div>
   </div>
@@ -139,6 +241,7 @@ body:not(.touchdev) .tc{display:none}
 <div id="talk" class="ov hidden"><div class="card" id="talkPanel"></div></div>
 <div id="qlog" class="ov hidden"><div class="card" id="logPanel"></div></div>
 <div id="shop" class="ov hidden"><div class="card" id="shopPanel"></div></div>
+<div id="forge" class="ov hidden"><div class="card" id="forgePanel"></div></div>
 
 <div id="pause" class="ov hidden">
   <div class="panel">
@@ -150,7 +253,7 @@ body:not(.touchdev) .tc{display:none}
     <div class="keys kb">
       <b>WASD</b> move · <b>Space</b> roll · <b>J / L-click</b> attack (hold = heavy)<br>
       <b>K / R-click</b> block · parry · <b>L / Tab</b> lock-on · <b>Z X</b> camera<br>
-      <b>E</b> use / talk · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag
+      <b>E</b> use / talk / forge · <b>Q</b> quest log · <b>H</b> horse · <b>R</b> potion · <b>I</b> bag · <b>1-8 / wheel</b> hotbar
     </div>
     <div class="keys tc">
       Joystick moves · <b>ROLL</b> · <b>ATTACK</b> (hold = heavy) · <b>BLOCK / PARRY</b><br>

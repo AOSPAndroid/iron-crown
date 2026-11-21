@@ -100,12 +100,12 @@ function startMain(i, quiet) {
 }
 
 // ---------- side quests: generated per village and giver ----------
-const ROLE_TYPES = { innkeeper: ['deliver', 'recover', 'bounty'], priest: ['manor', 'rescue', 'bounty'], captain: ['elite', 'bounty', 'rescue'] };
+const ROLE_TYPES = { innkeeper: ['deliver', 'recover', 'bounty'], priest: ['manor', 'rescue', 'bounty'], captain: ['elite', 'bounty', 'rescue'], smith: ['order'] };
 const CAPTIVES = ["Tom the miller's boy", 'Old Bess', 'Wat the tinker', 'Agnes Cole', 'young Hal', 'Martha the alewife', 'Brother Anselm', 'little Rowan'];
 const RELICS = ['a silver chalice', "the mill's ledger", "grandmother's locket", "the chapel's bell-clapper", 'the tithe purse', 'a box of seed corn', "the reeve's seal"];
 const ELITE_NAMES = { bandit: ['Black Wat', 'Gallows Jack', 'Sour Ned', 'Red Rowan'], soldier: ['Sergeant Crowle', 'Corporal Vane', 'Ensign Blight'], dragoon: ['Cornet Ashe', 'the Grey Dragoon'], vampire: ['Lady Morwen', 'the Pale Abbot'], gremlin_brute: ['Grimtooth', 'Old Scratch', 'Gnawbone'], witch: ['Mother Hobb', 'Mad Meg'] };
 function giverKey(e) { return e.qnpc ? e.qnpc : (e.village ? e.village.id : '?') + ':' + e.kind; }
-function giverName(e) { if (e.qnpc === 'hale') return 'Captain Hale'; if (e.cname) return e.cname; const v = e.village; return (e.kind === 'innkeeper' ? 'the innkeeper' : e.kind === 'priest' ? 'the priest' : e.kind) + (v && v.name ? ' of ' + v.name : ''); }
+function giverName(e) { if (e.qnpc === 'hale') return 'Captain Hale'; if (e.cname) return e.cname; const v = e.village; return (e.kind === 'innkeeper' ? 'the innkeeper' : e.kind === 'priest' ? 'the priest' : e.kind === 'smith' ? 'the blacksmith' : e.kind) + (v && v.name ? ' of ' + v.name : ''); }
 const OFFERC = new Map();
 function sideOffers(e) {
   const types = ROLE_TYPES[e.kind]; if (!types || !e.village || !e.village.id) return [];
@@ -167,6 +167,15 @@ function makeSide(type, e, v, gk, gen, n, R) {
       q.rew.gold = Math.round(q.rew.gold * 0.8); q.rew.vid = t.id;
       break;
     }
+    case 'order': {
+      const opts = [{ iron_ore: 4 + ((R() * 3) | 0), wood: 2 }, { leather_hide: 3, cloth: 2 }, { scrap: 4 }, { wood: 6, iron_ore: 1 }, { steel_ingot: 2, wood: 2 }, { frost_shard: 1, iron_ore: 3 }, { silver: 1, steel_ingot: 2 }];
+      const need = opts[(R() * (tier > 0 ? opts.length : 4)) | 0], kinds = ['sword', 'shield', 'armor'], k = kinds[(R() * 3) | 0];
+      q.title = 'An order for the forge'; q.sum = gname[0].toUpperCase() + gname.slice(1) + ' needs ' + matsLine(need) + ' to fill an order.';
+      q.lines = ['The Protector\'s quartermasters took every scrap of stock I had. I\'ve a lord\'s order to fill and nothing to fill it with.', 'Bring me ' + matsLine(need) + ' and I\'ll forge you something fine for your trouble.'];
+      q.steps = [{ t: 'mats', npc: gk, vid: v.id, need, txt: 'Bring ' + matsLine(need) + ' to ' + gname }];
+      q.rew.items = [makeVid(TIER[k][Math.min(4, tier + 1)], 0, '', 1)]; q.rew.gold = Math.round(q.rew.gold * 0.7);
+      break;
+    }
     case 'elite': {
       const kinds = tier >= 2 ? ['dragoon', 'gremlin_brute', 'vampire'] : ['bandit', 'soldier', 'gremlin_brute'], k = kinds[(R() * kinds.length) | 0], names = ELITE_NAMES[k] || ['the Butcher'];
       const nm = names[(R() * names.length) | 0], s = site(), pl = placeName(seed);
@@ -207,12 +216,13 @@ function completeQuest(q) {
   const r = q.rew || {}, got = [];
   if (r.gold) { P.gold += r.gold; got.push('+' + r.gold + ' gold'); }
   if (r.xp) { gainXP(r.xp); got.push('+' + r.xp + ' XP'); }
-  for (const it of r.items || []) { const id = it[0] === '$' ? rollLoot(it, (q.tier || 0) + 0.8 + (q.main ? q.ch * 0.25 : 0)) : it; giveOrDrop(id); autoEquip(id); got.push(ITEMS[id].name); }
+  const icons = [];
+  for (const it of r.items || []) { const id = it[0] === '$' ? rollLoot(it, (q.tier || 0) + 0.8 + (q.main ? q.ch * 0.25 : 0)) : it; giveOrDrop(id); autoEquip(id); if (typeof hotAuto === 'function') hotAuto(id); got.push(ITEMS[id].name); icons.push(id); }
   if (r.rep && r.vid) { S.Q.rep[r.vid] = (S.Q.rep[r.vid] || 0) + r.rep; const v = villageByKey(r.vid); got.push('+' + r.rep + ' reputation' + (v ? ' in ' + v.name : '')); }
   S.Q.act = S.Q.act.filter(x => x !== q); S.Q.done.push(q.id);
   if (!q.main && q.giver) S.Q.gen[q.giver.key] = (S.Q.gen[q.giver.key] || 0) + 1;
   for (const e of S.ents) if (e.qid === q.id && e.team === 2) e.dead = true;
-  banner('QUEST COMPLETE: ' + q.title.toUpperCase(), got.join(' · '), 5.5, '#8ae07a'); sfx('win');
+  banner('QUEST COMPLETE: ' + q.title.toUpperCase(), got.join(' · '), 5.5, '#8ae07a', icons.length ? icons : null); sfx('win');
   if (S.Q.track === q.id) S.Q.track = null;
   if (q.main) {
     const next = q.ch + 1;
@@ -308,6 +318,7 @@ function npcBusiness(e) {
   for (const q of S.Q.act) {
     const st = qStep(q); if (!st) continue;
     if (st.t === 'return' && npcIs(e, st)) out.turnin.push(q);
+    else if (st.t === 'mats' && npcIs(e, st) && haveMats(st.need)) out.turnin.push(q);
     else if (st.t === 'talk' && npcIs(e, st)) out.story.push(q);
     else if (st.t === 'free' && e.kind === 'captive' && e.qid === q.id && !e.freed) out.free.push(q);
   }
@@ -343,7 +354,7 @@ function questTarget(q) {
   if (st.t === 'reach' || st.t === 'escort') return { x: st.x, y: st.y };
   if (st.t === 'manor') { const m = [...MANC.values()].find(m => m && m.id === st.mid); if (m) { const p = l2w(m, 0, MAN_HZ - 2); return { x: p[0], y: p[1] }; } return null; }
   if (st.t === 'free') { const c = S.ents.find(e => e.qid === q.id && e.kind === 'captive'); return c ? { x: c.x, y: c.y } : null; }
-  if (st.t === 'talk' || st.t === 'return') {
+  if (st.t === 'talk' || st.t === 'return' || st.t === 'mats') {
     const e = S.ents.find(x => !x.dead && x.team === 2 && npcIs(x, st)); if (e) return { x: e.x, y: e.y };
     if (st.npc === 'stranger') { const L = villageLayout(ASHV()), n = L.npcs.find(n => n.kind === 'stranger'); if (n) return { x: n.x, y: n.y }; }
     if (st.x !== undefined) return { x: st.x, y: st.y };
@@ -351,7 +362,8 @@ function questTarget(q) {
   }
   return null;
 }
-function stepProgress(st) { return st && st.n > 1 && (st.t === 'kill') ? ' (' + (st.have || 0) + '/' + st.n + ')' : ''; }
+function stepProgress(st) { if (st && st.t === 'mats') return ' (' + Object.entries(st.need).map(([k, n]) => Math.min(invCount(k), n) + '/' + n).join(', ') + ')'; return st && st.n > 1 && (st.t === 'kill') ? ' (' + (st.have || 0) + '/' + st.n + ')' : ''; }
+function deliverOrder(q) { const st = qStep(q); if (!st || st.t !== 'mats' || !haveMats(st.need)) return false; takeMats(st.need); msg('You hand over ' + matsLine(st.need) + '.', '#e8dcc0'); advance(q); return true; }
 // ---------- save / load ----------
 function questSave() { return JSON.parse(JSON.stringify(S.Q)); }
 function questLoad(q, legacy) {

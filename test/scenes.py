@@ -15,7 +15,7 @@ window.scene = function(opts){
   P.x=opts.x; P.y=opts.y; P.a=opts.a===undefined?-Math.PI/2:opts.a; P.mounted=!!opts.mounted; P.hp=P.maxHp; P.st=opts.st===undefined?P.stMax:opts.st;
   S.horse.x=P.x+2.4*Math.cos(P.a+1.9); S.horse.y=P.y+2.4*Math.sin(P.a+1.9); S.horse.a=P.a+0.6; S.horse.state=P.mounted?'ridden':'idle';
   S.time=opts.time===undefined?0.45:opts.time; S.darkness=darkAt(S.time); S.tut=3; S.dirT=999; S.bloodMoon=false;
-  P.armor=opts.armor||'chainmail'; P.hands=opts.hands||['kite_shield','iron_sword'];
+  P.armor=opts.armor||'chainmail'; P.hands=opts.hands||['kite_shield','iron_sword']; P.inv=P.inv.filter(q=>!P.hands.includes(q.id)); if (typeof hotInit==='function') hotInit();
   if (opts.speed) { P.vx=Math.cos(P.a)*opts.speed; P.vy=Math.sin(P.a)*opts.speed; }
   manageChunks(80); S.curBiome=biomeAt(P.x,P.y);
   CAMK.yaw = CAMK.yawT = opts.yaw===undefined ? -Math.PI/2 : opts.yaw; CAMK.zoomLock = opts.zoom || 0;
@@ -89,6 +89,76 @@ SSCENES = {
   'ground': "(() => { let s=null; for(let r=180;r<1600 && !s;r+=40) for(let k=0;k<24;k++){ const a=k/24*Math.PI*2, x=Math.cos(a)*r, y=Math.sin(a)*r; if(biomeAt(x,y)===1 && biomeAt(x+10,y)===1 && !nearVillage(x,y,40) && !manorGround(x,y,30) && !castleGround(x,y) && !isWet(tileBase(x,y))) { s=[x,y]; break; } } return scene({x:s[0], y:s[1], time:0.4, hands:['buckler','iron_sword'], armor:'leather', v:2, step:1, zoom:1.25}); })()",
   'road': "(() => { const a=villageFor(0,0), b=villageLinks(a)[0], r=ROADS.get(a.id<b.id?a.id+'|'+b.id:b.id+'|'+a.id) || [...ROADS.values()][0], p=r.pts[1]; return scene({x:p[0], y:p[1], time:0.36, hands:['buckler','iron_sword'], armor:'leather', mounted:true, v:4, step:2, zoom:1.5}); })()",
 }
+
+# hotbar, inventory, forge, mining, shop (UI screens are DOM overlays over the frozen scene)
+UISETUP = """
+window.uikit = function(){
+  P.inv=[{id:'steel_sword+2#1',n:1},{id:'claymore',n:1},{id:'long_bow',n:1},{id:'tower_shield',n:1},{id:'halfplate',n:1},{id:'potion',n:5},{id:'bandage',n:3},{id:'arrows',n:24},{id:'pistol',n:1},{id:'crown_blade!s',n:1},{id:'buckler+1',n:1},{id:'chainmail',n:1},{id:'war_bow',n:1}];
+  P.hands=['kite_shield','iron_sword+1']; P.armor='leather';
+  P.hot=['iron_sword+1','kite_shield','claymore','long_bow','torch','potion','bandage',null]; P.inv.push({id:'torch',n:1}); P.hotSel=0;
+  P.mats={iron_ore:7,steel_ingot:4,leather_hide:3,wood:9,cloth:5,herb:4,silver:1,scrap:6,frost_shard:2,ghost_essence:1}; P.gold=412;
+};
+window.closeAll = function(){ for (const id of ['inv','forge','shop','talk','qlog']) show(id,false); INV.sel=null; FORGE.mg=null; FORGE.res=null; invDragEnd(); };
+window.uiscene = function(opts, after){ closeAll(); const pre=opts.pre; opts.pre=()=>{ uikit(); if (pre) pre(); }; scene(opts); if (after) { window.__FREEZE=false; after(); window.__FREEZE=true; render(0.05); } return 0; };
+window.oreNear = function(){ const v=villageFor(0,0); let best=null, bd=1e9; for (const c of CHUNKS.values()) for (const o of c.statics) if (o.type==='ore') { const d=Math.hypot(o.x-v.x,o.y-v.y); if (d<bd) { bd=d; best=o; } } return best; };
+"""
+UISCENES = {
+  'hud': "(() => { const v=villageFor(0,0); return uiscene({x:v.x+3, y:v.y+5, a:-1.2, time:0.42, hands:['kite_shield','iron_sword+1'], armor:'leather', pre:()=>{ hotLabel('Iron Sword +1', tierCol(ITEMS['iron_sword+1'])); S.hotLbl.t=1.5; msg('Picked up 2 Leather Hide', '#d8e8b0', 4.5, 'leather_hide'); msg('Picked up Healing Draught', '#ffe6a0', 4.5, 'potion'); }}); })()",
+  'inv_drag': "(() => { const v=villageFor(0,0); return uiscene({x:v.x+3, y:v.y+5, time:0.42, hands:['kite_shield','iron_sword+1'], armor:'leather'}, ()=>{ openInv(); }); })()",
+  'inv_detail': "(() => { const v=villageFor(0,0); return uiscene({x:v.x+3, y:v.y+5, time:0.42, hands:['kite_shield','iron_sword+1'], armor:'leather'}, ()=>{ openInv(); INV.sel={k:'bag',i:0}; invRender(); const d=document.querySelector('.detail'); if (d) d.scrollIntoView({block:'end'}); }); })()",
+  'forge': "(() => { const b=vb('smithy'), p=l2w(b, 0.6, 0.9); return uiscene({x:p[0], y:p[1], a:headingOf(b,-0.6,-1), time:0.62, yaw:headingOf(b,0,-1), hands:['kite_shield','iron_sword+1'], armor:'leather'}, ()=>{ openForge(S.ents.find(e=>e.kind==='smith'),'smith'); }); })()",
+  'forge_up': "(() => { const b=vb('smithy'), p=l2w(b, 0.6, 0.9); return uiscene({x:p[0], y:p[1], a:headingOf(b,-0.6,-1), time:0.62, yaw:headingOf(b,0,-1), hands:['kite_shield','iron_sword+1'], armor:'leather'}, ()=>{ openForge(S.ents.find(e=>e.kind==='smith'),'smith'); FORGE.tab='upgrade'; forgeRender(); }); })()",
+  'forge_mg': "(() => { const b=vb('smithy'), p=l2w(b, 0.6, 0.9); return uiscene({x:p[0], y:p[1], a:headingOf(b,-0.6,-1), time:0.62, yaw:headingOf(b,0,-1), hands:['kite_shield','iron_sword+1'], armor:'leather'}, ()=>{ openForge(S.ents.find(e=>e.kind==='smith'),'smith'); forgeAct('craft',{r:'smith:steel_sword'}); const m=FORGE.mg.m; m.res=[1]; m.i=1; m.zone=0.62; m.pos=0.48; m.fb='PERFECT!'; m.fbT=0.6; forgeRender(); drawMG(); }); })()",
+  'ore': "(() => { const o=oreNear(), a=-0.9, px=o.x-Math.cos(a)*(o.r+1.1), py=o.y-Math.sin(a)*(o.r+1.1); return uiscene({x:px, y:py, a, time:0.4, hands:[null,'iron_sword+1'], armor:'leather', zoom:0.8, pre:()=>{ swing('sword',0,0.6,a); sparks(o.x-Math.cos(a)*0.5, o.y-Math.sin(a)*0.5, 0.7, '!#ffd890', 10, true); addText(o.x, o.y, 1.9, '+1 Iron Ore', '#ffc890', true); msg('Mined Iron Ore (8)', '#d8e8b0', 4, 'iron_ore'); }}); })()",
+  'shop': "(() => { const m=S.ents.find(e=>e.kind==='merchant'), b=m.struct, p=b?l2w(b,0.4,0.8):[m.x+1,m.y+1]; return uiscene({x:p[0], y:p[1], time:0.5, yaw:b?headingOf(b,0,-1):undefined, hands:['kite_shield','iron_sword+1'], armor:'leather'}, ()=>{ openShop(m); }); })()",
+}
+async def ui_main(w, h, touch, tag, only):
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path='/usr/bin/google-chrome', args=ARGS)
+        ctx = await b.new_context(viewport={'width': w, 'height': h}, has_touch=touch, is_mobile=touch, device_scale_factor=2 if touch else 1)
+        pg = await ctx.new_page(); errs = []
+        pg.on('console', lambda m: errs.append(m.text) if m.type in ('error', 'warning') else None)
+        pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)))
+        await pg.goto(URL); await pg.wait_for_timeout(1500)
+        await pg.evaluate("document.getElementById('btnNew').click()"); await pg.wait_for_timeout(2500)
+        await pg.evaluate(SETUP + UISETUP + '; 0')
+        for k, js in UISCENES.items():
+            if only and k not in only and 'ui' not in only: continue
+            await pg.evaluate(js); await pg.wait_for_timeout(350)
+            if k == 'inv_drag':
+                a = await pg.evaluate("(() => { const r=document.querySelector('.sl.bag[data-i=\"0\"]').getBoundingClientRect(), t=document.querySelector('.sl.hot[data-i=\"7\"]').getBoundingClientRect(); return [r.x+r.width/2, r.y+r.height/2, t.x+t.width/2, t.y+t.height/2]; })()")
+                await pg.mouse.move(a[0], a[1]); await pg.mouse.down()
+                await pg.mouse.move((a[0] + a[2]) / 2, (a[1] + a[3]) / 2, steps=4); await pg.mouse.move(a[2] + 6, a[3] + 4, steps=4)
+                await pg.wait_for_timeout(150)
+                await pg.screenshot(path=str(SHOTS / f'sc_{tag}_{k}.png'))
+                await pg.mouse.up(); await pg.wait_for_timeout(100)
+                ok = await pg.evaluate("P.hot[7]")
+                print(tag, 'drag dropped onto hotbar slot 8:', ok)
+                continue
+            await pg.screenshot(path=str(SHOTS / f'sc_{tag}_{k}.png'))
+        info = await pg.evaluate("[GLOK, THUMBS.size, [...THUMBS.values()].filter(c=>c.gl).length]")
+        print(tag, 'GLOK, thumbs, GL-rendered thumbs:', info)
+        errs = [e for e in errs if 'GPU stall due to ReadPixels' not in e]
+        print(tag, 'console errors:', len(errs), errs[:10])
+        await b.close()
+def grid_inventory():
+    from PIL import Image, ImageDraw
+    order = ['hud', 'inv_drag', 'inv_detail', 'forge', 'forge_up', 'forge_mg', 'ore', 'shop']
+    parts = []
+    for tag, cols, tw in (('d', 4, 480), ('m', 8, 240)):
+        ims = [(n, Image.open(SHOTS / f'sc_{tag}_{n}.png').convert('RGB')) for n in order if (SHOTS / f'sc_{tag}_{n}.png').exists()]
+        if not ims: continue
+        th = int(ims[0][1].height * tw / ims[0][1].width)
+        rows = (len(ims) + cols - 1) // cols
+        G = Image.new('RGB', (cols * tw, rows * (th + 18)), (14, 12, 20)); d = ImageDraw.Draw(G)
+        for i, (n, im) in enumerate(ims):
+            x, y = (i % cols) * tw, (i // cols) * (th + 18)
+            G.paste(im.resize((tw, th), Image.LANCZOS), (x, y + 18)); d.text((x + 6, y + 3), n, fill=(240, 220, 160))
+        G.save(SHOTS / f'grid_inventory_{tag}.png'); parts.append(G)
+    W = max(g.width for g in parts); parts = [g.resize((W, int(g.height * W / g.width)), Image.LANCZOS) for g in parts]
+    G = Image.new('RGB', (W, sum(g.height for g in parts) + 8 * (len(parts) - 1)), (0, 0, 0)); y = 0
+    for g in parts: G.paste(g, (0, y)); y += g.height + 8
+    G.save(SHOTS / 'grid_inventory.png'); print('grid ->', SHOTS / 'grid_inventory.png', G.size)
 async def shoot(pg, name, js):
     await pg.evaluate(js)
     await pg.wait_for_timeout(300)
@@ -186,12 +256,18 @@ def grid_story():
     for g in parts: G.paste(g, (0, y)); y += g.height + 8
     G.save(SHOTS / 'grid_story.png'); print('grid ->', SHOTS / 'grid_story.png', G.size)
 async def run():
-    tags = [a for a in sys.argv[1:] if a in ('d', 'm')] or ['d', 'm']
-    only = [a for a in sys.argv[1:] if a not in ('d', 'm')]
+    tags = [a for a in sys.argv[1:] if a in ('d', 'm', 'l')] or ['d', 'm']
+    only = [a for a in sys.argv[1:] if a not in ('d', 'm', 'l')]
+    if only and all(o in UISCENES or o == 'ui' for o in only):
+        if 'd' in tags: await ui_main(1280, 720, False, 'd', only)
+        if 'm' in tags: await ui_main(390, 844, True, 'm', only)
+        if 'l' in tags: await ui_main(844, 390, True, 'l', only)
+        return
     if 'd' in tags: await main(1280, 720, False, 'd', only)
     if 'm' in tags: await main(390, 844, True, 'm', only)
 if __name__ == '__main__':
     if sys.argv[1:2] == ['grid']: grid(); grid_buildings(); grid_story()
     elif sys.argv[1:2] == ['grids']: grid_story()
+    elif sys.argv[1:2] == ['gridi']: grid_inventory()
     elif sys.argv[1:2] == ['gridb']: grid_buildings()
     else: asyncio.run(run())

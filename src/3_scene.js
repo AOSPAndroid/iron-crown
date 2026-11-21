@@ -81,7 +81,7 @@ function staticKey(o) {
   switch (o.type) {
     case 'rock': return o.snow ? 'rocksnow' : o.sand ? 'rocksand' : 'rock';
     case 'bigrock': return o.snow ? 'bigrocksnow' : 'bigrock';
-    case 'chest': case 'col': return null;
+    case 'chest': case 'col': case 'ore': return null;
     case 'bld': return o.mesh;
     default: return STATIC_BUILD[o.type] ? o.type : null;
   }
@@ -142,10 +142,11 @@ function buildChunkGPU(c) {
     if (any) water = gpuMesh(mb);
   }
   // scenery instances grouped by mesh
-  const groups = {}, chests = [], fires = [], houses = [];
+  const groups = {}, chests = [], fires = [], houses = [], ores = [];
   c.hg = hg;
   for (const o of c.statics) {
     if (o.type === 'chest') { chests.push(o); continue; }
+    if (o.type === 'ore') { ores.push(o); continue; }
     if (o.type === 'fire') fires.push(o); if (o.chim) houses.push(o);
     const k = staticKey(o); if (!k) continue;
     const h = hash2(Math.round(o.x * 7), Math.round(o.y * 7)), sr = SSCALE[k] || [1, 1];
@@ -189,7 +190,7 @@ function buildChunkGPU(c) {
     const fm = farMesh(k), deco = k.startsWith('pebble') || k === 'tuft' || k.startsWith('flower') || k === 'reed' || !!DECOR_BUILD[k];
     inst.push({ vao: instVAO(mesh, ibo), far: fm ? instVAO(fm, ibo) : null, fmesh: fm, ibo, n: data.length / 8, mesh, small: deco ? 34 : k === 'bush' || k.startsWith('rock') ? 80 : 999, ow: OWK[k] || 0 });
   }
-  const g = { vao, vbo, water, inst, chests, fires, houses, cx: c.cx, cy: c.cy, hmid: (hmin + hmax) / 2, hr: (hmax - hmin) / 2, c };
+  const g = { vao, vbo, water, inst, chests, fires, houses, ores, cx: c.cx, cy: c.cy, hmid: (hmin + hmax) / 2, hr: (hmax - hmin) / 2, c };
   GCH.set(c.key, g);
   return g;
 }
@@ -1152,6 +1153,13 @@ function drawStaticsAndTerrain(U) {
     setId(0.9);
     m4trs(TMPM, o.x, groundH(o.x, o.y), o.y, hash2(o.x | 0, o.y | 0) * TAU, 0, 0, 1); const mesh = staticMesh(S.looted.has(o.id) ? 'chestopen' : 'chest');
     gl.uniformMatrix4fv(U.uModel, false, TMPM); gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
+  }
+  for (const g of vis) for (const o of g.ores || []) {
+    setId(0.9);
+    const dep = oreDepleted(o), k = dep ? 'ore_dep' : o.silver ? 'ore_silver' : 'ore_iron';
+    m4trs(TMPM, o.x, groundH(o.x, o.y) - 0.05, o.y, hash2(o.x * 3 | 0, o.y * 3 | 0) * TAU, 0, 0, 1); const mesh = namedMesh(k + (o.snow ? 's' : ''), () => mkOreM(k, o.snow));
+    gl.uniformMatrix4fv(U.uModel, false, TMPM); gl.bindVertexArray(mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, mesh.n);
+    shadowAt(o.x, o.y, 1.1);
   }
   for (const g of vis) {
     if (Math.abs(g.cx * CS + 16 - CAM.x) > 40 || Math.abs(g.cy * CS + 16 - CAM.y) > 40) continue;

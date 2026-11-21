@@ -229,7 +229,7 @@ const GIANTS = {
 };
 function itemSpec(id) {
   if (!id) return null; const it = ITEMS[id]; if (!it) return null;
-  return it.type === 'sword' ? { t: 'sword', col: it.col, tier: it.tier } : it.type === 'sword2' ? { t: 'claymore' } : it.type === 'bow' ? { t: 'bow' } : it.type === 'shield' ? { t: 'shield', id } : it.type === 'torch' ? { t: 'torch' } : it.type === 'gun' ? { t: 'pistol' } : null;
+  return it.type === 'sword' ? { t: 'sword', col: it.col, tier: it.tier } : it.type === 'sword2' ? { t: 'claymore', col: it.col } : it.type === 'bow' ? { t: 'bow' } : it.type === 'shield' ? { t: 'shield', id: it.base || id } : it.type === 'torch' ? { t: 'torch' } : it.type === 'gun' ? { t: 'pistol' } : null;
 }
 // a held item in the arm's rest frame (arm hangs along -y from the shoulder); hand at HAND
 function buildItem(mb, it, side) {
@@ -624,10 +624,59 @@ function mkLootM(id) {
   const mb = new MB(51); const it = ITEMS[id];
   if (!it) { mb.sph(0, 0.1, 0, 0.12, 0.08, 0.12, '#ffd84a', 0); return mb; }
   switch (it.type) {
-    case 'potion': mb.sph(0, 0.12, 0, 0.13, 0.13, 0.13, '#e8304a'); mb.cyl(0, 0.22, 0, 0.05, 0.05, 0.1, 6, '#f0e8d8'); break;
+    case 'potion':
+      if (id === 'bandage') { mb.push().tr(0, 0.1, 0).rz(Math.PI / 2).cyl(0, -0.14, 0, 0.1, 0.1, 0.28, 10, '#ece4d0', '#d8ccb0').pop(); mb.bc(0.05, 0.1, 0.1, 0.06, 0.18, 0.02, '#c84a3a'); mb.tri([0.14, 0.02, 0.08], [0.14, 0.18, 0.08], [0.3, 0.0, 0.1], '#ece4d0'); }
+      else { mb.sph(0, 0.12, 0, 0.13, 0.13, 0.13, '#e8304a'); mb.cyl(0, 0.22, 0, 0.05, 0.05, 0.1, 6, '#f0e8d8'); mb.cyl(0, 0.32, 0, 0.055, 0.055, 0.04, 6, '#8a5a2e'); }
+      break;
     case 'ammo': for (let k = -2; k <= 2; k++) mb.beam([k * 0.05, 0.05, -0.35], [k * 0.05, 0.05, 0.35], 0.03, '#c8945a'); mb.bc(0, 0.05, 0.3, 0.24, 0.07, 0.09, '#ffffff'); break;
-    case 'armor': mb.sph(0, 0.1, 0, 0.32, 0.12, 0.24, it.color); mb.sph(0, 0.18, 0.1, 0.24, 0.05, 0.12, it.dark); break;
+    case 'armor': mb.push().tr(0, 0.06, 0).rx(-Math.PI / 2).sc(0.55).tr(0, -0.55, 0); mkArmorIcon(mb, it); mb.pop(); break;
+    case 'mat': mkMatMesh(mb, it.id); break;
     default: { const s = itemSpec(id); if (s) { mb.push().tr(0, 0.14, 0).rz(Math.PI / 2).tr(-HAND.x, -HAND.y, 0); buildItem(mb, s, 1); mb.pop(); } }
+  }
+  return mb;
+}
+// a little cuirass on a stand: torso, shoulders, belt, helm for the heavier sets (rig units, feet at 0)
+function mkArmorIcon(mb, it) {
+  const c = it.color, d = it.dark, l = it.legs || d, plate = it.def >= 0.4;
+  mb.frus(0.5, 0.92, 0.2, 0.13, 0.27, 0.15, c);
+  mb.frus(0.36, 0.52, 0.22, 0.14, 0.2, 0.13, l);
+  mb.bc(0, 0.53, 0, 0.44, 0.06, 0.3, d);
+  mb.bc(0, 0.53, 0.152, 0.07, 0.07, 0.01, '#e8c050');
+  for (const sd of [-1, 1]) { mb.sph(sd * 0.29, 0.88, 0, 0.11, 0.08, 0.13, plate ? d : c, 0); }
+  if (plate) { mb.push().tr(0.32, 0, 0); mb.frus(0.58, 0.84, 0.06, 0.06, 0.07, 0.07, c); mb.pop(); mb.push().tr(-0.32, 0, 0); mb.frus(0.58, 0.84, 0.06, 0.06, 0.07, 0.07, c); mb.pop(); }
+  mb.bc(0, 0.72, 0.15, 0.03, 0.34, 0.01, d);
+  if (it.helm) { mb.sph(0, 1.06, 0, 0.13, 0.13, 0.14, c, 1); mb.bc(0, 1.03, 0.12, 0.2, 0.025, 0.04, '#2a2a30'); if (it.def >= 0.6) mb.cyl(0, 1.17, 0, 0.02, 0.0, 0.14, 5, '#d0453a'); }
+  else mb.cyl(0, 0.92, 0, 0.07, 0.06, 0.06, 7, '#e8c39e');
+}
+// crafting materials (rig-ish units, resting on y = 0)
+function mkMatMesh(mb, id) {
+  switch (id) {
+    case 'iron_ore': mb.ico(0, 0.16, 0, 0.22, 0.17, 0.2, '#6e6862', 0.25, 0, 31); for (let k = 0; k < 5; k++) { const a = k * 1.3, r = 0.15; mb.ico(Math.cos(a) * r, 0.18 + (k % 2) * 0.08, Math.sin(a) * r, 0.06, 0.05, 0.06, k % 2 ? '#c87a3a' : '#a85a2a', 0.2, 0, 40 + k); } break;
+    case 'silver': mb.ico(0, 0.12, 0, 0.16, 0.12, 0.15, '#7a7a82', 0.25, 0, 33); { const e = mb.em; mb.em = 0.35; for (let k = 0; k < 4; k++) { const a = k * 1.6 + 0.4; mb.ico(Math.cos(a) * 0.1, 0.17, Math.sin(a) * 0.1, 0.07, 0.06, 0.07, '#f0f6ff', 0.2, 0, 50 + k); } mb.em = e; } break;
+    case 'steel_ingot': for (const [x, y] of [[-0.12, 0], [0.12, 0], [0, 0.11]]) { mb.push().tr(x, y, 0); mb.frus(0, 0.1, 0.11, 0.2, 0.08, 0.16, '#c8d4e0'); mb.pop(); } break;
+    case 'leather_hide': { const pts = [[-0.3, -0.2], [0.05, -0.28], [0.3, -0.18], [0.26, 0.2], [-0.05, 0.3], [-0.3, 0.16]]; for (let i = 1; i < pts.length - 1; i++) mb.tri([pts[0][0], 0.05, pts[0][1]], [pts[i][0], 0.05 + i * 0.012, pts[i][1]], [pts[i + 1][0], 0.05 + i * 0.012, pts[i + 1][1]], '#a8703e'); mb.push().tr(-0.1, 0.08, 0).rz(Math.PI / 2).cyl(0, -0.2, 0, 0.07, 0.07, 0.42, 8, '#8a5830', '#c89060').pop(); break; }
+    case 'wood': for (const [x, y, z] of [[-0.1, 0.08, 0], [0.1, 0.08, 0], [0, 0.24, 0]]) { mb.push().tr(x, y, z).rx(Math.PI / 2).cyl(0, -0.3, 0, 0.09, 0.09, 0.6, 7, '#8a5a32', '#d0a870').pop(); } break;
+    case 'cloth': mb.push().tr(0, 0.1, 0).rz(Math.PI / 2).cyl(0, -0.26, 0, 0.12, 0.12, 0.52, 10, '#e0d6bc', '#c8bc9a').pop(); mb.box(-0.27, 0.0, 0.05, 0.27, 0.02, 0.3, '#d8ccb0'); mb.bc(0, 0.1, 0, 0.06, 0.25, 0.25, '#b8403a'); break;
+    case 'herb': for (let k = 0; k < 6; k++) { const a = k / 6 * TAU, c = Math.cos(a), sn = Math.sin(a); mb.tri([0, 0.02, 0], [c * 0.08 - sn * 0.06, 0.12, sn * 0.08 + c * 0.06], [c * 0.3, 0.2 + (k % 2) * 0.1, sn * 0.3], k % 2 ? '#5aa040' : '#78c050'); } mb.cyl(0, 0, 0, 0.025, 0.02, 0.18, 5, '#5a7a30'); mb.sph(0, 0.2, 0, 0.05, 0.05, 0.05, '#e8e070', 0); break;
+    case 'scrap': mb.cyl(-0.08, 0.02, 0, 0.13, 0.13, 0.05, 8, '#8a8a52'); for (let k = 0; k < 8; k++) { const a = k / 8 * TAU; mb.bc(-0.08 + Math.cos(a) * 0.15, 0.045, Math.sin(a) * 0.15, 0.05, 0.05, 0.05, '#7a7a46'); } mb.beam([0.02, 0.06, -0.1], [0.28, 0.14, 0.12], 0.05, '#6a5a3a'); mb.bc(0.18, 0.08, -0.12, 0.12, 0.06, 0.08, '#a8a060'); break;
+    case 'frost_shard': { const e = mb.em; mb.em = 0.45; mb.cyl(0, 0, 0, 0.09, 0, 0.5, 5, '#8ae0ff'); mb.push().tr(0.12, 0, 0.04).rz(-0.4).cyl(0, 0, 0, 0.06, 0, 0.32, 5, '#c8f4ff').pop(); mb.push().tr(-0.1, 0, -0.03).rz(0.5).cyl(0, 0, 0, 0.055, 0, 0.28, 5, '#6ac8f0').pop(); mb.em = e; break; }
+    case 'ghost_essence': mb.cyl(0, 0, 0, 0.11, 0.09, 0.22, 8, '#5a4a7a'); mb.cyl(0, 0.22, 0, 0.05, 0.05, 0.08, 6, '#5a4a7a'); { const e = mb.em; mb.em = 0.8; mb.sph(0, 0.11, 0, 0.085, 0.09, 0.085, '#d8c8ff', 0); mb.em = e; } mb.cyl(0, 0.3, 0, 0.055, 0.055, 0.04, 6, '#8a5a2e'); break;
+    default: mb.sph(0, 0.1, 0, 0.12, 0.08, 0.12, '#ffd84a', 0);
+  }
+}
+// an ore outcrop: a craggy grey rock studded with rusty iron (or bright silver) nuggets; spent veins show only scars
+function mkOreM(k, snow) {
+  const mb = new MB(120); mb.smooth = false;
+  const base = '#7e7872', top = snow ? (n => n[1] > 0.55 ? '#f0f4f8' : base) : (n => n[1] > 0.8 ? '#6e6e52' : base);
+  mb.ico(0, 0.45, 0, 0.85, 0.62, 0.78, top, 0.2, 1, 61); mb.ico(0.62, 0.22, 0.42, 0.45, 0.36, 0.42, top, 0.2, 1, 62); mb.ico(-0.55, 0.2, -0.32, 0.38, 0.3, 0.36, '#6e6964', 0.2, 0, 63);
+  const R = mulberry(64), sil = k === 'ore_silver', dep = k === 'ore_dep';
+  // veins: clusters of chunky nuggets standing proud of the surface
+  for (let i = 0; i < 16; i++) {
+    const a = R() * TAU, h = 0.25 + Math.sqrt(R()) * 0.78, f = Math.sqrt(Math.max(0.08, 1 - ((h - 0.45) / 0.62) ** 2)), x = Math.cos(a) * 0.85 * f, z = Math.sin(a) * 0.78 * f, s = 0.1 + R() * 0.08;
+    if (dep) { mb.ico(x * 0.97, h, z * 0.97, s * 0.9, s * 0.7, s * 0.9, '#45413d', 0.2, 0, 70 + i); continue; }
+    const e = mb.em; mb.em = sil ? 0.5 : 0.18;
+    mb.ico(x * 1.02, h, z * 1.02, s, s * 0.85, s, sil ? (i % 2 ? '#f4f8ff' : '#c8d8f0') : (i % 3 ? '#e0883a' : '#b85a22'), 0.3, 0, 70 + i);
+    mb.em = e;
   }
   return mb;
 }

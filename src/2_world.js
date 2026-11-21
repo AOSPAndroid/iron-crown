@@ -104,7 +104,7 @@ const SDEF = {
   menhir: { r: 0.7, h: 3 }, palm: { r: 0.5, h: 5 }, bush: { r: 0.5, h: 1, block: false }, fire: { r: 0.6, h: 1.0 },
   well: { r: 0.9, h: 1.6 }, ruin: { r: 4.2, h: 7 }, chest: { r: 0.6, h: 0.8 },
   col: { r: 1, h: 3 }, bld: { r: 4, h: 5, block: false }, fence: { r: 1.6, h: 1.0 }, lamp: { r: 0.2, h: 2.7 }, barrel: { r: 0.38, h: 0.9 }, crate: { r: 0.38, h: 0.8 },
-  birch: { r: 0.45, h: 5 }, willow: { r: 0.8, h: 4.5 }, log: { r: 0.55, h: 0.6 }, stump: { r: 0.42, h: 0.6 }, bigrock: { r: 1.3, h: 1.6 }
+  birch: { r: 0.45, h: 5 }, ore: { r: 0.8, h: 1.1 }, willow: { r: 0.8, h: 4.5 }, log: { r: 0.55, h: 0.6 }, stump: { r: 0.42, h: 0.6 }, bigrock: { r: 1.3, h: 1.6 }
 };
 const GC = 8, MAXR = 4.6;
 let STAMP = 1;
@@ -199,6 +199,14 @@ function genChunk(cx, cy) {
     const t = tileL(x, y);
     if (isWet(t) || t === T_DIRT || nearVil(x, y, 31) || nearCas(x, y, 7) || nearMan(x, y, 3) || localNear(c, x, y, 1.5) || Math.hypot(x - 16, y) < 10) continue;
     addStaticTo(c, i % 4 === 3 && B !== B_DESERT ? 'bigrock' : 'rock', x, y, (t === T_SNOW || t === T_DRIFT) ? { snow: 1 } : (t === T_SAND || t === T_DUNE) ? { sand: 1 } : null);
+  }
+  // ore outcrops (own random stream so the rest of the layout is unchanged): one just outside every village,
+  // and scattered veins in the wild, richer in the hills, heath and the frozen north (silver)
+  { const RO = mulberry((Math.imul(cx, 2654435761) ^ Math.imul(cy, 40503) ^ 0x0e0e) | 0); let n = 0;
+    const put = (x, y, silver) => { if (x < ox || y < oy || x >= ox + CS || y >= oy + CS) return false; const t = tileL(x, y); if (isWet(t) || t === T_DIRT || localNear(c, x, y, 1.4) || nearCas(x, y, 6) || nearMan(x, y, 3)) return false; addStaticTo(c, 'ore', x, y, { id: c.key + ':o' + (n++), silver: !!silver, snow: t === T_SNOW || t === T_DRIFT ? 1 : 0 }); return true; };
+    for (const v of vils) for (let k = 0; k < 6; k++) { const a = v.gap + Math.PI * 0.62 + k * 0.5, x = v.x + Math.cos(a) * 34, y = v.y + Math.sin(a) * 34; if (x >= ox && y >= oy && x < ox + CS && y < oy + CS) { if (put(x, y, false)) break; } else break; }
+    const ch = { [B_HEATH]: 0.5, [B_SNOW]: 0.45, [B_PLAINS]: 0.16, [B_FOREST]: 0.2, [B_DESERT]: 0.22, [B_SWAMP]: 0.05 }[B] || 0;
+    if (!own && RO() < ch) for (let k = 0; k < 4; k++) { const x = ox + 3 + RO() * (CS - 6), y = oy + 3 + RO() * (CS - 6); if (nearVil(x, y, 31)) continue; if (put(x, y, RO() < (B === B_SNOW || B === B_HEATH ? 0.4 : 0.18))) break; }
   }
   return c;
 }

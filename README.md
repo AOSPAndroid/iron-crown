@@ -53,7 +53,106 @@ Open `index.html` in any modern browser with WebGL2. It is one self-contained fi
 - **Haunted manors.** Rare, derelict three-wing mansions inside walled, overgrown gardens, with graves, box tombs, weeping statues, dead trees, a dry fountain, a broken iron gate and low fog. You can walk in through the front door. The roof and upper storey cut away to show four furnished rooms: a hall (grand stair, chandelier, portraits, a grandfather clock), a dining room with a long table, a library, and a crypt with sarcophagi, coffins and stairs leading down. There are dusty floors, cobwebs and candles. Gremlins lurk in the garden, ghosts and a vampire walk the rooms, and the manor's master, a **vampire lord**, waits in the crypt with the treasure. Moonlight falls through the windows in cold shafts (dusty sunlight by day). Killing the master cleanses the house for good. Manors are placed deterministically, about one try per 10×10-chunk region, mostly in forest, swamp and heath, never near villages or castles. The minimap marks them in violet.
 - **Roads.** Dirt tracks link each village to its nearest neighbours, and lanes run to castle gates and manor gates.
 - **Gear.** Two hands, one item each: swords (5 tiers), shields, a torch, a flintlock pistol. The claymore and bows take both hands. Armor goes from a linen tunic to full plate; heavier armor protects more but slows you, shortens your dash and its i-frames, and slows stamina recovery.
-- **Horse riding**, an XP/level system, a 20-slot inventory, merchants, loot that improves with distance, and saves (rest at a campfire or an inn, plus autosave). Looted chests stay looted.
+- **Horse riding**, an XP/level system, a 20-slot inventory with a hotbar, merchants, loot that improves with distance, and saves (rest at a campfire or an inn, plus autosave). Looted chests stay looted.
+
+## Hotbar, inventory and forging
+
+**Hotbar.** A row of 8 slots sits at the bottom centre of the screen, Minecraft-style. Each slot shows a small 3D thumbnail of its item, a stack count, its upgrade level (`+2`) and a temper gem, plus a marker if the item is in your hand (`L`, `R`, `2H`). The selected slot is outlined in gold, and a short item-name label fades in above the bar.
+
+- Select a slot with the **mouse wheel**, the **1-8** keys, or (on touch) by **tapping** the slot. **Swiping** sideways along the bar cycles through the slots, and **holding** the bar opens the bag.
+- Selecting a slot equips its item, following the two-hand rules:
+  - a one-hand sword or the pistol goes to the right (main) hand;
+  - the claymore and bows take both hands;
+  - a shield, or a torch, goes to the off hand when the main hand holds a one-hand weapon (a shield also stows a two-hander);
+  - an **empty slot means bare fists** (everything but a shield is stowed);
+  - armour on the hotbar is put on.
+- **Potions and bandages**: selecting one keeps your weapon in hand and turns ATTACK into **DRINK**. ATTACK drinks one, and so does pressing the same number key (or tapping the selected slot) again. **R** / **POT** still drinks a potion at any time.
+- New weapons, shields, torches and consumables fill free hotbar slots automatically. The layout is saved; saves from before the hotbar build it from your gear.
+- On phones the bar spans the bottom strip. In portrait the joystick and buttons sit above it; in landscape it fits between them.
+
+**Inventory** (**I** / **B** / **BAG**). It has three equipment slots (left hand, right hand, body), the 8-slot hotbar, a 20-slot bag grid, and the **materials pouch**. Materials never take bag slots. Every slot shows a thumbnail with a tier colour: common, sturdy (green), superior (blue), rare (violet) and legendary (gold).
+
+- **Drag and drop** (mouse or touch) between the bag, the hotbar and the equipment slots:
+  - drag a bag item onto the hotbar to bind it;
+  - drag it onto a hand or the body to equip it;
+  - drag a hand onto the bag to unequip;
+  - drag between the hands to swap them;
+  - drag a hotbar slot back to the bag to unbind it.
+- Invalid drops (a sword on your body, for example) are refused.
+- **Touch fallback**: tap an item, then tap where it should go.
+- **Detail panel**: a big thumbnail, the name in its tier colour, and the item's stats, each compared with what you have equipped (green ▲ / red ▼). The actions are Equip L / Equip R / Wear / Use / Unequip / To hotbar / Off hotbar / Split stack / Drop.
+
+**Item thumbnails.** Each item type is rendered once from its real game mesh, the same `buildItem` and loot meshes used in the world. The render goes through a small offscreen WebGL target with faceted two-band lighting, a 3/4 angle (long items are auto-aligned to the diagonal and rolled to show their widest face) and a dark outline. The results are cached as canvases and data URLs. The thumbnails are used in the hotbar, the hand slots, the inventory, shops, the forge, pickup messages, treasure and quest-reward banners, and quest offers. If WebGL is unavailable, a drawn glyph is used instead.
+
+**Materials.** Each entry gives what it is used for, then where to get it:
+
+| Material | Used for | Where to get it |
+|---|---|---|
+| Iron Ore | smelting steel, arrows, upgrades | mining iron ore outcrops; redcoats, brutes; merchants |
+| Silver Nugget | silvering, high upgrades, fine work | silver veins (snow / heath); vampires, vampire lords, Ravensworth |
+| Steel Ingot | blades, plate, upgrades | smelt 2 ore + 1 timber at a forge; soldiers, dragoons; merchants in bigger villages |
+| Timber | shields, bows, arrows, torches | chopping trees, logs and stumps; archers, giants; merchants |
+| Leather Hide | grips, leather armour, armour upgrades | bandits, dragoons, giants; merchants |
+| Linen Cloth | gambesons, bandages, torches | bandits, soldiers, vampires; merchants |
+| Healing Herb | healing draughts | hitting bushes; witches, shamans; merchants |
+| Gremlin Scrap | pistols | every kind of gremlin |
+| Frost Shard | frost tempering, the Blade of the Crown | frost giants |
+| Ghost Essence | +5 upgrades, the Blade of the Crown | ghosts, vampires, witches, vampire lords |
+
+Chests also hold 1–3 stacks of materials.
+
+**Mining and chopping.** Any swing that hits no foe can hit the world. **Ore outcrops** are craggy rocks studded with rusty iron (or bright silver) nuggets. One stands just outside every village, and more are scattered across the wilds, richest on the heath and in the Frostlands. Every couple of hits gives one ore; a claymore or a heavy swing mines faster, and fists mine slower. After 3–4 ore the vein is spent, and it shows ore again two days later (this is saved). **Trees**, logs and stumps give a few pieces of timber, and bushes sometimes give a healing herb.
+
+**The blacksmith's forge.** Talk to any village blacksmith (**E** / **SMITH**). The forge screen has five tabs, and **Trade** opens the smith's shop (the shop has a **Forge** button back):
+
+- **Craft**: weapons, shields and armour from recipes. Each row shows the required materials against what you own, with thumbnails, and greys out what you can't make yet.
+- **Upgrade**: takes gear from **+1 to +5**. Each level adds about 8 % damage + 1 (weapons), +3 % block (shields) or +2.5 % armour (armour). The cost is iron, then steel, then silver at +4 and ghost essence at +5, plus gold.
+- **Temper**: two kinds:
+  - **Silvered** (2 silver): ×1.5 damage against the undead, ghosts and witches;
+  - **Frost-tempered** (2 frost shards): +10 % damage, and struck foes are chilled (slowed).
+- **Salvage**: breaks bag items down into about half their materials, more for upgraded or tempered gear.
+- **Orders**: the smith's own side quest. Bring him a set of materials; the reward is gold, XP, reputation and a *Fine* piece of gear. A **?** shows over him when you can deliver.
+
+| Smith recipe | Materials |
+|---|---|
+| Steel Ingot (smelting, no minigame) | 2 iron ore, 1 timber |
+| Iron Sword | 3 iron ore, 1 timber, 1 hide, $8 |
+| Steel Arming Sword | 3 steel, 1 hide, $20 |
+| Knight's Longsword | 5 steel, 1 silver, 2 hide, $60 |
+| Claymore | 6 steel, 2 timber, 1 hide, $45 |
+| Blade of the Crown | 6 steel, 3 silver, 2 frost shards, 2 ghost essence, $150 |
+| Flintlock Pistol | 3 steel, 2 timber, 3 gremlin scrap, $40 |
+| Buckler / Kite / Tower Shield | 3 timber + 1 ore / 3 timber + 2 steel + 1 hide / 4 timber + 4 steel + 2 hide |
+| Gambeson / Leather / Chainmail / Half-Plate / Full Plate | 4 cloth / 4 hide + 1 cloth / 4 steel + 2 ore + 2 cloth / 6 steel + 2 hide / 9 steel + 2 silver + 3 hide |
+
+**Campfire workbench.** Use a village campfire (**E** / **CAMP**). You can **Rest** there as before, or craft:
+
+- 10 arrows (1 timber + 1 iron ore);
+- a torch (timber + cloth);
+- 2 bandages (2 cloth, heal 25);
+- a healing draught (3 herbs);
+- short bow, longbow and war bow.
+
+**The hammer minigame.** Forging, upgrading and tempering are done with three hammer strikes. A marker sweeps back and forth across a glowing bar, faster on each strike, and a bright mark sits in a new place each time. Strike with **Space / J / Enter**, a click, or the **STRIKE** button (touch). Each strike is graded and rings the anvil:
+
+- **PERFECT** (within 4.5 % of the bar): 1;
+- **GOOD** (within 12 %): 0.6;
+- **FAIR** (within 22 %): 0.3;
+- **MISS**: 0.
+
+An average of 0.85 or more makes a **Masterwork** item (+10 % damage, or more block / armour), and 0.5 or more makes a **Fine** one (+5 %). Upgrading or tempering can raise an item's quality, but never lowers it. Materials are only used when the work is finished; **Stop** or Esc cancels.
+
+**Under the hood.** Forged variants live in the item id string, `base[+level][!temper][#quality]` (for example `steel_sword+3!s#2`). `ITEMS` is a Proxy that resolves such ids into derived items on demand, so hands, the bag, the hotbar, shops and saves keep using plain strings, and old saves load unchanged.
+
+| | |
+|---|---|
+| ![Hotbar in play](docs/screenshots/sc_d_hud.png) | ![Inventory: dragging to the hotbar](docs/screenshots/sc_d_inv_drag.png) |
+| ![Item detail and compare](docs/screenshots/sc_d_inv_detail.png) | ![The forge](docs/screenshots/sc_d_forge.png) |
+| ![Upgrades](docs/screenshots/sc_d_forge_up.png) | ![The hammer minigame](docs/screenshots/sc_d_forge_mg.png) |
+| ![Mining an ore outcrop](docs/screenshots/sc_d_ore.png) | ![Shop with thumbnails](docs/screenshots/sc_d_shop.png) |
+| ![Hotbar (phone)](docs/screenshots/sc_m_hud.png) | ![Inventory (phone)](docs/screenshots/sc_m_inv_detail.png) |
+
+All inventory and forge scenes, at 1280×720 and 390×844: `docs/screenshots/grid_inventory.png`.
 
 ## Combat
 
@@ -123,11 +222,14 @@ There is no tutorial fight. The controls are listed on the title screen and the 
 | Quest log | Q | QUESTS (top of screen) |
 | Lock on (press again for the next target) | L or Tab | LOCK |
 | Turn camera 45° | Z / X | – |
-| Talk (quest givers, innkeeper: quests, bed) / trade (merchant, blacksmith, quartermaster) / rest (campfire) / loot / mount | E | USE |
+| Talk (quest givers, innkeeper: quests, bed) / trade (merchant, quartermaster) / forge (blacksmith) / campfire (rest, craft) / loot / mount | E | USE |
+| Hotbar: select a slot | 1-8, mouse wheel, click a slot | tap a slot, swipe the bar |
+| Hit ore rocks / trees for materials | attack | ATTACK |
+| Forge hammer strike | Space, J, Enter or click | STRIKE |
 | Enter a building | walk through the door | joystick |
 | Horse (mount, dismount, call) | H | HORSE |
-| Potion | R | POT |
-| Inventory | I or B | BAG |
+| Potion (or a potion selected on the hotbar + attack) | R | POT (or DRINK) |
+| Inventory (drag and drop) | I or B | BAG, or hold the hotbar |
 | Pause / mute | P or Esc / M | II |
 
 With a mouse, attacks aim at the cursor while you are using the mouse.
@@ -198,12 +300,15 @@ src/2_world.js    biomes, tiles, infinite chunk generation, villages, collisions
 src/2_struct.js   wall / box colliders, structures (footprints, doors, navigation), building specs, village layouts, castle placement + plans
 src/3_gl.js       WebGL2 core: toon shaders, outline + bloom composite, fixed 3/4 camera, sun/moon, lights
 src/3_mesh.js     mesh builder; chibi rigged people, armour, items, horse, giants, toon scenery
+src/3_thumb.js    item thumbnails: each item mesh rendered once offscreen (WebGL2) into cached canvases, glyph fallback
 src/3_scene.js    terrain chunks, instancing + decor, poses, telegraph decals, slash ribbons, particles, frame, overlays
 src/2_manor.js    haunted manors: deterministic placement, plan (rooms, furniture, garden, graves), colliders, structure, lights
 src/3_arch.js     architecture kit: walls with doors and windows, roofs, furniture, interiors, village props, castle part meshes + LOD
 src/3_manor.js    manor meshes (house, interiors, walled garden, gate), part LOD + culling, moonlight shafts
 src/4_quest.js    the main story, side-quest generation, objectives, rewards, reputation, quest saves
 src/4_game.js     game state, action combat (combos, dash, parry, heavy, poise, tokens, style), enemy AI, events, saves
+src/4_craft.js    hotbar rules, materials, recipes, upgrades / tempering / salvage, the hammer minigame, mining and chopping
+src/5_inv.js      HUD hotbar (wheel / keys / tap / swipe), inventory grid with drag and drop and item details, forge + campfire screens
 src/5_ui.js       HUD, minimap, input (keyboard / touch), overlays, sound, main loop
 src/shell.html    page shell: CSS, overlays, touch controls
 build.py          inlines src/*.js into shell.html -> index.html (and test/game.js)
@@ -211,6 +316,7 @@ test/harness.js   Node vm harness with DOM/canvas stubs
 test/sim.js       scripted play-through on the harness (story opening, chapter 2, fights, gremlins, a manor, biomes, tavern + inn, castle assault, ruins at night, death, saves)
 test/story.js     story / quests / gremlins / ghosts / manors: no tutorial, quest accept → progress → reward, dialogue, saves (incl. old + corrupt saves), gold theft and recovery, horse spooking, shaman interrupt, bombs, ghosts through walls, manor determinism + cutaway, the whole main story
 test/combat.js    timing tests: perfect dodge, parry windows, combo mashing, stamina, tokens, buffer
+test/craft.js     hotbar rules, wheel + keys, inventory drag and drop, crafting, upgrades, tempering, salvage, forge timing + quality, mining, smith orders, hotbar saves + old saves
 test/buildings.js wall collision, doors and gates, cutaway state, enemy navigation, castle placement, inn / smith / garrison, saves
 test/scenes.py    Playwright screenshots (SwiftShader WebGL2) of test scenes -> shots/
 ```

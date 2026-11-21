@@ -21,11 +21,11 @@ var KEYS = ['KeyJ', 'KeyK'];
 function randKeys() {
   keys.KeyJ = Math.random() < 0.45; keys.KeyK = Math.random() < 0.2;
   if (Math.random() < 0.15) edge.Space = true; if (Math.random() < 0.05) edge.KeyL = true;
-  if (Math.random() < 0.04) edge.KeyH = true; if (Math.random() < 0.05) edge.KeyE = true; if (Math.random() < 0.02) edge.KeyR = true;
+  if (Math.random() < 0.04) edge.KeyH = true; if (Math.random() < 0.04) hotSelect(ri(0, 7), 'key'); if (Math.random() < 0.03) hotWheel(Math.random() < 0.5 ? 1 : -1); if (Math.random() < 0.05) edge.KeyE = true; if (Math.random() < 0.02) edge.KeyR = true;
   const foe = S.ents.find(e => e.team === 1 && !e.dead && dist(e, P) < 25);
   if (foe && Math.random() < 0.8) stick(foe.x, foe.y, 1.2); else { touch.active = true; touch.jx = Math.random() * 2 - 1; touch.jy = Math.random() * 2 - 1; }
 }
-function sim(sec) { const n = Math.round(sec / 0.033); for (let i = 0; i < n; i++) { if (i % 6 === 0) randKeys(); step(0.033); if (S.mode === 'shop') closeShop(); if (S.mode === 'inv') closeInv(); if (S.mode === 'paused') closePause(); if (S.mode === 'talk') closeTalk(); if (S.mode === 'log') closeLog(); if (S.mode === 'over') { overClick({ target: { closest: () => ({ dataset: { a: 'rise' } }) } }); } } release(); }
+function sim(sec) { const n = Math.round(sec / 0.033); for (let i = 0; i < n; i++) { if (i % 6 === 0) randKeys(); step(0.033); if (S.mode === 'shop') closeShop(); if (S.mode === 'inv') closeInv(); if (S.mode === 'paused') closePause(); if (S.mode === 'talk') closeTalk(); if (S.mode === 'log') closeLog(); if (S.mode === 'forge') closeForge(); if (S.mode === 'over') { overClick({ target: { closest: () => ({ dataset: { a: 'rise' } }) } }); } } release(); }
 `);
 // story opening: the prologue, then the stranger at the inn (no tutorial)
 console.log('opening', run('S.mode'), 'quest', run('S.Q.act[0].title'), 'bandits', run("S.ents.filter(e=>e.kind==='bandit').length"));
@@ -76,7 +76,10 @@ run(`P.x=0; P.y=500; sim(20); P.x=900; P.y=0; sim(20); P.x=-900; P.y=200; sim(20
 run(`P.x=16; P.y=22; S.horse.x=20; S.horse.y=22; P.mounted=false; for(let i=0;i<40;i++) step(0.033);
 { const L=villageLayout(villageFor(0,0)), tav=L.structs.find(s=>s.type==='tavern'), d=tav.doors[0]; for(let i=0;i<400 && structAt(P.x,P.y)!==tav;i++){ stick(Math.hypot(P.x-d.ox,P.y-d.oy)>1.2 && !structAt(P.x,P.y) ? d.ox : d.ix, Math.hypot(P.x-d.ox,P.y-d.oy)>1.2 && !structAt(P.x,P.y) ? d.oy : d.iy, 0.3); step(0.033); }
   release(); var inTavern = structAt(P.x,P.y)===tav; S.ents=S.ents.filter(e=>e.team!==1); const ip=l2w(tav,3.0,-0.6); P.x=ip[0]; P.y=ip[1]; P.hp=10; P.gold+=20; for(let i=0;i<3;i++) step(0.033); S.interact=findInteract(); doInteract(); if (S.mode==='talk') talkAct('rest'); for(let i=0;i<30;i++) step(0.033); }
-const sm=S.ents.find(e=>e.kind==='smith'); if(sm){ openShop(sm); shopClick({target:{closest:()=>({dataset:{a:'buy',i:'0'}})}}); closeShop(); }`);
+const sm=S.ents.find(e=>e.kind==='smith'); if(sm){ openShop(sm); shopClick({target:{closest:()=>({dataset:{a:'buy',i:'0'}})}}); closeShop(); }
+if(sm){ Object.assign(P.mats, { iron_ore: 9, wood: 6, leather_hide: 4, steel_ingot: 6, cloth: 4 }); P.gold += 300; openForge(sm, 'smith'); for (const t of ['upgrade', 'temper', 'salvage', 'orders', 'craft']) forgeAct('tab', { t });
+  forgeAct('craft', { r: 'smith:iron_sword' }); for (let i = 0; i < 200 && FORGE.mg; i++) { step(0.033); if (i % 9 === 4) forgeStrike(); } forgeAct('resok', {}); forgeAct('tab', { t: 'upgrade' });
+  const up = forgeOwned(id => upgradable(id))[0]; if (up) { forgeAct('upg', { id: up }); for (let i = 0; i < 200 && FORGE.mg; i++) { step(0.033); if (i % 7 === 3) forgeStrike(); } } closeForge(); }`);
 console.log('tavern entered', run('inTavern'), 'hp after inn', run('Math.round(P.hp)'), 'cut', run('S.cut.s && S.cut.s.type'));
 run(`{ const cs=nearestCastle(16,16,900), g=l2w(cs,0,CAS_S+12); P.x=g[0]; P.y=g[1]; S.horse.x=P.x+3; S.horse.y=P.y; S.time=0.4; for(let i=0;i<60;i++) step(0.033);
   if (P.mounted) horseAction(); const gi=l2w(cs,0,CAS_S-12); P.hp=P.maxHp=2000; for(let i=0;i<450 && castleAt(P.x,P.y)!==cs;i++){ stick(gi[0],gi[1],0.5); keys.KeyJ = i % 8 < 2; step(0.033); } release(); var inCastle=castleAt(P.x,P.y)===cs; var garrisonSeen=S.ents.filter(e=>e.castle===cs).length; sim(45);
