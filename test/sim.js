@@ -4,7 +4,7 @@ const t0 = Date.now();
 // title frames
 run('for(let i=0;i<30;i++) step(0.016)');
 run('startNew()');
-run('for(let i=0;i<80;i++) step(0.016)');
+run('for(let i=0;i<200000 && S.mode==="loading";i++) step(0.016)');
 console.log('mode after load', run('S.mode'), 'tut', run('S.tut'), 'ents', run('S.ents.length'), 'chunks', run('CHUNKS.size'));
 // fake input
 run(`var KEYS=['KeyW','KeyA','KeyD','KeyJ','KeyK','Space','KeyH','KeyE','KeyR'];
@@ -33,7 +33,7 @@ run(`S.time=0.85; S.dirT=0; const ti=P.inv.findIndex(q=>q.id==='torch'); if(ti>=
 console.log('night: ents', run('S.ents.map(e=>e.kind).join(",")'), 'dark', run('S.darkness'), 'hp', run('Math.round(P.hp)'), 'mode', run('S.mode'));
 // snow
 run(`P.x=10; P.y=-420; S.horse.x=P.x; S.horse.y=P.y; S.time=0.4; for(let i=0;i<30;i++) step(0.033);`);
-console.log('biome at snow', run('biomeAt(P.x,P.y)'), 'flakes', run('S.flakes.length'));
+console.log('biome at snow', run('biomeAt(P.x,P.y)'));
 run(`S.dirT=0; spawnGroup('frostgiant'); sim(60)`);
 console.log('snow: ents', run('S.ents.map(e=>e.kind).join(",")'), 'hp', run('Math.round(P.hp)'), 'kills', run('S.kills'));
 // desert, swamp, far east
@@ -45,7 +45,7 @@ console.log('mode after death', run('S.mode'));
 run(`overClick({target:{closest:()=>({dataset:{a:'rise'}})}}); for(let i=0;i<30;i++) step(0.033);`);
 console.log('after respawn', run('S.mode'), run('Math.round(P.x)+","+Math.round(P.y)'), 'hp', run('P.hp'));
 // save / continue
-run('saveGame(); continueGame(); for(let i=0;i<120;i++) step(0.016);');
+run('saveGame(); continueGame(); for(let i=0;i<200000 && S.mode==="loading";i++) step(0.016); for(let i=0;i<60;i++) step(0.016);');
 console.log('continue mode', run('S.mode'), 'day', run('S.day'));
 run('sim(120)');
 console.log('final', run('S.mode'), 'kills', run('S.kills'), 'lvl', run('P.level'), 'ents', run('S.ents.length'), 'parts', run('S.parts.length'));

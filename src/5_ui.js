@@ -28,7 +28,7 @@ function icon(name, x, y, s, over) {
   for (let r = 0; r < rows.length; r++) for (let c = 0; c < rows[r].length; c++) { const ch = rows[r][c]; if (ch === '.') continue; ctx.fillStyle = (over && over[ch]) || ICOL[ch]; ctx.fillRect(Math.round(x + c * s), Math.round(y + r * s), s, s); }
 }
 function itemIcon(it) { if (!it) return 'fist'; return { sword: 'sword', sword2: 'claymore', bow: 'bow', shield: 'shield', torch: 'torch', gun: 'gun', armor: 'armor' }[it.type] || 'fist'; }
-function hudPanel(x, y, w, h) { ctx.fillStyle = 'rgba(12,9,6,0.78)'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#5a4a30'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); }
+function hudPanel(x, y, w, h) { ctx.fillStyle = 'rgba(6,8,12,0.58)'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = 'rgba(170,180,200,0.22)'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1); }
 function hudText(s, x, y, col, align) { ctx.textAlign = align || 'left'; ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillText(s, x + 1, y + 1); ctx.fillStyle = col; ctx.fillText(s, x, y); }
 function hudBar(x, y, w, h, f, col, bg) { ctx.fillStyle = '#000'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2); ctx.fillStyle = bg; ctx.fillRect(x, y, w, h); ctx.fillStyle = col; ctx.fillRect(x, y, Math.round(w * clamp(f, 0, 1)), h); ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(x, y, Math.round(w * clamp(f, 0, 1)), 1); }
 function slot(x, y, it, label, active) {
